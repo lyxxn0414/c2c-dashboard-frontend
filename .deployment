@@ -1,0 +1,12 @@
+# Azure App Service deployment configuration
+# Learn more: https://docs.microsoft.com/azure/app-service/deploy-run-package
+
+# Build configuration
+WEBSITE_NODE_DEFAULT_VERSION=18.17.1
+SCM_DO_BUILD_DURING_DEPLOYMENT=true
+
+# Application settings that can be configured in Azure portal
+# NODE_ENV=production
+# PORT=8080
+# API_BASE_URL=https://your-api.azurewebsites.net
+# CORS_ORIGIN=https://your-frontend.azurewebsites.net

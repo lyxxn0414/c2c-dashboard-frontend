@@ -1,0 +1,14 @@
+{
+  "scripts": {
+    "start": "node dist/app.js",
+    "dev": "nodemon --exec ts-node src/app.ts",
+    "build": "tsc",
+    "clean": "rimraf dist",
+    "prebuild": "npm run clean",
+    "lint": "eslint src/**/*.ts",
+    "test": "jest",
+    "deploy:build": "npm run build && echo Build completed successfully",
+    "deploy:zip": "powershell -Command \"Compress-Archive -Path 'dist/*','public/*','package.json','.env' -DestinationPath 'deployment.zip' -Force\"",
+    "deploy:package": "npm run deploy:build && npm run deploy:zip"
+  }
+}
