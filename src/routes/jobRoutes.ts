@@ -50,8 +50,7 @@ router.get('/', asyncHandler(async (req: Request, res: Response) => {
         PoolName: 'default-pool',
         TaskNum: 63,
         SuccessTasks: 58,
-        SuccessRate: '92%',
-        status: JobStatus.COMPLETED
+        SuccessRate: '92%'
       },
       {
         TestJobID: 'job-2',
@@ -61,8 +60,7 @@ router.get('/', asyncHandler(async (req: Request, res: Response) => {
         PoolName: 'test-pool',
         TaskNum: 45,
         SuccessTasks: 30,
-        SuccessRate: '87%',
-        status: JobStatus.RUNNING
+        SuccessRate: '87%'
       }
     ];
 
@@ -103,7 +101,8 @@ router.get('/:id', asyncHandler(async (req: Request, res: Response) => {
   const { id } = req.params;
 
   try {
-    const job = await externalJobService.getJobByIdCompatible(id);
+    const job = await externalJobService.getJobById(id);
+    console.log("Fetched job:", job);
     res.json(job);
   } catch (error) {
     console.error(`Error fetching job ${id} from external service:`, error);
@@ -124,8 +123,7 @@ router.get('/:id', asyncHandler(async (req: Request, res: Response) => {
       PoolName: 'fallback-pool',
       TaskNum: 0,
       SuccessTasks: 0,
-      SuccessRate: '0%',
-      status: JobStatus.PENDING
+      SuccessRate: '0%'
     };
 
     res.json(fallbackJob);
@@ -161,8 +159,7 @@ router.post('/', asyncHandler(async (req: Request, res: Response) => {
       PoolName: 'local-pool',
       TaskNum: 0,
       SuccessTasks: 0,
-      SuccessRate: '0%',
-      status: JobStatus.PENDING
+      SuccessRate: '0%'
     };
 
     res.status(201).json(fallbackJob);

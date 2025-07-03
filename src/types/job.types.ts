@@ -9,7 +9,6 @@ export interface Job {
   SuccessTasks: number;       // 成功任务数
   FailedTasks?: number;       // 失败任务数
   SuccessRate: string;        // 成功率
-  status?: JobStatus;         // 状态（前端添加的字段）
   
   // 详情页面额外字段
   UseMCP?: number;
@@ -22,18 +21,6 @@ export interface Job {
   RegionCalls?: number;
   QuotaCalls?: number;
   AIIntegration?: number;
-}
-
-// 向后兼容的字段映射
-export interface JobCompatible {
-  id: string;                 // mapped from TestJobID
-  createdBy: string;          // mapped from InitiatedBy
-  creationTime: string;       // mapped from CreatedTime
-  description: string;        // mapped from JobDiscription
-  taskNum: number;           // mapped from TaskNum
-  finishedTaskNum: number;   // mapped from SuccessTasks
-  successRate: string;       // mapped from SuccessRate
-  status: JobStatus;
 }
 
 export enum JobStatus {

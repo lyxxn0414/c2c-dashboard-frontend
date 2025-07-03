@@ -54,7 +54,14 @@ class JobDashboard {
         this.jobAvgIterations = document.getElementById('job-avg-iterations');
         this.jobAvgAiIntegration = document.getElementById('job-avg-ai-integration');
         this.jobIterationsChanges = document.getElementById('job-iterations-changes');
-        
+
+        // Tool call elements
+        this.toolRecommend = document.getElementById('tool-recommend');
+        this.toolPredeploy = document.getElementById('tool-predeploy');
+        this.toolDeploy = document.getElementById('tool-deploy');
+        this.toolRegion = document.getElementById('tool-region');
+        this.toolQuota = document.getElementById('tool-quota');
+
         // Button elements
         this.backToJobsBtn = document.getElementById('back-to-jobs-btn');
         this.configBtn = document.getElementById('config-btn');
@@ -243,7 +250,7 @@ class JobDashboard {
         // Apply user filter
         let filteredJobs = jobs;
         if (this.currentUserFilter !== 'all') {
-            filteredJobs = jobs.filter(job => job.createdBy === this.currentUserFilter);
+            filteredJobs = jobs.filter(job => job.InitiatedBy === this.currentUserFilter);
         }
 
         filteredJobs.forEach(job => {
@@ -251,28 +258,28 @@ class JobDashboard {
             row.className = 'fade-in';
             row.innerHTML = `
                 <td>
-                    <a href="#" class="job-id-link" data-job-id="${job.id}">
-                        ${job.id}
+                    <a href="#" class="job-id-link" data-job-id="${job.TestJobID}">
+                        ${job.TestJobID}
                     </a>
                 </td>
-                <td>${this.escapeHtml(job.user || job.createdBy)}</td>
-                <td>${this.formatDateTime(job.creationTime)}</td>
-                <td>${this.escapeHtml(job.description)}</td>
-                <td>${job.finishedTaskNum}</td>
+                <td>${this.escapeHtml(job.InitiatedBy)}</td>
+                <td>${this.formatDateTime(job.CreatedTime)}</td>
+                <td>${this.escapeHtml(job.JobDiscription)}</td>
+                <td>${job.TaskNum}</td>
                 <td>
-                    <span class="success-rate ${this.getSuccessRateClass(job.successRate)}">
-                        ${job.successRate}
+                    <span class="success-rate ${this.getSuccessRateClass(job.SuccessRate)}">
+                        ${job.SuccessRate}
                     </span>
                 </td>
                 <td>
                     <div class="btn-group btn-group-sm">
-                        <button class="btn btn-outline-primary btn-sm" onclick="jobDashboard.viewJob('${job.id}')" title="View Details">
+                        <button class="btn btn-outline-primary btn-sm" onclick="jobDashboard.viewJob('${job.TestJobID}')" title="View Details">
                             <i class="bi bi-eye"></i>
                         </button>
-                        <button class="btn btn-outline-secondary btn-sm" onclick="jobDashboard.editJob('${job.id}')" title="Edit">
+                        <button class="btn btn-outline-secondary btn-sm" onclick="jobDashboard.editJob('${job.TestJobID}')" title="Edit">
                             <i class="bi bi-pencil"></i>
                         </button>
-                        <button class="btn btn-outline-danger btn-sm" onclick="jobDashboard.deleteJob('${job.id}')" title="Delete">
+                        <button class="btn btn-outline-danger btn-sm" onclick="jobDashboard.deleteJob('${job.TestJobID}')" title="Delete">
                             <i class="bi bi-trash"></i>
                         </button>
                     </div>
@@ -352,45 +359,6 @@ class JobDashboard {
         document.getElementById('create-job-form').reset();
         this.validateCreateJobForm();
         modal.show();
-    }
-
-    async createJob() {
-        const description = document.getElementById('job-description').value.trim();
-        const poolId = document.getElementById('job-pool-id').value.trim();
-
-        if (!description) {
-            this.showAlert('Please enter a job description.', 'danger');
-            return;
-        }
-
-        try {
-            // Note: Create job might use a different endpoint, keeping original for now
-            const response = await fetch('/api/jobs', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                    description,
-                    poolId: poolId || undefined
-                }),
-            });
-
-            if (!response.ok) {
-                throw new Error(`HTTP error! status: ${response.status}`);
-            }
-
-            const newJob = await response.json();
-            this.showAlert('Job created successfully!', 'success');
-            
-            // Close modal and refresh jobs
-            bootstrap.Modal.getInstance(document.getElementById('createJobModal')).hide();
-            this.currentPage = 1;
-            this.loadJobs();
-        } catch (error) {
-            console.error('Error creating job:', error);
-            this.showAlert('Failed to create job. Please try again.', 'danger');
-        }
     }
 
     validateCreateJobForm() {
@@ -666,6 +634,7 @@ class JobDashboard {
         try {
             // Use our backend API endpoint (not direct kusto call)
             const response = await fetch(`/api/jobs/${jobId}`);
+            console.log(jobId, response);
             if (!response.ok) {
                 throw new Error(`HTTP error! status: ${response.status}`);
             }
@@ -691,23 +660,37 @@ class JobDashboard {
         detailView.classList.add('view-transition');
         
         // Populate job detail fields
-        document.getElementById('job-detail-title').textContent = job.name || `Job-${job.id}`;
-        document.getElementById('job-detail-id').textContent = job.id;
-        document.getElementById('job-detail-creator').textContent = job.InitiatedBy || job.createdBy || job.user;
-        document.getElementById('job-detail-creation-time').textContent = this.formatDateTime(job.CreatedTime || job.creationTime);
-        document.getElementById('job-detail-description').textContent = job.JobDiscription || job.description;
+        document.getElementById('job-detail-title').textContent = `Job-${job.TestJobID}`;
+        document.getElementById('job-detail-id').textContent = job.TestJobID;
+        document.getElementById('job-detail-creator').textContent = job.InitiatedBy;
+        document.getElementById('job-detail-creation-time').textContent = this.formatDateTime(job.CreatedTime);
+        document.getElementById('job-detail-description').textContent = job.JobDiscription;
         
         // Populate metrics - handle both new and old field names for compatibility
-        document.getElementById('job-completed-tasks').textContent = job.SuccessTasks || job.finishedTaskNum || 0;
+        document.getElementById('job-completed-tasks').textContent = job.TaskNum || 0;
         document.getElementById('job-success-tasks').textContent = job.SuccessTasks || this.calculateSuccessTasks(job);
         document.getElementById('job-failed-tasks').textContent = job.FailedTasks || this.calculateFailedTasks(job);
-        document.getElementById('job-success-rate').textContent = job.SuccessRate || job.successRate || '0%';
-        
+        document.getElementById('job-success-rate').textContent = job.SuccessRate || '0%';
+
         // Additional metrics from backend
+        console.log('Job metrics:', job);
         document.getElementById('job-avg-iterations').textContent = job.AvgSuccessIteration || '10';
         document.getElementById('job-avg-ai-integration').textContent = job.AIIntegration || '10';
         document.getElementById('job-iterations-changes').textContent = job.AvgInfraChanges || 'xx';
-        
+
+        // Tool call metrics
+        document.getElementById('tool-recommend').textContent = job.RecommendCalls || 0;
+        document.getElementById('tool-predeploy').textContent = job.PredeployCalls || 0;
+        document.getElementById('tool-deploy').textContent = job.DeployCalls || 0;
+        document.getElementById('tool-region').textContent = job.RegionCalls || 0;
+        document.getElementById('tool-quota').textContent = job.QuotaCalls || 0;
+
+        // Model statistics (using mock data for now - will be replaced with real API data)
+        this.populateModelStatistics(job);
+
+        // Failed tasks analysis
+        this.populateFailedTasks(job);
+
         // Trigger transition effect
         setTimeout(() => {
             detailView.classList.add('active');
@@ -724,6 +707,153 @@ class JobDashboard {
             detailView.classList.remove('view-transition');
             document.getElementById('jobs-view').classList.remove('d-none');
         }, 300);
+    }
+
+    populateModelStatistics(job) {
+        // For now, using mock data. In the future, this should come from the API response
+        // TODO: Replace with real classification statistics from job data
+        
+        // Model statistics
+        const modelStats = {
+            'claude-35': { successRate: '85%', avgIteration: 8.5 },
+            'claude-37': { successRate: '92%', avgIteration: 7.2 },
+            'claude-40': { successRate: '88%', avgIteration: 6.8 },
+            'gpt-41': { successRate: '90%', avgIteration: 7.5 }
+        };
+
+        // Language statistics
+        const languageStats = {
+            'java': { successRate: '88%', avgIteration: 9.2 },
+            'dotnet': { successRate: '85%', avgIteration: 8.7 },
+            'jsts': { successRate: '90%', avgIteration: 7.8 },
+            'python': { successRate: '92%', avgIteration: 7.3 }
+        };
+
+        // Resource type statistics
+        const resourceStats = {
+            'resource-1-0': { successRate: '95%', avgIteration: 6.5 },
+            'resource-1-1': { successRate: '88%', avgIteration: 8.2 },
+            'resource-1-n': { successRate: '82%', avgIteration: 9.8 },
+            'resource-n-0': { successRate: '75%', avgIteration: 11.2 },
+            'resource-n-1': { successRate: '70%', avgIteration: 12.5 },
+            'resource-n-n': { successRate: '65%', avgIteration: 14.3 }
+        };
+
+        // Specific repo statistics
+        const repoStats = {
+            'airsonic': { successRate: '92%', avgIteration: 7.8 },
+            'assessment': { successRate: '85%', avgIteration: 9.1 },
+            'before-container': { successRate: '78%', avgIteration: 10.5 },
+            'tasktracker': { successRate: '89%', avgIteration: 8.3 },
+            'task-2': { successRate: '83%', avgIteration: 9.7 },
+            'task-3': { successRate: '87%', avgIteration: 8.9 }
+        };
+
+        // Update each category's statistics
+        [modelStats, languageStats, resourceStats, repoStats].forEach(statsCategory => {
+            Object.entries(statsCategory).forEach(([key, stats]) => {
+                const successRateElement = document.getElementById(`${key}-success-rate`);
+                const avgIterationElement = document.getElementById(`${key}-avg-iteration`);
+                
+                if (successRateElement) {
+                    successRateElement.textContent = stats.successRate;
+                }
+                if (avgIterationElement) {
+                    avgIterationElement.textContent = stats.avgIteration;
+                }
+            });
+        });
+    }
+
+    populateFailedTasks(job) {
+        const failedTasksContainer = document.getElementById('failed-tasks-content');
+        
+        if (!failedTasksContainer) {
+            console.warn('Failed tasks container not found');
+            return;
+        }
+
+        // Check if there are failed tasks in the job data
+        // First check if job has a FailedTasksDetails array or similar field
+        let failedTasks = [];
+        
+        if (job.FailedTasksDetails && Array.isArray(job.FailedTasksDetails)) {
+            failedTasks = job.FailedTasksDetails;
+        } else if (job.failedTasksDetails && Array.isArray(job.failedTasksDetails)) {
+            failedTasks = job.failedTasksDetails;
+        } else if (job.FailedTasks && job.FailedTasks > 0) {
+            // If we only have the count, generate mock failed tasks for demo
+            failedTasks = this.generateMockFailedTasks(job.FailedTasks);
+        } else {
+            // No failed tasks - show success message
+            failedTasksContainer.innerHTML = `
+                <div class="no-failed-tasks">
+                    <div>All tasks completed successfully!</div>
+                </div>
+            `;
+            return;
+        }
+
+        // Update failed tasks count badge
+        const failedTasksCountBadge = document.getElementById('failed-tasks-count');
+        if (failedTasksCountBadge) {
+            failedTasksCountBadge.textContent = `${failedTasks.length} Failed Task${failedTasks.length !== 1 ? 's' : ''}`;
+        }
+
+        // Generate HTML for failed tasks using Bootstrap row/col structure
+        const failedTasksHTML = failedTasks.map(task => `
+            <div class="failed-task-item">
+                <div class="row align-items-center">
+                    <div class="col-md-3">
+                        <span class="task-name">${task.taskName || task.name || 'Unknown Task'}</span>
+                    </div>
+                    <div class="col-md-3">
+                        <span class="error-category badge bg-danger-subtle text-danger">${task.errorCategory || task.category || 'General Error'}</span>
+                    </div>
+                    <div class="col-md-6">
+                        <span class="error-description">${task.errorDescription || task.description || task.error || 'No error description available'}</span>
+                    </div>
+                </div>
+            </div>
+        `).join('');
+
+        failedTasksContainer.innerHTML = failedTasksHTML;
+    }
+
+    generateMockFailedTasks(failedCount) {
+        // Generate mock failed tasks for demonstration when real data isn't available
+        const mockErrorCategories = ['Network', 'Timeout', 'Validation', 'Configuration', 'Dependency'];
+        const mockTaskNames = [
+            'Azure Resource Deployment',
+            'Container Registry Setup',
+            'Database Configuration',
+            'API Gateway Setup',
+            'Load Balancer Configuration',
+            'SSL Certificate Installation',
+            'DNS Configuration',
+            'Monitoring Setup'
+        ];
+        const mockErrorDescriptions = [
+            'Connection timeout while establishing connection to Azure Resource Manager',
+            'Invalid configuration parameters provided for the service setup',
+            'Required dependencies are missing or incompatible versions detected',
+            'Authentication failed due to expired or invalid credentials',
+            'Resource quota exceeded for the specified subscription tier',
+            'Network security group rules blocking required communication ports',
+            'Service endpoint configuration conflicts with existing setup',
+            'Validation failed for resource naming conventions'
+        ];
+
+        const failedTasks = [];
+        for (let i = 0; i < Math.min(failedCount, 8); i++) {
+            failedTasks.push({
+                taskName: mockTaskNames[i % mockTaskNames.length],
+                errorCategory: mockErrorCategories[i % mockErrorCategories.length],
+                errorDescription: mockErrorDescriptions[i % mockErrorDescriptions.length]
+            });
+        }
+
+        return failedTasks;
     }
 
     calculateSuccessTasks(job) {
@@ -808,36 +938,6 @@ class JobDashboard {
     }
 
     async deleteJob(jobId) {
-        if (!confirm('Are you sure you want to delete this job?')) {
-            return;
-        }
-
-        try {
-            // Note: Delete job might use a different endpoint, keeping original for now
-            const response = await fetch(`/api/jobs/${jobId}`, {
-                method: 'DELETE',
-            });
-
-            if (!response.ok) {
-                throw new Error(`HTTP error! status: ${response.status}`);
-            }
-
-            this.showAlert('Job deleted successfully!', 'success');
-            
-            // If we're in detail view, go back to jobs view first
-            if (!document.getElementById('job-detail-view').classList.contains('d-none')) {
-                this.showJobsView();
-                // Wait for transition before loading jobs
-                setTimeout(() => {
-                    this.loadJobs();
-                }, 350);
-            } else {
-                this.loadJobs();
-            }
-        } catch (error) {
-            console.error('Error deleting job:', error);
-            this.showError('Failed to delete job.');
-        }
     }
 }
 

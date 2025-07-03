@@ -1,5 +1,5 @@
 import axios, { AxiosInstance, AxiosRequestConfig } from 'axios';
-import { Job, JobQueryParams, JobListResponse, CreateJobRequest, JobCompatible } from '../types/job.types';
+import { Job, JobQueryParams, JobListResponse, CreateJobRequest } from '../types/job.types';
 
 export class ExternalJobService {
     private client: AxiosInstance;
@@ -78,22 +78,6 @@ export class ExternalJobService {
                 return Promise.reject(error);
             }
         );
-    }
-
-    /**
-     * Map backend job data to frontend compatible format
-     */
-    private mapJobToCompatible(job: Job): JobCompatible {
-        return {
-            id: job.TestJobID,
-            createdBy: job.InitiatedBy,
-            creationTime: job.CreatedTime,
-            description: job.JobDiscription,
-            taskNum: job.TaskNum || 0,
-            finishedTaskNum: job.SuccessTasks || 0,
-            successRate: job.SuccessRate || '0%',
-            status: job.status || 'completed' as any
-        };
     }
 
     /**
@@ -190,11 +174,11 @@ export class ExternalJobService {
     /**
      * Get jobs in compatible format for existing frontend code
      */
-    async getJobsCompatible(params: JobQueryParams & { filter?: string }): Promise<{ jobs: JobCompatible[]; total: number; page: number; limit: number; totalPages: number }> {
+    async getJobsCompatible(params: JobQueryParams & { filter?: string }): Promise<{ jobs: Job[]; total: number; page: number; limit: number; totalPages: number }> {
         const response = await this.getJobs(params);
         return {
             ...response,
-            jobs: response.jobs.map(job => this.mapJobToCompatible(job))
+            jobs: response.jobs
         };
     }
 
@@ -239,14 +223,6 @@ export class ExternalJobService {
             }
             throw new Error(`Failed to fetch job from external service: ${error instanceof Error ? error.message : 'Unknown error'}`);
         }
-    }
-
-    /**
-     * Get a specific job by ID in compatible format
-     */
-    async getJobByIdCompatible(id: string): Promise<JobCompatible> {
-        const job = await this.getJobById(id);
-        return this.mapJobToCompatible(job);
     }
 
     /**

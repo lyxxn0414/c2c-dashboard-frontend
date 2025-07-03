@@ -554,6 +554,25 @@ main {
     font-weight: 500;
     color: var(--text-primary);
     transition: all 0.3s ease;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.classification-item .model-name {
+    font-weight: 600;
+    color: var(--primary-color);
+}
+
+.classification-item .model-stats {
+    font-size: 0.875rem;
+    color: var(--text-secondary);
+    font-weight: 400;
+}
+
+.classification-item .model-stats span {
+    font-weight: 500;
+    color: var(--text-primary);
 }
 
 .classification-item:hover {
@@ -593,10 +612,106 @@ main {
     transform: translateY(0);
 }
 
+/* Failed Tasks Analysis Styles */
+.failed-tasks-section {
+    margin-top: 2rem;
+}
+
+.failed-tasks-card {
+    background: rgba(255, 255, 255, 0.9);
+    backdrop-filter: blur(10px);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-lg);
+    padding: 1.5rem;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.05);
+    transition: all 0.3s ease;
+}
+
+.failed-tasks-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
+}
+
+.failed-tasks-header {
+    background: rgba(248, 250, 252, 0.8);
+    border-radius: var(--radius-sm);
+    padding: 1rem;
+    margin-bottom: 1rem;
+    border-bottom: 2px solid var(--border-color);
+}
+
+.failed-task-item {
+    padding: 1rem;
+    border-bottom: 1px solid var(--border-color);
+    transition: background-color 0.2s ease;
+}
+
+.failed-task-item:last-child {
+    border-bottom: none;
+}
+
+.failed-task-item:hover {
+    background: rgba(248, 250, 252, 0.5);
+}
+
+.failed-task-item .task-name {
+    font-weight: 600;
+    color: var(--text-primary);
+    font-size: 0.9rem;
+}
+
+.failed-task-item .error-category {
+    font-size: 0.75rem;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.failed-task-item .error-description {
+    color: var(--text-muted);
+    font-size: 0.875rem;
+    line-height: 1.4;
+    margin: 0;
+}
+
+.no-failed-tasks {
+    text-align: center;
+    color: #28a745;
+    font-style: italic;
+    padding: 2rem;
+    background: rgba(212, 237, 218, 0.3);
+    border-radius: var(--radius-md);
+    border: 1px solid rgba(195, 230, 203, 0.5);
+}
+
+.no-failed-tasks::before {
+    content: "✅";
+    display: block;
+    font-size: 2rem;
+    margin-bottom: 0.5rem;
+}
+
+#failed-tasks-count {
+    font-size: 0.875rem;
+    padding: 0.5rem 1rem;
+}
+
 /* Responsive adjustments for job detail */
 @media (max-width: 768px) {
     .metric-card {
         margin-bottom: 1rem;
+    }
+    
+    .failed-tasks-card {
+        padding: 1rem;
+    }
+    
+    .failed-task-item {
+        padding: 0.75rem;
+    }
+    
+    .failed-tasks-header {
+        display: none; /* Hide header on mobile for better space utilization */
     }
     
     .metric-value {
