@@ -47,7 +47,6 @@ class JobDashboard {
         this.jobDetailDescription = document.getElementById('job-detail-description');
         
         // Metric elements
-        this.jobTotalTasks = document.getElementById('job-total-tasks');
         this.jobCompletedTasks = document.getElementById('job-completed-tasks');
         this.jobSuccessTasks = document.getElementById('job-success-tasks');
         this.jobFailedTasks = document.getElementById('job-failed-tasks');
@@ -205,17 +204,21 @@ class JobDashboard {
                 filter: this.currentFilter
             });
 
+            // Use our backend API endpoint (not direct kusto call)
             const response = await fetch(`/api/jobs?${params}`);
             if (!response.ok) {
                 throw new Error(`HTTP error! status: ${response.status}`);
             }
             
             const data = await response.json();
+            // Backend already returns mapped data, so we can use it directly
             this.renderJobs(data.jobs);
             this.renderPagination(data);
         } catch (error) {
             console.error('Error loading jobs:', error);
-            this.showError('Failed to load jobs. Please try again.');
+            this.showError('Failed to load jobs. Please check your connection and try again.');
+            // Show empty state
+            this.renderJobs([]);
         } finally {
             this.showLoading(false);
         }
@@ -252,10 +255,9 @@ class JobDashboard {
                         ${job.id}
                     </a>
                 </td>
-                <td>${this.escapeHtml(job.createdBy)}</td>
+                <td>${this.escapeHtml(job.user || job.createdBy)}</td>
                 <td>${this.formatDateTime(job.creationTime)}</td>
                 <td>${this.escapeHtml(job.description)}</td>
-                <td>${job.taskNum}</td>
                 <td>${job.finishedTaskNum}</td>
                 <td>
                     <span class="success-rate ${this.getSuccessRateClass(job.successRate)}">
@@ -362,6 +364,7 @@ class JobDashboard {
         }
 
         try {
+            // Note: Create job might use a different endpoint, keeping original for now
             const response = await fetch('/api/jobs', {
                 method: 'POST',
                 headers: {
@@ -457,9 +460,10 @@ class JobDashboard {
 
     async checkExternalServiceStatus() {
         try {
+            // Use our backend API endpoint for health check
             const response = await fetch('/api/jobs/health/external');
             const data = await response.json();
-            this.externalServiceStatus = data.external_service;
+            this.externalServiceStatus = data.external_service || { available: data.status === 'healthy', error: null };
             this.updateServiceStatusIndicator();
         } catch (error) {
             console.error('Failed to check external service status:', error);
@@ -660,12 +664,14 @@ class JobDashboard {
     // Job action methods
     async viewJob(jobId) {
         try {
+            // Use our backend API endpoint (not direct kusto call)
             const response = await fetch(`/api/jobs/${jobId}`);
             if (!response.ok) {
                 throw new Error(`HTTP error! status: ${response.status}`);
             }
             const job = await response.json();
             
+            // Backend already returns compatible format
             // Store current job for editing/deleting
             this.currentJob = job;
             
@@ -687,21 +693,20 @@ class JobDashboard {
         // Populate job detail fields
         document.getElementById('job-detail-title').textContent = job.name || `Job-${job.id}`;
         document.getElementById('job-detail-id').textContent = job.id;
-        document.getElementById('job-detail-creator').textContent = job.createdBy;
-        document.getElementById('job-detail-creation-time').textContent = this.formatDateTime(job.creationTime);
-        document.getElementById('job-detail-description').textContent = job.description;
+        document.getElementById('job-detail-creator').textContent = job.InitiatedBy || job.createdBy || job.user;
+        document.getElementById('job-detail-creation-time').textContent = this.formatDateTime(job.CreatedTime || job.creationTime);
+        document.getElementById('job-detail-description').textContent = job.JobDiscription || job.description;
         
-        // Populate metrics
-        document.getElementById('job-total-tasks').textContent = job.taskNum || 0;
-        document.getElementById('job-completed-tasks').textContent = job.finishedTaskNum || 0;
-        document.getElementById('job-success-tasks').textContent = this.calculateSuccessTasks(job);
-        document.getElementById('job-failed-tasks').textContent = this.calculateFailedTasks(job);
-        document.getElementById('job-success-rate').textContent = job.successRate || '0%';
+        // Populate metrics - handle both new and old field names for compatibility
+        document.getElementById('job-completed-tasks').textContent = job.SuccessTasks || job.finishedTaskNum || 0;
+        document.getElementById('job-success-tasks').textContent = job.SuccessTasks || this.calculateSuccessTasks(job);
+        document.getElementById('job-failed-tasks').textContent = job.FailedTasks || this.calculateFailedTasks(job);
+        document.getElementById('job-success-rate').textContent = job.SuccessRate || job.successRate || '0%';
         
-        // Additional metrics (mock data for now)
-        document.getElementById('job-avg-iterations').textContent = '10';
-        document.getElementById('job-avg-ai-integration').textContent = '10';
-        document.getElementById('job-iterations-changes').textContent = 'xx';
+        // Additional metrics from backend
+        document.getElementById('job-avg-iterations').textContent = job.AvgSuccessIteration || '10';
+        document.getElementById('job-avg-ai-integration').textContent = job.AIIntegration || '10';
+        document.getElementById('job-iterations-changes').textContent = job.AvgInfraChanges || 'xx';
         
         // Trigger transition effect
         setTimeout(() => {
@@ -722,26 +727,78 @@ class JobDashboard {
     }
 
     calculateSuccessTasks(job) {
+        // Use backend field if available, otherwise calculate
+        if (job.SuccessTasks !== undefined) {
+            return job.SuccessTasks;
+        }
+        
         if (!job.successRate || !job.finishedTaskNum) return 0;
         const rate = parseFloat(job.successRate.replace('%', '')) / 100;
         return Math.round(job.finishedTaskNum * rate);
     }
 
     calculateFailedTasks(job) {
+        // Use backend field if available, otherwise calculate
+        if (job.FailedTasks !== undefined) {
+            return job.FailedTasks;
+        }
+        
         if (!job.finishedTaskNum) return 0;
         const successTasks = this.calculateSuccessTasks(job);
         return job.finishedTaskNum - successTasks;
     }
 
+    // Map backend response fields to frontend compatible format
+    mapBackendJob(backendJob) {
+        if (!backendJob) return {};
+        
+        return {
+            id: backendJob.TestJobID || backendJob.id || 'N/A',
+            name: backendJob.TestJobName || backendJob.name || 'Unnamed Job',
+            description: backendJob.JobDiscription || backendJob.description || 'No description',
+            creationTime: backendJob.CreatedTime || backendJob.creationTime || new Date().toISOString(),
+            user: backendJob.InitiatedBy || backendJob.user || 'Unknown',
+            createdBy: backendJob.InitiatedBy || backendJob.createdBy || backendJob.user || 'Unknown',
+            poolName: backendJob.PoolName || backendJob.poolName || 'Default',
+            taskNum: backendJob.TaskNum || backendJob.taskNum || 0,
+            finishedTaskNum: backendJob.FinishedTaskNum || backendJob.finishedTaskNum || 0,
+            successRate: this.formatSuccessRate(backendJob.SuccessRate || backendJob.successRate),
+            // Backend fields for direct access
+            TestJobID: backendJob.TestJobID,
+            InitiatedBy: backendJob.InitiatedBy,
+            CreatedTime: backendJob.CreatedTime,
+            JobDiscription: backendJob.JobDiscription,
+            PoolName: backendJob.PoolName,
+            TaskNum: backendJob.TaskNum,
+            SuccessTasks: backendJob.SuccessTasks,
+            SuccessRate: backendJob.SuccessRate,
+            FailedTasks: backendJob.FailedTasks,
+            AvgSuccessIteration: backendJob.AvgSuccessIteration,
+            AIIntegration: backendJob.AIIntegration,
+            AvgInfraChanges: backendJob.AvgInfraChanges
+        };
+    }
+
+    formatSuccessRate(rate) {
+        if (!rate) return '0%';
+        if (typeof rate === 'string' && rate.includes('%')) return rate;
+        if (typeof rate === 'number') return `${rate}%`;
+        return '0%';
+    }
+
     editCurrentJob() {
         if (this.currentJob) {
-            this.editJob(this.currentJob.id);
+            // Use the mapped ID field
+            const jobId = this.currentJob.TestJobID || this.currentJob.id;
+            this.editJob(jobId);
         }
     }
 
     deleteCurrentJob() {
         if (this.currentJob) {
-            this.deleteJob(this.currentJob.id);
+            // Use the mapped ID field
+            const jobId = this.currentJob.TestJobID || this.currentJob.id;
+            this.deleteJob(jobId);
         }
     }
 
@@ -756,6 +813,7 @@ class JobDashboard {
         }
 
         try {
+            // Note: Delete job might use a different endpoint, keeping original for now
             const response = await fetch(`/api/jobs/${jobId}`, {
                 method: 'DELETE',
             });

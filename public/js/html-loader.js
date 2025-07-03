@@ -1,506 +1,84 @@
-// HTML Templates
+// HTML Template loader - loads templates from external files
 const HTMLTemplates = {
-    jobsView: `
-        <!-- Jobs View -->
-        <div id="jobs-view">
-            <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
-                <h1 class="h2">Job View</h1>
-                <div class="btn-toolbar mb-2 mb-md-0">
-                    <button type="button" class="btn btn-outline-secondary me-2" id="config-btn">
-                        <i class="bi bi-gear"></i>
-                        External API Config
-                    </button>
-                    <button type="button" class="btn btn-primary" id="create-job-btn">
-                        <i class="bi bi-plus-circle"></i>
-                        Create a New Job
-                    </button>
-                </div>
-            </div>
-
-            <!-- Filters -->
-            <div class="row mb-4">
-                <div class="col-md-12">
-                    <div class="d-flex gap-3 align-items-center flex-wrap">
-                        <div class="input-group" style="max-width: 300px;">
-                            <span class="input-group-text">
-                                <i class="bi bi-search"></i>
-                            </span>
-                            <input type="text" class="form-control" id="filter-input" placeholder="Filter for any fields...">
-                        </div>
-                        
-                        <div class="dropdown">
-                            <button class="btn btn-outline-secondary dropdown-toggle" type="button" id="created-by-filter" data-bs-toggle="dropdown">
-                                Created By <span class="badge bg-primary">equals</span> <span class="badge bg-secondary">all</span>
-                            </button>
-                            <ul class="dropdown-menu">
-                                <li><a class="dropdown-item" href="#" data-filter="all">All</a></li>
-                                <li><a class="dropdown-item" href="#" data-filter="alias">alias</a></li>
-                                <li><a class="dropdown-item" href="#" data-filter="user2">user2</a></li>
-                                <li><a class="dropdown-item" href="#" data-filter="user3">user3</a></li>
-                                <li><a class="dropdown-item" href="#" data-filter="admin">admin</a></li>
-                            </ul>
-                        </div>
-
-                        <div class="dropdown">
-                            <button class="btn btn-outline-secondary dropdown-toggle" type="button" id="pool-id-filter" data-bs-toggle="dropdown">
-                                PoolID <span class="badge bg-primary">equals</span> <span class="badge bg-secondary">all</span>
-                            </button>
-                            <ul class="dropdown-menu">
-                                <li><a class="dropdown-item" href="#" data-filter="all">All</a></li>
-                            </ul>
-                        </div>
-
-                        <div class="dropdown">
-                            <button class="btn btn-outline-secondary dropdown-toggle" type="button" id="job-name-filter" data-bs-toggle="dropdown">
-                                JobName <span class="badge bg-primary">equals</span> <span class="badge bg-secondary">all</span>
-                            </button>
-                            <ul class="dropdown-menu">
-                                <li><a class="dropdown-item" href="#" data-filter="all">All</a></li>
-                            </ul>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Job Table -->
-            <div class="table-responsive">
-                <table class="table table-striped table-hover">
-                    <thead class="table-light">
-                        <tr>
-                            <th class="sortable" data-sort="id">
-                                ID
-                                <i class="bi bi-arrow-down-up ms-1"></i>
-                            </th>
-                            <th class="sortable" data-sort="createdBy">
-                                CreatedBy
-                                <i class="bi bi-arrow-down-up ms-1"></i>
-                            </th>
-                            <th class="sortable" data-sort="creationTime">
-                                CreationTime
-                                <i class="bi bi-arrow-down-up ms-1"></i>
-                            </th>
-                            <th class="sortable" data-sort="description">
-                                Description
-                                <i class="bi bi-arrow-down-up ms-1"></i>
-                            </th>
-                            <th class="sortable" data-sort="taskNum">
-                                TaskNum
-                                <i class="bi bi-arrow-down-up ms-1"></i>
-                            </th>
-                            <th class="sortable" data-sort="finishedTaskNum">
-                                Finished TaskNum
-                                <i class="bi bi-arrow-down-up ms-1"></i>
-                            </th>
-                            <th class="sortable" data-sort="successRate">
-                                Success Rate
-                                <i class="bi bi-arrow-down-up ms-1"></i>
-                            </th>
-                            <th>Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody id="jobs-table-body">
-                        <!-- Jobs will be loaded here -->
-                    </tbody>
-                </table>
-            </div>
-
-            <!-- Pagination -->
-            <nav aria-label="Job pagination">
-                <ul class="pagination justify-content-center" id="pagination">
-                    <!-- Pagination buttons will be generated here -->
-                </ul>
-            </nav>
-
-            <!-- Loading indicator -->
-            <div class="text-center d-none" id="loading-indicator">
-                <div class="spinner-border" role="status">
-                    <span class="visually-hidden">Loading...</span>
-                </div>
-            </div>
-        </div>
-    `,
-    
-    jobDetail: `
-        <!-- Job Detail View -->
-        <div id="job-detail-view" class="d-none">
-            <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
-                <div class="d-flex align-items-center">
-                    <button class="btn btn-outline-secondary me-3" id="back-to-jobs-btn">
-                        <i class="bi bi-arrow-left"></i>
-                        Back to Jobs
-                    </button>
-                    <h1 class="h2 mb-0">Job Detail</h1>
-                </div>
-                <div class="btn-toolbar mb-2 mb-md-0">
-                    <button class="btn btn-outline-primary me-2" id="edit-job-btn">
-                        <i class="bi bi-pencil"></i>
-                        Edit Job
-                    </button>
-                    <button class="btn btn-outline-danger" id="delete-job-detail-btn">
-                        <i class="bi bi-trash"></i>
-                        Delete Job
-                    </button>
-                </div>
-            </div>
-
-            <!-- Job Header -->
-            <div class="job-header-card">
-                <div class="d-flex align-items-center mb-3">
-                    <i class="bi bi-briefcase fs-2 me-3 text-primary"></i>
-                    <div>
-                        <h3 class="mb-1" id="job-detail-title">Job-sample</h3>
-                        <div class="text-muted">
-                            <span class="me-3"><strong>ID:</strong> <span id="job-detail-id">123456</span></span>
-                            <span class="me-3"><strong>CreatedBy:</strong> <span id="job-detail-creator">Alias</span></span>
-                            <span><strong>Creation Time:</strong> <span id="job-detail-creation-time">2025-06-23 14:57</span></span>
-                        </div>
-                    </div>
-                </div>
-                <div class="mb-3">
-                    <strong>Description:</strong> <span id="job-detail-description">Test with recommend tool refine</span>
-                </div>
-            </div>
-
-            <!-- Overall Result -->
-            <div class="result-section">
-                <div class="d-flex justify-content-between align-items-center mb-3">
-                    <h4>Overall Result</h4>
-                    <a href="#" class="text-primary text-decoration-none">
-                        <i class="bi bi-arrow-right"></i>
-                        See more task details
-                    </a>
-                </div>
-                
-                <div class="row mb-4">
-                    <div class="col-md-2">
-                        <div class="metric-card text-center">
-                            <div class="metric-label">Total</div>
-                            <div class="metric-value" id="job-total-tasks">63</div>
-                        </div>
-                    </div>
-                    <div class="col-md-2">
-                        <div class="metric-card text-center">
-                            <div class="metric-label">Completed</div>
-                            <div class="metric-value" id="job-completed-tasks">63</div>
-                        </div>
-                    </div>
-                    <div class="col-md-2">
-                        <div class="metric-card text-center">
-                            <div class="metric-label text-success">Success</div>
-                            <div class="metric-value text-success" id="job-success-tasks">58</div>
-                        </div>
-                    </div>
-                    <div class="col-md-2">
-                        <div class="metric-card text-center">
-                            <div class="metric-label text-danger">Failed</div>
-                            <div class="metric-value text-danger" id="job-failed-tasks">5</div>
-                        </div>
-                    </div>
-                    <div class="col-md-2">
-                        <div class="metric-card text-center">
-                            <div class="metric-label text-primary">Success Rate</div>
-                            <div class="metric-value text-primary" id="job-success-rate">92%</div>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="row mb-4">
-                    <div class="col-md-4">
-                        <div class="metric-card text-center">
-                            <div class="metric-label">Avg Success Iterations/task</div>
-                            <div class="metric-value" id="job-avg-iterations">10</div>
-                        </div>
-                    </div>
-                    <div class="col-md-4">
-                        <div class="metric-card text-center">
-                            <div class="metric-label">Avg AI Integration/task</div>
-                            <div class="metric-value" id="job-avg-ai-integration">10</div>
-                        </div>
-                    </div>
-                    <div class="col-md-4">
-                        <div class="metric-card text-center">
-                            <div class="metric-label">IterationsWithintra/CodeChanges</div>
-                            <div class="metric-value" id="job-iterations-changes">xx</div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Tool Call Section -->
-                <div class="tool-call-section mb-4">
-                    <h5><i class="bi bi-wrench"></i> Tool call:</h5>
-                    <div class="row">
-                        <div class="col-md-2">
-                            <div class="tool-metric">
-                                <div class="tool-label">Recommend</div>
-                                <div class="tool-value">xx</div>
-                            </div>
-                        </div>
-                        <div class="col-md-2">
-                            <div class="tool-metric">
-                                <div class="tool-label">Predeploy</div>
-                                <div class="tool-value">xx</div>
-                            </div>
-                        </div>
-                        <div class="col-md-2">
-                            <div class="tool-metric">
-                                <div class="tool-label">Deploy</div>
-                                <div class="tool-value">xx</div>
-                            </div>
-                        </div>
-                        <div class="col-md-2">
-                            <div class="tool-metric">
-                                <div class="tool-label">Region</div>
-                                <div class="tool-value">xx</div>
-                            </div>
-                        </div>
-                        <div class="col-md-2">
-                            <div class="tool-metric">
-                                <div class="tool-label">Quota</div>
-                                <div class="tool-value">xx</div>
-                            </div>
-                        </div>
-                        <div class="col-md-2">
-                            <div class="tool-metric">
-                                <div class="tool-label">GetLogs</div>
-                                <div class="tool-value">xx</div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Classification Results -->
-            <div class="classification-section">
-                <div class="row">
-                    <div class="col-md-6 mb-4">
-                        <div class="classification-card">
-                            <div class="classification-header">
-                                <h5>Result classified by Model</h5>
-                                <div class="tags">
-                                    <span class="tag">Language model</span>
-                                    <span class="tag">all</span>
-                                    <span class="tag">Compute Resource Note</span>
-                                    <span class="tag">result</span>
-                                    <span class="tag">all</span>
-                                    <span class="tag">Binding Resource Note</span>
-                                    <span class="tag">result</span>
-                                    <span class="tag">all</span>
-                                </div>
-                            </div>
-                            <div class="classification-content">
-                                <div class="classification-item">Claude-3.5</div>
-                                <div class="classification-item">Claude-3.7</div>
-                                <div class="classification-item">Claude-4.0</div>
-                                <div class="classification-item">GPT-4.1</div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="col-md-6 mb-4">
-                        <div class="classification-card">
-                            <div class="classification-header">
-                                <h5>Result classified by language</h5>
-                                <div class="tags">
-                                    <span class="tag">Model</span>
-                                    <span class="tag">result</span>
-                                    <span class="tag">all</span>
-                                    <span class="tag">Compute Resource Note</span>
-                                    <span class="tag">result</span>
-                                    <span class="tag">all</span>
-                                    <span class="tag">Binding Resource Note</span>
-                                    <span class="tag">result</span>
-                                    <span class="tag">all</span>
-                                </div>
-                            </div>
-                            <div class="classification-content">
-                                <div class="classification-item">Java</div>
-                                <div class="classification-item">Dotnet</div>
-                                <div class="classification-item">Jsts</div>
-                                <div class="classification-item">Python</div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="col-md-6 mb-4">
-                        <div class="classification-card">
-                            <div class="classification-header">
-                                <h5>Result classified by resource type</h5>
-                                <div class="tags">
-                                    <span class="tag">Language</span>
-                                    <span class="tag">result</span>
-                                    <span class="tag">all</span>
-                                    <span class="tag">Model</span>
-                                    <span class="tag">result</span>
-                                    <span class="tag">all</span>
-                                </div>
-                            </div>
-                            <div class="classification-content">
-                                <div class="classification-subtitle">Num of Compute Resource + Num of Binding Resource</div>
-                                <div class="classification-item">1 + 0</div>
-                                <div class="classification-item">1 + 1</div>
-                                <div class="classification-item">1 + N</div>
-                                <div class="classification-item">N + 0</div>
-                                <div class="classification-item">N + 1</div>
-                                <div class="classification-item">N + N</div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="col-md-6 mb-4">
-                        <div class="classification-card">
-                            <div class="classification-header">
-                                <h5>Result classified by specific repo</h5>
-                                <div class="tags">
-                                    <span class="tag">Model</span>
-                                    <span class="tag">result</span>
-                                    <span class="tag">all</span>
-                                </div>
-                            </div>
-                            <div class="classification-content">
-                                <div class="classification-subtitle">Task Name</div>
-                                <div class="classification-item">airSonic</div>
-                                <div class="classification-item">assessmentManager</div>
-                                <div class="classification-item">before-container</div>
-                                <div class="classification-item">tasktracker</div>
-                                <div class="classification-item">task-2</div>
-                                <div class="classification-item">task-3</div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    `,
-    
-    modals: `
-        <!-- Configuration Modal -->
-        <div class="modal fade" id="configModal" tabindex="-1">
-            <div class="modal-dialog">
-                <div class="modal-content">
-                    <div class="modal-header">
-                        <h5 class="modal-title">External API Configuration</h5>
-                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                    </div>
-                    <div class="modal-body">
-                        <div class="alert alert-info">
-                            <i class="bi bi-info-circle me-2"></i>
-                            Configure the external App Service URL to fetch real job data.
-                        </div>
-                        <form id="config-form">
-                            <div class="mb-3">
-                                <label for="external-api-url" class="form-label">External API Base URL *</label>
-                                <input type="url" class="form-control" id="external-api-url" 
-                                    placeholder="https://your-api-service.azurewebsites.net" required>
-                                <div class="form-text">Enter the base URL of your external App Service API</div>
-                            </div>
-                            <div class="mb-3">
-                                <label for="api-timeout" class="form-label">Timeout (seconds)</label>
-                                <input type="number" class="form-control" id="api-timeout" 
-                                    value="30" min="5" max="300">
-                            </div>
-                            <div class="mb-3">
-                                <label for="retry-attempts" class="form-label">Retry Attempts</label>
-                                <input type="number" class="form-control" id="retry-attempts" 
-                                    value="3" min="1" max="10">
-                            </div>
-                            <div class="mb-3">
-                                <button type="button" class="btn btn-outline-primary" id="test-connection-btn">
-                                    <i class="bi bi-wifi"></i>
-                                    Test Connection
-                                </button>
-                                <div id="connection-test-result" class="mt-2"></div>
-                            </div>
-                        </form>
-                    </div>
-                    <div class="modal-footer">
-                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                        <button type="button" class="btn btn-primary" id="save-config-btn">
-                            <i class="bi bi-check2"></i>
-                            Save Configuration
-                        </button>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Create Job Modal -->
-        <div class="modal fade" id="createJobModal" tabindex="-1">
-            <div class="modal-dialog">
-                <div class="modal-content">
-                    <div class="modal-header">
-                        <h5 class="modal-title">Create New Job</h5>
-                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                    </div>
-                    <div class="modal-body">
-                        <form id="create-job-form">
-                            <div class="mb-3">
-                                <label for="job-description" class="form-label">Description *</label>
-                                <textarea class="form-control" id="job-description" rows="3" required
-                                    placeholder="Enter job description..."></textarea>
-                            </div>
-                            <div class="mb-3">
-                                <label for="job-pool-id" class="form-label">Pool ID</label>
-                                <input type="text" class="form-control" id="job-pool-id" 
-                                    placeholder="Optional pool ID">
-                            </div>
-                        </form>
-                    </div>
-                    <div class="modal-footer">
-                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                        <button type="button" class="btn btn-primary" id="submit-job-btn">Create Job</button>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Toast Container -->
-        <div class="toast-container position-fixed top-0 end-0 p-3" id="toast-container">
-            <!-- Toasts will be added here -->
-        </div>
-    `
+    // Templates will be loaded from files
+    jobsView: '',
+    jobDetail: '',
+    modals: ''
 };
 
-// Initialize page by loading templates
-document.addEventListener('DOMContentLoaded', () => {
-    console.log('🚀 Loading HTML templates...');
-    
-    // Load templates into the page
-    const jobsContent = document.getElementById('jobs-content');
-    const jobDetailContent = document.getElementById('job-detail-content');
-    const modalsContent = document.getElementById('modals-content');
-    
-    if (jobsContent) {
-        jobsContent.innerHTML = HTMLTemplates.jobsView;
-        console.log('✅ Jobs view template loaded');
-    } else {
-        console.error('❌ jobs-content element not found');
-    }
-    
-    if (jobDetailContent) {
-        jobDetailContent.innerHTML = HTMLTemplates.jobDetail;
-        console.log('✅ Job detail template loaded');
-    } else {
-        console.error('❌ job-detail-content element not found');
-    }
-    
-    if (modalsContent) {
-        modalsContent.innerHTML = HTMLTemplates.modals;
-        console.log('✅ Modals template loaded');
-    } else {
-        console.error('❌ modals-content element not found');
-    }
-    
-    // Initialize dashboard after templates are loaded
-    setTimeout(() => {
-        console.log('🔧 Initializing JobDashboard...');
-        if (window.JobDashboard) {
-            window.jobDashboard = new JobDashboard();
-            console.log('✅ JobDashboard initialized');
-        } else {
-            console.error('❌ JobDashboard class not found');
+// Function to load HTML from file
+async function loadTemplate(templateName, filePath) {
+    try {
+        const response = await fetch(filePath);
+        if (!response.ok) {
+            throw new Error(`Failed to load template: ${response.status}`);
         }
-    }, 100);
+        const html = await response.text();
+        HTMLTemplates[templateName] = html;
+        console.log(`✅ ${templateName} template loaded from ${filePath}`);
+        return html;
+    } catch (error) {
+        console.error(`❌ Failed to load ${templateName} template:`, error);
+        return '';
+    }
+}
+
+// Initialize page by loading templates from files
+document.addEventListener('DOMContentLoaded', async () => {
+    console.log('🚀 Loading HTML templates from files...');
+    
+    try {
+        // Load all templates
+        await Promise.all([
+            loadTemplate('jobsView', '/partials/jobs-view.html'),
+            loadTemplate('jobDetail', '/partials/job-detail.html'),
+            loadTemplate('modals', '/partials/modals.html')
+        ]);
+        
+        // Load templates into the page
+        const jobsContent = document.getElementById('jobs-content');
+        const jobDetailContent = document.getElementById('job-detail-content');
+        const modalsContent = document.getElementById('modals-content');
+        
+        if (jobsContent && HTMLTemplates.jobsView) {
+            jobsContent.innerHTML = HTMLTemplates.jobsView;
+            console.log('✅ Jobs view template loaded');
+        } else {
+            console.error('❌ jobs-content element not found or template not loaded');
+        }
+        
+        if (jobDetailContent && HTMLTemplates.jobDetail) {
+            jobDetailContent.innerHTML = HTMLTemplates.jobDetail;
+            console.log('✅ Job detail template loaded');
+        } else {
+            console.error('❌ job-detail-content element not found or template not loaded');
+        }
+        
+        if (modalsContent && HTMLTemplates.modals) {
+            modalsContent.innerHTML = HTMLTemplates.modals;
+            console.log('✅ Modals template loaded');
+        } else {
+            console.error('❌ modals-content element not found or template not loaded');
+        }
+        
+        // Initialize dashboard after templates are loaded
+        setTimeout(() => {
+            console.log('🔧 Initializing JobDashboard...');
+            if (window.JobDashboard) {
+                window.jobDashboard = new JobDashboard();
+                console.log('✅ JobDashboard initialized');
+            } else {
+                console.error('❌ JobDashboard class not found');
+            }
+        }, 100);
+        
+    } catch (error) {
+        console.error('❌ Error loading templates:', error);
+    }
 });
+
+// Export for use in other scripts
+window.HTMLTemplates = HTMLTemplates;
 
 // Export for use in other scripts
 window.HTMLTemplates = HTMLTemplates;

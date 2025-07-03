@@ -13,25 +13,27 @@ router.get('/', asyncHandler(async (req: Request, res: Response) => {
   const {
     page = 1,
     limit = 10,
-    sortBy = 'creationTime',
+    sortBy = 'CreatedTime',
     sortOrder = 'desc',
     filter = '',
-    createdBy,
-    status,
-    poolId
+    CreatedBy,
+    PooID,
+    JobID,
+    status
   } = req.query as unknown as JobQueryParams & { filter: string };
 
   try {
-    // Call external service
-    const response = await externalJobService.getJobs({
+    // Call external service with compatible format
+    const response = await externalJobService.getJobsCompatible({
       page: Number(page),
       limit: Number(limit),
       sortBy,
       sortOrder,
       filter,
-      createdBy,
-      status,
-      poolId
+      CreatedBy,
+      PooID,
+      JobID,
+      status
     });
 
     res.json(response);
@@ -41,23 +43,25 @@ router.get('/', asyncHandler(async (req: Request, res: Response) => {
     // Fallback to mock data if external service fails
     const mockJobs: Job[] = [
       {
-        id: 'job-1',
-        createdBy: 'alias',
-        creationTime: '2025-06-23 14:57',
-        description: 'External service unavailable - showing cached data',
-        taskNum: 63,
-        finishedTaskNum: 63,
-        successRate: '92% ( 58/63 )',
+        TestJobID: 'job-1',
+        InitiatedBy: 'alias',
+        CreatedTime: '2025-06-23 14:57',
+        JobDiscription: 'External service unavailable - showing cached data',
+        PoolName: 'default-pool',
+        TaskNum: 63,
+        SuccessTasks: 58,
+        SuccessRate: '92%',
         status: JobStatus.COMPLETED
       },
       {
-        id: 'job-2', 
-        createdBy: 'user2',
-        creationTime: '2025-06-23 15:30',
-        description: 'Fallback data - External API connection failed',
-        taskNum: 45,
-        finishedTaskNum: 30,
-        successRate: '87% ( 26/30 )',
+        TestJobID: 'job-2',
+        InitiatedBy: 'user2',
+        CreatedTime: '2025-06-23 15:30',
+        JobDiscription: 'Fallback data - External API connection failed',
+        PoolName: 'test-pool',
+        TaskNum: 45,
+        SuccessTasks: 30,
+        SuccessRate: '87%',
         status: JobStatus.RUNNING
       }
     ];
@@ -67,9 +71,9 @@ router.get('/', asyncHandler(async (req: Request, res: Response) => {
     if (filter) {
       const filterLower = filter.toLowerCase();
       filteredJobs = filteredJobs.filter(job => 
-        job.id.toLowerCase().includes(filterLower) ||
-        job.createdBy.toLowerCase().includes(filterLower) ||
-        job.description.toLowerCase().includes(filterLower)
+        job.TestJobID.toLowerCase().includes(filterLower) ||
+        job.InitiatedBy.toLowerCase().includes(filterLower) ||
+        job.JobDiscription.toLowerCase().includes(filterLower)
       );
     }
 
@@ -99,7 +103,7 @@ router.get('/:id', asyncHandler(async (req: Request, res: Response) => {
   const { id } = req.params;
 
   try {
-    const job = await externalJobService.getJobById(id);
+    const job = await externalJobService.getJobByIdCompatible(id);
     res.json(job);
   } catch (error) {
     console.error(`Error fetching job ${id} from external service:`, error);
@@ -113,13 +117,14 @@ router.get('/:id', asyncHandler(async (req: Request, res: Response) => {
 
     // Return fallback data
     const fallbackJob: Job = {
-      id: id,
-      createdBy: 'unknown',
-      creationTime: new Date().toISOString().slice(0, 16).replace('T', ' '),
-      description: 'External service unavailable - showing fallback data',
-      taskNum: 0,
-      finishedTaskNum: 0,
-      successRate: '0% ( 0/0 )',
+      TestJobID: id,
+      InitiatedBy: 'unknown',
+      CreatedTime: new Date().toISOString().slice(0, 16).replace('T', ' '),
+      JobDiscription: 'External service unavailable - showing fallback data',
+      PoolName: 'fallback-pool',
+      TaskNum: 0,
+      SuccessTasks: 0,
+      SuccessRate: '0%',
       status: JobStatus.PENDING
     };
 
@@ -149,13 +154,14 @@ router.post('/', asyncHandler(async (req: Request, res: Response) => {
     
     // Create a fallback response
     const fallbackJob: Job = {
-      id: `job-${Date.now()}`,
-      createdBy: 'current-user',
-      creationTime: new Date().toLocaleString('sv-SE', { timeZone: 'UTC' }).replace('T', ' ').substring(0, 16),
-      description: createJobData.description + ' (Created locally - external service unavailable)',
-      taskNum: 0,
-      finishedTaskNum: 0,
-      successRate: '0% ( 0/0 )',
+      TestJobID: `job-${Date.now()}`,
+      InitiatedBy: 'current-user',
+      CreatedTime: new Date().toLocaleString('sv-SE', { timeZone: 'UTC' }).replace('T', ' ').substring(0, 16),
+      JobDiscription: createJobData.description + ' (Created locally - external service unavailable)',
+      PoolName: 'local-pool',
+      TaskNum: 0,
+      SuccessTasks: 0,
+      SuccessRate: '0%',
       status: JobStatus.PENDING
     };
 
