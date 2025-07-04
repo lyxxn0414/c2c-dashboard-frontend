@@ -16,10 +16,90 @@ class JobDashboard {
         setTimeout(() => {
             this.initializeElements();
             this.bindEvents();
+            this.setupRouting();
             this.checkExternalServiceStatus();
             this.loadJobs();
             this.loadConfig();
+            this.handleInitialRoute();
         }, 200);
+    }
+
+    setupRouting() {
+        // Listen for browser back/forward button
+        window.addEventListener('popstate', (event) => {
+            console.log('Popstate event:', event.state);
+            this.handleRoute(window.location.pathname + window.location.search);
+        });
+    }
+
+    handleInitialRoute() {
+        // Handle the initial page load route
+        const currentPath = window.location.pathname + window.location.search;
+        console.log('Initial route:', currentPath);
+        this.handleRoute(currentPath);
+    }
+
+    handleRoute(path) {
+        console.log('Handling route:', path);
+        
+        // Parse job detail routes: /job-detail/jobID=#id or ?jobID=#id
+        const jobDetailMatch = path.match(/\/job-detail\/jobID=([^&?#]+)/);
+        const jobDetailQueryMatch = path.match(/[?&]jobID=([^&]+)/);
+        
+        if (jobDetailMatch || jobDetailQueryMatch) {
+            const jobId = jobDetailMatch ? jobDetailMatch[1] : jobDetailQueryMatch[1];
+            console.log('Routing to job detail:', jobId);
+            this.navigateToJobDetail(jobId);
+        } else {
+            // Default to jobs view
+            this.showJobsView();
+            // Update URL if needed
+            if (path !== '/' && path !== '') {
+                this.updateURL('/');
+            }
+        }
+    }
+
+    async navigateToJobDetail(jobId) {
+        try {
+            console.log('Navigating to job detail:', jobId);
+            
+            // Fetch job data
+            const response = await fetch(`/api/jobs/${jobId}`);
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            
+            const job = await response.json();
+            console.log('Fetched job for detail view:', job);
+            
+            // Show job detail view
+            this.showJobDetailView(job);
+            
+            // Update URL if we're not already there
+            const expectedURL = `/job-detail/jobID=${jobId}`;
+            if (window.location.pathname + window.location.search !== expectedURL) {
+                this.updateURL(expectedURL);
+            }
+            
+        } catch (error) {
+            console.error('Error navigating to job detail:', error);
+            this.showError(`Failed to load job details for job ${jobId}.`);
+            // Fallback to jobs view
+            this.showJobsView();
+            this.updateURL('/');
+        }
+    }
+
+    updateURL(path, replaceState = false) {
+        const fullURL = window.location.origin + path;
+        console.log('Updating URL to:', fullURL);
+        
+        if (replaceState) {
+            history.replaceState({ path }, '', path);
+        } else {
+            history.pushState({ path }, '', path);
+        }
     }
 
     initializeElements() {
@@ -52,7 +132,7 @@ class JobDashboard {
         this.jobFailedTasks = document.getElementById('job-failed-tasks');
         this.jobSuccessRate = document.getElementById('job-success-rate');
         this.jobAvgIterations = document.getElementById('job-avg-iterations');
-        this.jobAvgAiIntegration = document.getElementById('job-avg-ai-integration');
+        // this.jobAvgAiIntegration = document.getElementById('job-avg-ai-integration');
         this.jobIterationsChanges = document.getElementById('job-iterations-changes');
 
         // Tool call elements
@@ -64,13 +144,9 @@ class JobDashboard {
 
         // Button elements
         this.backToJobsBtn = document.getElementById('back-to-jobs-btn');
-        this.configBtn = document.getElementById('config-btn');
-        this.createJobBtn = document.getElementById('create-job-btn');
-        this.saveConfigBtn = document.getElementById('save-config-btn');
         this.testConnectionBtn = document.getElementById('test-connection-btn');
         this.submitJobBtn = document.getElementById('submit-job-btn');
         this.editJobBtn = document.getElementById('edit-job-btn');
-        this.deleteJobDetailBtn = document.getElementById('delete-job-detail-btn');
         
         // Form elements
         this.externalApiUrl = document.getElementById('external-api-url');
@@ -168,16 +244,6 @@ class JobDashboard {
             this.validateCreateJobForm();
         });
 
-        // Configuration button
-        document.getElementById('config-btn').addEventListener('click', () => {
-            this.showConfigModal();
-        });
-
-        // Save configuration
-        document.getElementById('save-config-btn').addEventListener('click', () => {
-            this.saveConfiguration();
-        });
-
         // Test connection
         document.getElementById('test-connection-btn').addEventListener('click', () => {
             this.testConnection();
@@ -191,11 +257,6 @@ class JobDashboard {
         // Edit job button in detail view
         document.getElementById('edit-job-btn').addEventListener('click', () => {
             this.editCurrentJob();
-        });
-
-        // Delete job button in detail view
-        document.getElementById('delete-job-detail-btn').addEventListener('click', () => {
-            this.deleteCurrentJob();
         });
     }
 
@@ -631,28 +692,16 @@ class JobDashboard {
 
     // Job action methods
     async viewJob(jobId) {
-        try {
-            // Use our backend API endpoint (not direct kusto call)
-            const response = await fetch(`/api/jobs/${jobId}`);
-            console.log(jobId, response);
-            if (!response.ok) {
-                throw new Error(`HTTP error! status: ${response.status}`);
-            }
-            const job = await response.json();
-            
-            // Backend already returns compatible format
-            // Store current job for editing/deleting
-            this.currentJob = job;
-            
-            // Show job detail view
-            this.showJobDetailView(job);
-        } catch (error) {
-            console.error('Error viewing job:', error);
-            this.showError('Failed to load job details.');
-        }
+        // Use the routing system to navigate to job detail
+        console.log('Viewing job:', jobId);
+        this.updateURL(`/job-detail/jobID=${jobId}`);
+        await this.navigateToJobDetail(jobId);
     }
 
     showJobDetailView(job) {
+        // Store current job for editing/deleting
+        this.currentJob = job;
+        
         // Hide jobs view and show detail view
         document.getElementById('jobs-view').classList.add('d-none');
         const detailView = document.getElementById('job-detail-view');
@@ -675,8 +724,9 @@ class JobDashboard {
         // Additional metrics from backend
         console.log('Job metrics:', job);
         document.getElementById('job-avg-iterations').textContent = job.AvgSuccessIteration || '10';
-        document.getElementById('job-avg-ai-integration').textContent = job.AIIntegration || '10';
-        document.getElementById('job-iterations-changes').textContent = job.AvgInfraChanges || 'xx';
+        // 保留小数点后两位
+        // document.getElementById('job-avg-ai-integration').textContent = (job.AIIntegration || '10').toFixed(2);
+        document.getElementById('job-iterations-changes').textContent = (job.AvgInfraChanges || 'xx').toFixed(2);
 
         // Tool call metrics
         document.getElementById('tool-recommend').textContent = job.RecommendCalls || 0;
@@ -698,6 +748,9 @@ class JobDashboard {
     }
 
     showJobsView() {
+        // Update URL to root path
+        this.updateURL('/');
+        
         // Hide detail view and show jobs view
         const detailView = document.getElementById('job-detail-view');
         detailView.classList.remove('active');

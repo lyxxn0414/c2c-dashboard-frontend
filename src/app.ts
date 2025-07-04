@@ -80,12 +80,35 @@ class App {
     this.app.use('/api/jobs', jobRoutes);
     this.app.use('/api/config', configRoutes);
 
+    // Specific route for job details
+    this.app.get('/job-detail/*', (req: Request, res: Response) => {
+      console.log(`Serving index.html for job detail route: ${req.path}`);
+      res.sendFile(path.join(__dirname, '../public/index.html'));
+    });
+
     // Main route - serve the dashboard
     this.app.get('/', (req: Request, res: Response) => {
       res.sendFile(path.join(__dirname, '../public/index.html'));
     });
 
-    // 404 handler
+    // SPA routes - serve the main HTML for all other non-API, non-static file routes
+    this.app.get('*', (req: Request, res: Response, next: NextFunction) => {
+      // Skip API routes
+      if (req.path.startsWith('/api/')) {
+        return next();
+      }
+      
+      // Skip static files (they have file extensions)
+      if (req.path.includes('.') && !req.path.includes('jobID=')) {
+        return next();
+      }
+      
+      // Serve the main HTML page for all other routes (SPA routing)
+      console.log(`Serving index.html for route: ${req.path}`);
+      res.sendFile(path.join(__dirname, '../public/index.html'));
+    });
+
+    // 404 handler for API routes and static files that weren't found
     this.app.use('*', (req: Request, res: Response) => {
       res.status(404).json({
         error: 'Not Found',
