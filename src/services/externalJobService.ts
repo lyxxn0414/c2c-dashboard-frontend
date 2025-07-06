@@ -17,12 +17,6 @@ export class ExternalJobService {
             this.baseURL = this.baseURL.slice(0, -1);
         }
         
-        console.log('=== External API Service Config ===');
-        console.log(`Base URL: ${this.baseURL}`);
-        console.log(`Timeout: ${this.timeout}ms`);
-        console.log(`Retry Attempts: ${this.retryAttempts}`);
-        console.log('===================================');
-        
         this.client = axios.create({
             baseURL: this.baseURL,
             timeout: this.timeout,
@@ -36,10 +30,6 @@ export class ExternalJobService {
         // Add request interceptor for logging
         this.client.interceptors.request.use(
             (config: any) => {
-                console.log('=== API Request Debug ===');
-                console.log(`Method: ${config.method?.toUpperCase()}`);
-                console.log(`URL: ${config.baseURL}${config.url}`);
-                console.log(`Headers:`, config.headers);
                 if (config.data) {
                     console.log(`Request Body:`, JSON.stringify(config.data, null, 2));
                 }
@@ -58,12 +48,6 @@ export class ExternalJobService {
         // Add response interceptor for error handling
         this.client.interceptors.response.use(
             (response: any) => {
-                console.log('=== API Response Debug ===');
-                console.log(`Status: ${response.status}`);
-                console.log(`URL: ${response.config.url}`);
-                console.log(`Response Headers:`, response.headers);
-                console.log(`Response Data:`, JSON.stringify(response.data, null, 2));
-                console.log('=========================');
                 return response;
             },
             (error: any) => {
@@ -119,39 +103,26 @@ export class ExternalJobService {
     async getJobs(params: JobQueryParams & { filter?: string }): Promise<JobListResponse> {
         try {
             // 构建查询参数
-            const queryParams = new URLSearchParams();
-            if (params.CreatedBy) queryParams.append('CreatedBy', params.CreatedBy);
-            if (params.PooID) queryParams.append('PooID', params.PooID);
-            if (params.JobID) queryParams.append('JobID', params.JobID);
+            let requestBody: { [key: string]: any } = {};
+            if (params.CreatedBy) requestBody.CreatedBy = params.CreatedBy;
+            if (params.PooID) requestBody.PooID = params.PooID;
+            if (params.JobID) requestBody.JobID = params.JobID;
 
-            const queryString = queryParams.toString();
-            const url = `/kusto/getJobList${queryString ? `?${queryString}` : ''}`;
-
-            console.log('=== Preparing API Call ===');
-            console.log(`Method: GET`);
-            console.log(`Endpoint: ${this.baseURL}${url}`);
-            console.log(`Headers: Content-Type: application/json`);
-            console.log('=== Expected Format ===');
-            console.log(`GET ${this.baseURL}${url}`);
-            console.log('Content-Type: application/json');
-            console.log('=======================');
+            const url = `/kusto/getJobList`;
 
             const response = await this.requestWithRetry<{name: string, data: Job[]} | Job[]>({
                 method: 'GET',
-                url: url
+                url: url,
+                data: requestBody
             });
 
-            // 处理不同的响应格式
             let jobs: Job[] = [];
             if (response && typeof response === 'object' && 'data' in response && Array.isArray(response.data)) {
-                // API返回的是包装格式 {name: "PrimaryResult", data: [...]}
                 jobs = response.data;
             } else if (Array.isArray(response)) {
-                // 直接返回数组
                 jobs = response;
             }
             
-            // 模拟分页（后端没有返回分页信息）
             const page = params.page || 1;
             const limit = params.limit || 10;
             const startIndex = (page - 1) * limit;
@@ -190,18 +161,6 @@ export class ExternalJobService {
             const requestBody = {
                 TestJobID: id
             };
-
-            console.log('=== Preparing Job Details API Call ===');
-            console.log(`Method: GET`);
-            console.log(`Endpoint: ${this.baseURL}/kusto/getJobDetailsByID`);
-            console.log(`Headers: Content-Type: application/json`);
-            console.log(`Request Body:`, JSON.stringify(requestBody, null, 2));
-            console.log('=== Expected Format ===');
-            console.log('GET https://c2c-test-dashboard-d8feccd5dgbmd7a2.eastus-01.azurewebsites.net/kusto/getJobDetailsByID');
-            console.log('Content-Type: application/json');
-            console.log('');
-            console.log(JSON.stringify(requestBody, null, 2));
-            console.log('=====================================');
 
             const response = await this.requestWithRetry<Job | {name: string, data: Job[]}>({
                 method: 'GET',
@@ -307,6 +266,53 @@ export class ExternalJobService {
         } catch (error) {
             console.error('[ExternalAPI] Health check failed:', error);
             throw error;
+        }
+    }
+
+    async getTaskFirstErrorDetailByJobID(id: string): Promise<any> {
+        try {
+            const requestBody = {
+                JobID: id
+            };
+
+            const response = await this.requestWithRetry<any>({
+                method: 'GET',
+                url: '/kusto/getTaskFirstErrorDetailByJobID',
+                data: requestBody
+            });
+            
+            return response;
+            
+        } catch (error) {
+            console.error(`[ExternalAPI] Failed to fetch job ${id}:`, error);
+            if (error instanceof Error && error.message.includes('404')) {
+                throw new Error(`Job with ID ${id} not found`);
+            }
+            throw new Error(`Failed to fetch job from external service: ${error instanceof Error ? error.message : 'Unknown error'}`);
+        }
+    }
+
+    async getClassifiedResultsByJobID(id: string, classification: string): Promise<any> {
+        try {
+            const requestBody = {
+                TestJobID: id,
+                Classification: classification
+            };
+
+            const response = await this.requestWithRetry<any>({
+                method: 'GET',
+                url: '/kusto/getResultsClassifiedBy',
+                data: requestBody
+            });
+
+            return response;
+
+        } catch (error) {
+            console.error(`[ExternalAPI] Failed to fetch classified results for job ${id}:`, error);
+            if (error instanceof Error && error.message.includes('404')) {
+                throw new Error(`Job with ID ${id} not found`);
+            }
+            throw new Error(`Failed to fetch classified results from external service: ${error instanceof Error ? error.message : 'Unknown error'}`);
         }
     }
 }

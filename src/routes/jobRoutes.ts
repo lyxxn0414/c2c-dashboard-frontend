@@ -1,6 +1,6 @@
 import { Router, Request, Response } from 'express';
 import { asyncHandler } from '../middleware/errorHandler';
-import { Job, JobStatus, JobQueryParams, JobListResponse, CreateJobRequest } from '../types/job.types';
+import { Job, JobQueryParams, JobListResponse, CreateJobRequest } from '../types/job.types';
 import { externalJobService } from '../services/externalJobService';
 
 const router = Router();
@@ -102,8 +102,20 @@ router.get('/:id', asyncHandler(async (req: Request, res: Response) => {
 
   try {
     const job = await externalJobService.getJobById(id);
-    console.log("Fetched job:", job);
-    res.json(job);
+    console.log(`Fetched job ${id} from external service:`, job);
+    const taskErrors = await externalJobService.getTaskFirstErrorDetailByJobID(id);
+    const classifications = ['Model','RepoType','AppPattern','Language'];
+    const classifiedResults: { [key: string]: any } = {};
+    for (const classification of classifications) {
+      classifiedResults[classification] = await externalJobService.getClassifiedResultsByJobID(id, classification);
+      console.log(`Fetched classified results for ${classification}:`, classifiedResults[classification]);
+    }
+    console.log("Fetched task errors:", taskErrors);
+    res.json({
+      job: job,
+      taskErrors: taskErrors,
+      classifiedResults: classifiedResults
+    });
   } catch (error) {
     console.error(`Error fetching job ${id} from external service:`, error);
     

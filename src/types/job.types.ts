@@ -21,6 +21,19 @@ export interface Job {
   RegionCalls?: number;
   QuotaCalls?: number;
   AIIntegration?: number;
+
+  // 分类统计数据
+  ModelClassification?: ClassificationStats[];
+  LanguageClassification?: ClassificationStats[];
+  ResourceTypeClassification?: ClassificationStats[];
+  RepoClassification?: ClassificationStats[];
+}
+
+export interface ClassificationStats {
+  name: string;
+  taskNum: number;
+  successRate: string;
+  avgSuccessIterations: number;
 }
 
 export enum JobStatus {

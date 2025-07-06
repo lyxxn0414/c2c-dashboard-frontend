@@ -49,6 +49,8 @@ class JobDashboard {
         if (jobDetailMatch || jobDetailQueryMatch) {
             const jobId = jobDetailMatch ? jobDetailMatch[1] : jobDetailQueryMatch[1];
             console.log('Routing to job detail:', jobId);
+            // Immediately show detail view with loading state instead of jobs view
+            this.showJobDetailLoadingState();
             this.navigateToJobDetail(jobId);
         } else {
             // Default to jobs view
@@ -70,24 +72,20 @@ class JobDashboard {
                 throw new Error(`HTTP error! status: ${response.status}`);
             }
             
-            const job = await response.json();
+            const jobDetail = await response.json();
+            const job = jobDetail.job;
+            const taskErrors = jobDetail.taskErrors;
+            const classifiedResults = jobDetail.classifiedResults;
             console.log('Fetched job for detail view:', job);
             
-            // Show job detail view
-            this.showJobDetailView(job);
-            
-            // Update URL if we're not already there
-            const expectedURL = `/job-detail/jobID=${jobId}`;
-            if (window.location.pathname + window.location.search !== expectedURL) {
-                this.updateURL(expectedURL);
-            }
-            
+            // Show job detail view with actual data
+            this.showJobDetailView(job, taskErrors, classifiedResults);
+
         } catch (error) {
             console.error('Error navigating to job detail:', error);
             this.showError(`Failed to load job details for job ${jobId}.`);
-            // Fallback to jobs view
+            // Fallback to jobs view on error
             this.showJobsView();
-            this.updateURL('/');
         }
     }
 
@@ -679,8 +677,34 @@ class JobDashboard {
     }
 
     formatDateTime(dateTime) {
-        // Handle the format from the mock data
-        return dateTime;
+        // Handle the format from the API data
+        if (!dateTime) return 'N/A';
+        console.log("Formatting date:", dateTime);
+        
+        try {
+            const date = new Date(dateTime);
+            
+            if (isNaN(date.getTime())) {
+                return dateTime; // Return original string if parsing fails
+            }
+            
+            const options = {
+                timeZone: 'Asia/Shanghai',
+                year: 'numeric',
+                month: '2-digit',
+                day: '2-digit',
+                hour: '2-digit',
+                minute: '2-digit',
+                hour12: false
+            };
+            console.log("Formatted date:", date.toLocaleString('sv-SE', options));
+            
+            return date.toLocaleString('sv-SE', options).replace('T', ' ');
+            
+        } catch (error) {
+            console.warn('Error formatting date:', error, dateTime);
+            return dateTime; // Return original if formatting fails
+        }
     }
 
     getSuccessRateClass(successRate) {
@@ -698,7 +722,7 @@ class JobDashboard {
         await this.navigateToJobDetail(jobId);
     }
 
-    showJobDetailView(job) {
+    showJobDetailView(job, taskErrors, classifiedResults) {
         // Store current job for editing/deleting
         this.currentJob = job;
         
@@ -736,11 +760,61 @@ class JobDashboard {
         document.getElementById('tool-quota').textContent = job.QuotaCalls || 0;
 
         // Model statistics (using mock data for now - will be replaced with real API data)
-        this.populateModelStatistics(job);
+        this.populateModelStatistics(classifiedResults);
 
         // Failed tasks analysis
-        this.populateFailedTasks(job);
+        this.populateFailedTasks(taskErrors);
 
+        // Trigger transition effect
+        setTimeout(() => {
+            detailView.classList.add('active');
+        }, 10);
+    }
+
+    showJobDetailLoadingState() {
+        // Hide jobs view immediately
+        document.getElementById('jobs-view').classList.add('d-none');
+        
+        // Show detail view with loading state
+        const detailView = document.getElementById('job-detail-view');
+        detailView.classList.remove('d-none');
+        detailView.classList.add('view-transition');
+        
+        // Clear previous content and show loading state
+        const jobDetailTitle = document.getElementById('job-detail-title');
+        const jobDetailId = document.getElementById('job-detail-id');
+        const jobDetailCreator = document.getElementById('job-detail-creator');
+        const jobDetailCreationTime = document.getElementById('job-detail-creation-time');
+        const jobDetailDescription = document.getElementById('job-detail-description');
+        
+        if (jobDetailTitle) jobDetailTitle.textContent = 'Loading...';
+        if (jobDetailId) jobDetailId.textContent = '...';
+        if (jobDetailCreator) jobDetailCreator.textContent = '...';
+        if (jobDetailCreationTime) jobDetailCreationTime.textContent = '...';
+        if (jobDetailDescription) jobDetailDescription.textContent = 'Loading job details...';
+        
+        // Show loading spinner for metrics
+        const loadingSpinner = '<span class="spinner-border spinner-border-sm" role="status"></span>';
+        
+        const metricsElements = [
+            'job-completed-tasks', 'job-success-tasks', 'job-failed-tasks', 'job-success-rate',
+            'job-avg-iterations', 'job-iterations-changes',
+            'tool-recommend', 'tool-predeploy', 'tool-deploy', 'tool-region', 'tool-quota'
+        ];
+        
+        metricsElements.forEach(elementId => {
+            const element = document.getElementById(elementId);
+            if (element) {
+                element.innerHTML = loadingSpinner;
+            }
+        });
+        
+        // Clear model statistics and failed tasks content
+        const failedTasksContent = document.getElementById('failed-tasks-content');
+        if (failedTasksContent) {
+            failedTasksContent.innerHTML = '<div class="text-center py-3">' + loadingSpinner + ' Loading failed tasks...</div>';
+        }
+        
         // Trigger transition effect
         setTimeout(() => {
             detailView.classList.add('active');
@@ -762,109 +836,171 @@ class JobDashboard {
         }, 300);
     }
 
-    populateModelStatistics(job) {
-        // For now, using mock data. In the future, this should come from the API response
-        // TODO: Replace with real classification statistics from job data
-        
-        // Model statistics
-        const modelStats = {
-            'claude-35': { successRate: '85%', avgIteration: 8.5 },
-            'claude-37': { successRate: '92%', avgIteration: 7.2 },
-            'claude-40': { successRate: '88%', avgIteration: 6.8 },
-            'gpt-41': { successRate: '90%', avgIteration: 7.5 }
-        };
+    populateModelStatistics(classifiedResults) {
+        const classificationContainer = document.getElementById('classification-container');
+        if (!classificationContainer) {
+            console.warn('Classification container not found');
+            return;
+        }
 
-        // Language statistics
-        const languageStats = {
-            'java': { successRate: '88%', avgIteration: 9.2 },
-            'dotnet': { successRate: '85%', avgIteration: 8.7 },
-            'jsts': { successRate: '90%', avgIteration: 7.8 },
-            'python': { successRate: '92%', avgIteration: 7.3 }
-        };
+        console.log("Populating model statistics with classified results:", classifiedResults);
 
-        // Resource type statistics
-        const resourceStats = {
-            'resource-1-0': { successRate: '95%', avgIteration: 6.5 },
-            'resource-1-1': { successRate: '88%', avgIteration: 8.2 },
-            'resource-1-n': { successRate: '82%', avgIteration: 9.8 },
-            'resource-n-0': { successRate: '75%', avgIteration: 11.2 },
-            'resource-n-1': { successRate: '70%', avgIteration: 12.5 },
-            'resource-n-n': { successRate: '65%', avgIteration: 14.3 }
-        };
+        // Define classification categories with their data sources
+        const classificationCategories = [
+            {
+                title: 'Result classified by Model',
+                subtitle: '',
+                data: classifiedResults['Model']&& classifiedResults['Model'].data || this.getMockModelStats(),
+                tags: ['Language model', 'all', 'Compute Resource Note', 'result']
+            },
+            {
+                title: 'Result classified by Language',
+                subtitle: '',
+                data: classifiedResults['Language']&& classifiedResults['Language'].data || this.getMockLanguageStats(),
+                tags: ['Model', 'result', 'all', 'Compute Resource Note']
+            },
+            {
+                title: 'Result classified by Resource Type',
+                subtitle: 'Num of Compute Resource + Num of Binding Resource',
+                data: classifiedResults['AppPattern']&& classifiedResults['AppPattern'].data || this.getMockResourceStats(),
+                tags: ['Language', 'result', 'all', 'Model']
+            },
+            {
+                title: 'Result classified by Repo Type',
+                subtitle: 'Task Name',
+                data: classifiedResults['RepoType']&& classifiedResults['RepoType'].data || this.getMockRepoStats(),
+                tags: ['Model', 'result', 'all']
+            }
+        ];
 
-        // Specific repo statistics
-        const repoStats = {
-            'airsonic': { successRate: '92%', avgIteration: 7.8 },
-            'assessment': { successRate: '85%', avgIteration: 9.1 },
-            'before-container': { successRate: '78%', avgIteration: 10.5 },
-            'tasktracker': { successRate: '89%', avgIteration: 8.3 },
-            'task-2': { successRate: '83%', avgIteration: 9.7 },
-            'task-3': { successRate: '87%', avgIteration: 8.9 }
-        };
+        // Clear existing content
+        classificationContainer.innerHTML = '';
 
-        // Update each category's statistics
-        [modelStats, languageStats, resourceStats, repoStats].forEach(statsCategory => {
-            Object.entries(statsCategory).forEach(([key, stats]) => {
-                const successRateElement = document.getElementById(`${key}-success-rate`);
-                const avgIterationElement = document.getElementById(`${key}-avg-iteration`);
-                
-                if (successRateElement) {
-                    successRateElement.textContent = stats.successRate;
-                }
-                if (avgIterationElement) {
-                    avgIterationElement.textContent = stats.avgIteration;
-                }
-            });
+        // Generate classification cards dynamically
+
+        classificationCategories.forEach(category => {
+            console.log(`Processing classification category data: ${category.data}`);
+            if (category.data && category.data.length > 0) {
+                const cardHTML = this.generateClassificationCard(category);
+                classificationContainer.insertAdjacentHTML('beforeend', cardHTML);
+                console.log(`Added classification card for: ${category.title}`);
+            }
         });
     }
 
-    populateFailedTasks(job) {
-        const failedTasksContainer = document.getElementById('failed-tasks-content');
+    generateClassificationCard(category) {
+        console.log(`Generating classification card for: ${category.title}`);
+        const tagsHTML = category.tags.map(tag => `<span class="tag">${tag}</span>`).join('');
+        const subtitleHTML = category.subtitle ? `<div class="classification-subtitle">${category.subtitle}</div>` : '';
         
+        const itemsHTML = category.data.map(item => `
+            <div class="classification-item">
+                <span class="model-name">${item.Type}</span>
+                <span class="model-stats">
+                    Tasks: ${item.TaskNum || 0} |
+                    Success Rate: ${item.SuccessRate || '0%'} |
+                    Avg Iteration: ${item.AvgSuccessIteration || 0}
+                </span>
+            </div>
+        `).join('');
+
+        return `
+            <div class="col-md-6 mb-4">
+                <div class="classification-card">
+                    <div class="classification-header">
+                        <h5>${category.title}</h5>
+                        <div class="tags">
+                            ${tagsHTML}
+                        </div>
+                    </div>
+                    <div class="classification-content">
+                        ${subtitleHTML}
+                        ${itemsHTML}
+                    </div>
+                </div>
+            </div>
+        `;
+    }
+
+    // Mock data methods for fallback when real data is not available
+    getMockModelStats() {
+        return [
+            { name: 'Claude-3.5', taskNum: 25, successRate: '85%', avgSuccessIterations: 8.5 },
+            { name: 'Claude-3.7', taskNum: 18, successRate: '92%', avgSuccessIterations: 7.2 },
+            { name: 'Claude-4.0', taskNum: 20, successRate: '88%', avgSuccessIterations: 6.8 },
+            { name: 'GPT-4.1', taskNum: 15, successRate: '90%', avgSuccessIterations: 7.5 }
+        ];
+    }
+
+    getMockLanguageStats() {
+        return [
+            { name: 'Java', taskNum: 22, successRate: '88%', avgSuccessIterations: 9.2 },
+            { name: 'Dotnet', taskNum: 18, successRate: '85%', avgSuccessIterations: 8.7 },
+            { name: 'JavaScript/TypeScript', taskNum: 16, successRate: '90%', avgSuccessIterations: 7.8 },
+            { name: 'Python', taskNum: 12, successRate: '92%', avgSuccessIterations: 7.3 }
+        ];
+    }
+
+    getMockResourceStats() {
+        return [
+            { name: '1 + 0', taskNum: 15, successRate: '95%', avgSuccessIterations: 6.5 },
+            { name: '1 + 1', taskNum: 20, successRate: '88%', avgSuccessIterations: 8.2 },
+            { name: '1 + N', taskNum: 12, successRate: '82%', avgSuccessIterations: 9.8 },
+            { name: 'N + 0', taskNum: 8, successRate: '75%', avgSuccessIterations: 11.2 },
+            { name: 'N + 1', taskNum: 6, successRate: '70%', avgSuccessIterations: 12.5 },
+            { name: 'N + N', taskNum: 4, successRate: '65%', avgSuccessIterations: 14.3 }
+        ];
+    }
+
+    getMockRepoStats() {
+        return [
+            { name: 'airSonic', taskNum: 12, successRate: '92%', avgSuccessIterations: 7.8 },
+            { name: 'assessmentManager', taskNum: 10, successRate: '85%', avgSuccessIterations: 9.1 },
+            { name: 'before-container', taskNum: 8, successRate: '78%', avgSuccessIterations: 10.5 },
+            { name: 'tasktracker', taskNum: 14, successRate: '89%', avgSuccessIterations: 8.3 },
+            { name: 'task-2', taskNum: 9, successRate: '83%', avgSuccessIterations: 9.7 },
+            { name: 'task-3', taskNum: 11, successRate: '87%', avgSuccessIterations: 8.9 }
+        ];
+    }
+
+    populateFailedTasks(taskErrors) {
+        const failedTasksContainer = document.getElementById('failed-tasks-content');
         if (!failedTasksContainer) {
             console.warn('Failed tasks container not found');
             return;
         }
 
-        // Check if there are failed tasks in the job data
-        // First check if job has a FailedTasksDetails array or similar field
-        let failedTasks = [];
-        
-        if (job.FailedTasksDetails && Array.isArray(job.FailedTasksDetails)) {
-            failedTasks = job.FailedTasksDetails;
-        } else if (job.failedTasksDetails && Array.isArray(job.failedTasksDetails)) {
-            failedTasks = job.failedTasksDetails;
-        } else if (job.FailedTasks && job.FailedTasks > 0) {
-            // If we only have the count, generate mock failed tasks for demo
-            failedTasks = this.generateMockFailedTasks(job.FailedTasks);
+        // Ensure taskErrors is always an array
+        let failedTasksArr = [];
+        if (Array.isArray(taskErrors)) {
+            failedTasksArr = taskErrors;
+        } else if (taskErrors && typeof taskErrors === 'object' && Array.isArray(taskErrors.data)) {
+            failedTasksArr = taskErrors.data;
+        } else if (taskErrors == null) {
+            failedTasksArr = [];
         } else {
-            // No failed tasks - show success message
-            failedTasksContainer.innerHTML = `
-                <div class="no-failed-tasks">
-                    <div>All tasks completed successfully!</div>
-                </div>
-            `;
-            return;
+            console.warn('Unexpected taskErrors format:', taskErrors);
+            failedTasksArr = [];
         }
 
         // Update failed tasks count badge
         const failedTasksCountBadge = document.getElementById('failed-tasks-count');
         if (failedTasksCountBadge) {
-            failedTasksCountBadge.textContent = `${failedTasks.length} Failed Task${failedTasks.length !== 1 ? 's' : ''}`;
+            failedTasksCountBadge.textContent = `${failedTasksArr.length} Failed Task${failedTasksArr.length !== 1 ? 's' : ''}`;
         }
 
         // Generate HTML for failed tasks using Bootstrap row/col structure
-        const failedTasksHTML = failedTasks.map(task => `
+        const failedTasksHTML = failedTasksArr.map(task => `
             <div class="failed-task-item">
                 <div class="row align-items-center">
                     <div class="col-md-3">
-                        <span class="task-name">${task.taskName || task.name || 'Unknown Task'}</span>
+                        <span class="task-name">${task.TaskID || 'Unknown Task'}</span>
                     </div>
                     <div class="col-md-3">
-                        <span class="error-category badge bg-danger-subtle text-danger">${task.errorCategory || task.category || 'General Error'}</span>
+                        <span class="error-category badge bg-danger-subtle text-danger">${task.ErrorCategory || 'General Error'}</span>
                     </div>
                     <div class="col-md-6">
-                        <span class="error-description">${task.errorDescription || task.description || task.error || 'No error description available'}</span>
+                        <span class="error-description">${task.ErrorDescription || 'No error description available'}</span>
                     </div>
                 </div>
             </div>
@@ -873,41 +1009,41 @@ class JobDashboard {
         failedTasksContainer.innerHTML = failedTasksHTML;
     }
 
-    generateMockFailedTasks(failedCount) {
-        // Generate mock failed tasks for demonstration when real data isn't available
-        const mockErrorCategories = ['Network', 'Timeout', 'Validation', 'Configuration', 'Dependency'];
-        const mockTaskNames = [
-            'Azure Resource Deployment',
-            'Container Registry Setup',
-            'Database Configuration',
-            'API Gateway Setup',
-            'Load Balancer Configuration',
-            'SSL Certificate Installation',
-            'DNS Configuration',
-            'Monitoring Setup'
-        ];
-        const mockErrorDescriptions = [
-            'Connection timeout while establishing connection to Azure Resource Manager',
-            'Invalid configuration parameters provided for the service setup',
-            'Required dependencies are missing or incompatible versions detected',
-            'Authentication failed due to expired or invalid credentials',
-            'Resource quota exceeded for the specified subscription tier',
-            'Network security group rules blocking required communication ports',
-            'Service endpoint configuration conflicts with existing setup',
-            'Validation failed for resource naming conventions'
-        ];
+    // generateMockFailedTasks(failedCount) {
+    //     // Generate mock failed tasks for demonstration when real data isn't available
+    //     const mockErrorCategories = ['Network', 'Timeout', 'Validation', 'Configuration', 'Dependency'];
+    //     const mockTaskNames = [
+    //         'Azure Resource Deployment',
+    //         'Container Registry Setup',
+    //         'Database Configuration',
+    //         'API Gateway Setup',
+    //         'Load Balancer Configuration',
+    //         'SSL Certificate Installation',
+    //         'DNS Configuration',
+    //         'Monitoring Setup'
+    //     ];
+    //     const mockErrorDescriptions = [
+    //         'Connection timeout while establishing connection to Azure Resource Manager',
+    //         'Invalid configuration parameters provided for the service setup',
+    //         'Required dependencies are missing or incompatible versions detected',
+    //         'Authentication failed due to expired or invalid credentials',
+    //         'Resource quota exceeded for the specified subscription tier',
+    //         'Network security group rules blocking required communication ports',
+    //         'Service endpoint configuration conflicts with existing setup',
+    //         'Validation failed for resource naming conventions'
+    //     ];
 
-        const failedTasks = [];
-        for (let i = 0; i < Math.min(failedCount, 8); i++) {
-            failedTasks.push({
-                taskName: mockTaskNames[i % mockTaskNames.length],
-                errorCategory: mockErrorCategories[i % mockErrorCategories.length],
-                errorDescription: mockErrorDescriptions[i % mockErrorDescriptions.length]
-            });
-        }
+    //     const failedTasks = [];
+    //     for (let i = 0; i < Math.min(failedCount, 8); i++) {
+    //         failedTasks.push({
+    //             taskName: mockTaskNames[i % mockTaskNames.length],
+    //             errorCategory: mockErrorCategories[i % mockErrorCategories.length],
+    //             errorDescription: mockErrorDescriptions[i % mockErrorDescriptions.length]
+    //         });
+    //     }
 
-        return failedTasks;
-    }
+    //     return failedTasks;
+    // }
 
     calculateSuccessTasks(job) {
         // Use backend field if available, otherwise calculate
