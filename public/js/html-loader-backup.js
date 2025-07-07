@@ -79,7 +79,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 console.log('✅ JobDashboard initialized');
             } else {
                 console.error('❌ JobDashboard class not found');
-            }
+            }            
         }, 100);
         
     } catch (error) {
@@ -87,34 +87,34 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 });
 
-// Setup navigation handlers when dashboard is ready
-window.addEventListener('load', () => {
-    setTimeout(() => {
-        console.log('Setting up navigation handlers...');
-        document.addEventListener('click', (e) => {
-            // Handle navigation links
-            if (e.target.closest('#job-view')) {
-                e.preventDefault();
-                console.log('Job view clicked');
-                if (window.jobDashboard) {
-                    window.jobDashboard.showJobsView();
-                } else {
-                    console.error('JobDashboard not available');
-                }
+// Setup navigation handlers when router is ready
+window.addEventListener('routerReady', () => {
+    console.log('Router ready, setting up navigation handlers...');
+    document.addEventListener('click', (e) => {
+        console.log('Click detected on:', e.target);
+        
+        // Handle navigation links
+        if (e.target.closest('#job-view')) {
+            e.preventDefault();
+            console.log('Job view clicked');
+            if (window.router) {
+                window.router.navigate('/jobs');
+            } else {
+                console.error('Router not available');
             }
+        }
 
-            if (e.target.closest('#repo-view')) {
-                e.preventDefault();
-                console.log('Repo view clicked');
-                if (window.jobDashboard) {
-                    window.jobDashboard.showReposView();
-                } else {
-                    console.error('JobDashboard not available');
-                }
+        if (e.target.closest('#repo-view')) {
+            e.preventDefault();
+            console.log('Repo view clicked');
+            if (window.router) {
+                window.router.navigate('/repos');
+            } else {
+                console.error('Router not available');
             }
-        });
-        console.log('✅ Navigation handlers set up');
-    }, 200);
+        }
+    });
+    console.log('✅ Navigation handlers set up');
 });
 
 // Export for use in other scripts

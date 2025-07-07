@@ -79,11 +79,21 @@ class App {
     // API routes
     this.app.use('/api/jobs', jobRoutes);
     this.app.use('/api/config', configRoutes);
-    this.app.use('/api/repos', repoRoutes);
-
-    // Specific route for job details
+    this.app.use('/api/repos', repoRoutes);    // Specific route for job details
     this.app.get('/job-detail/*', (req: Request, res: Response) => {
       console.log(`Serving index.html for job detail route: ${req.path}`);
+      res.sendFile(path.join(__dirname, '../public/index.html'));
+    });
+
+    // Repos route
+    this.app.get('/repos', (req: Request, res: Response) => {
+      console.log(`Serving index.html for repos route: ${req.path}`);
+      res.sendFile(path.join(__dirname, '../public/index.html'));
+    });
+
+    // Jobs route
+    this.app.get('/jobs', (req: Request, res: Response) => {
+      console.log(`Serving index.html for jobs route: ${req.path}`);
       res.sendFile(path.join(__dirname, '../public/index.html'));
     });
 

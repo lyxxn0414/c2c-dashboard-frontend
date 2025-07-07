@@ -37,9 +37,7 @@ class JobDashboard {
         const currentPath = window.location.pathname + window.location.search;
         console.log('Initial route:', currentPath);
         this.handleRoute(currentPath);
-    }
-
-    handleRoute(path) {
+    }    handleRoute(path) {
         console.log('Handling route:', path);
         
         // Parse job detail routes: /job-detail/jobID=#id or ?jobID=#id
@@ -52,11 +50,14 @@ class JobDashboard {
             // Immediately show detail view with loading state instead of jobs view
             this.showJobDetailLoadingState();
             this.navigateToJobDetail(jobId);
+        } else if (path === '/repos' || path.startsWith('/repos')) {
+            console.log('Routing to repos view');
+            this.showReposView();
         } else {
             // Default to jobs view
             this.showJobsView();
             // Update URL if needed
-            if (path !== '/' && path !== '') {
+            if (path !== '/' && path !== '/jobs' && path !== '') {
                 this.updateURL('/');
             }
         }
@@ -245,11 +246,14 @@ class JobDashboard {
         // Test connection
         document.getElementById('test-connection-btn').addEventListener('click', () => {
             this.testConnection();
-        });
-
-        // Back to jobs button
+        });        // Back to jobs button
         document.getElementById('back-to-jobs-btn').addEventListener('click', () => {
             this.showJobsView();
+        });
+
+        // Go to repos button
+        document.getElementById('goto-repos-btn').addEventListener('click', () => {
+            this.navigateToRepos();
         });
 
         // Edit job button in detail view
@@ -667,6 +671,13 @@ class JobDashboard {
         toastElement.addEventListener('hidden.bs.toast', () => {
             toastElement.remove();
         });
+    }    // Navigation methods
+    navigateToRepos() {
+        window.navigateToRepos();
+    }
+
+    navigateToJobs() {
+        window.navigateToJobs();
     }
 
     // Utility methods
@@ -819,21 +830,92 @@ class JobDashboard {
         setTimeout(() => {
             detailView.classList.add('active');
         }, 10);
-    }
-
-    showJobsView() {
+    }    showJobsView() {
         // Update URL to root path
         this.updateURL('/');
         
         // Hide detail view and show jobs view
         const detailView = document.getElementById('job-detail-view');
+        const reposContent = document.getElementById('repos-content');
+        
         detailView.classList.remove('active');
+        
+        if (reposContent) {
+            reposContent.style.display = 'none';
+        }
         
         setTimeout(() => {
             detailView.classList.add('d-none');
             detailView.classList.remove('view-transition');
             document.getElementById('jobs-view').classList.remove('d-none');
+            
+            const jobsContent = document.getElementById('jobs-content');
+            if (jobsContent) {
+                jobsContent.style.display = 'block';
+            }
         }, 300);
+        
+        // Update navigation active state
+        this.updateNavigationState('jobs');
+    }
+
+    showReposView() {
+        console.log('Showing repos view');
+        // Update URL to repos path
+        this.updateURL('/repos');
+        
+        // Hide all other views
+        const detailView = document.getElementById('job-detail-view');
+        const jobsView = document.getElementById('jobs-view');
+        const jobsContent = document.getElementById('jobs-content');
+        const reposContent = document.getElementById('repos-content');
+        
+        if (detailView) {
+            detailView.classList.add('d-none');
+            detailView.classList.remove('active');
+        }
+        
+        if (jobsView) {
+            jobsView.classList.add('d-none');
+        }
+        
+        if (jobsContent) {
+            jobsContent.style.display = 'none';
+        }
+        
+        if (reposContent) {
+            reposContent.style.display = 'block';
+            
+            // Initialize repo view if not already done
+            if (!window.reposInitialized) {
+                window.reposInitialized = true;
+                setTimeout(() => {
+                    if (typeof initRepoView === 'function') {
+                        console.log('Initializing repo view');
+                        initRepoView();
+                    } else {
+                        console.error('initRepoView function not found');
+                    }
+                }, 100);
+            }
+        }
+        
+        // Update navigation active state
+        this.updateNavigationState('repos');
+    }
+
+    updateNavigationState(activeView) {
+        // Remove active class from all nav links
+        document.querySelectorAll('.nav-link').forEach(link => {
+            link.classList.remove('active');
+        });
+        
+        // Add active class to current view
+        if (activeView === 'repos') {
+            document.getElementById('repo-view')?.classList.add('active');
+        } else {
+            document.getElementById('job-view')?.classList.add('active');
+        }
     }
 
     populateModelStatistics(classifiedResults) {

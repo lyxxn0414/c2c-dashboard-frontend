@@ -161,5 +161,5 @@ function createSuccessRateBadge(rate) {
     return `<span class="badge ${badgeClass}">${percentage}%</span>`;
 }
 
-// Initialize when the page loads
-document.addEventListener('DOMContentLoaded', initRepoView);
+// Initialize when called by router (not automatically)
+// document.addEventListener('DOMContentLoaded', initRepoView);
