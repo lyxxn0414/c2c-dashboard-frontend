@@ -12,6 +12,7 @@ dotenv.config();
 // Import routes
 import jobRoutes from './routes/jobRoutes';
 import configRoutes from './routes/configRoutes';
+import repoRoutes from './routes/repoRoutes';
 import { errorHandler } from './middleware/errorHandler';
 
 class App {
@@ -73,12 +74,12 @@ class App {
         timestamp: new Date().toISOString(),
         uptime: process.uptime(),
         environment: process.env.NODE_ENV || 'development',
-      });
-    });
+      });    });
 
     // API routes
     this.app.use('/api/jobs', jobRoutes);
     this.app.use('/api/config', configRoutes);
+    this.app.use('/api/repos', repoRoutes);
 
     // Specific route for job details
     this.app.get('/job-detail/*', (req: Request, res: Response) => {

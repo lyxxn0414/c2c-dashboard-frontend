@@ -3,7 +3,8 @@ const HTMLTemplates = {
     // Templates will be loaded from files
     jobsView: '',
     jobDetail: '',
-    modals: ''
+    modals: '',
+    reposView: ''
 };
 
 // Function to load HTML from file
@@ -27,12 +28,12 @@ async function loadTemplate(templateName, filePath) {
 document.addEventListener('DOMContentLoaded', async () => {
     console.log('🚀 Loading HTML templates from files...');
     
-    try {
-        // Load all templates
+    try {        // Load all templates
         await Promise.all([
             loadTemplate('jobsView', '/partials/jobs-view.html'),
             loadTemplate('jobDetail', '/partials/job-detail.html'),
-            loadTemplate('modals', '/partials/modals.html')
+            loadTemplate('modals', '/partials/modals.html'),
+            loadTemplate('reposView', '/partials/repos-view.html')
         ]);
         
         // Load templates into the page
@@ -53,15 +54,21 @@ document.addEventListener('DOMContentLoaded', async () => {
         } else {
             console.error('❌ job-detail-content element not found or template not loaded');
         }
-        
-        if (modalsContent && HTMLTemplates.modals) {
+          if (modalsContent && HTMLTemplates.modals) {
             modalsContent.innerHTML = HTMLTemplates.modals;
             console.log('✅ Modals template loaded');
         } else {
             console.error('❌ modals-content element not found or template not loaded');
         }
-        
-        // Initialize dashboard after templates are loaded
+
+        const reposContent = document.getElementById('repos-content');
+        if (reposContent && HTMLTemplates.reposView) {
+            reposContent.innerHTML = HTMLTemplates.reposView;
+            console.log('✅ Repos view template loaded');
+        } else {
+            console.error('❌ repos-content element not found or template not loaded');
+        }
+          // Initialize dashboard after templates are loaded
         setTimeout(() => {
             console.log('🔧 Initializing JobDashboard...');
             if (window.JobDashboard) {
@@ -70,6 +77,24 @@ document.addEventListener('DOMContentLoaded', async () => {
             } else {
                 console.error('❌ JobDashboard class not found');
             }
+
+            // Setup navigation handlers
+            document.getElementById('job-view').addEventListener('click', (e) => {
+                e.preventDefault();
+                document.getElementById('jobs-content').style.display = 'block';
+                document.getElementById('repos-content').style.display = 'none';
+            });
+
+            document.getElementById('repo-view').addEventListener('click', (e) => {
+                e.preventDefault();
+                document.getElementById('jobs-content').style.display = 'none';
+                document.getElementById('repos-content').style.display = 'block';
+                // Initialize repo view
+                if (!window.reposInitialized) {
+                    window.reposInitialized = true;
+                    initRepoView();
+                }
+            });
         }, 100);
         
     } catch (error) {
