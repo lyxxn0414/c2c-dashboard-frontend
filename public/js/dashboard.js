@@ -963,7 +963,89 @@ class JobDashboard {
         ];
     }
 
-    populateFailedTasks(taskErrors) {
+    populateTopErrorCategory(errorsByCategory) {
+        const entries = Object.entries(errorsByCategory);
+        if (entries.length === 0) {
+            this.updateTopErrorDisplay(null);
+            return;
+        }
+
+        // Get the most frequent error category
+        const [topCategory, topData] = entries[0];
+        
+        // Calculate percentage of this error type
+        const totalErrors = Object.values(errorsByCategory)
+            .reduce((sum, data) => sum + data.count, 0);
+        const percentage = ((topData.count / totalErrors) * 100).toFixed(1);
+
+        this.updateTopErrorDisplay({
+            category: topCategory,
+            count: topData.count,
+            percentage: percentage,
+            patterns: this.analyzeErrorPatterns(topData.tasks)
+        });
+    }
+
+    updateTopErrorDisplay(data) {
+        // Update top error category display
+        const categoryElem = document.getElementById('top-error-category');
+        const countElem = document.getElementById('top-error-count');
+        const percentageElem = document.getElementById('top-error-percentage');
+        const progressElem = document.getElementById('top-error-progress');
+        const patternsElem = document.getElementById('top-error-patterns');
+
+        if (!data) {
+            categoryElem.textContent = 'No Errors';
+            countElem.innerHTML = '<span class="count">0</span> occurrences';
+            percentageElem.textContent = '0%';
+            progressElem.style.width = '0%';
+            progressElem.setAttribute('aria-valuenow', '0');
+            patternsElem.innerHTML = '<div class="error-pattern-item text-success">No error patterns to display</div>';
+            return;
+        }
+
+        categoryElem.textContent = data.category;
+        countElem.innerHTML = `<span class="count">${data.count}</span> occurrence${data.count !== 1 ? 's' : ''}`;
+        percentageElem.textContent = `${data.percentage}%`;
+        progressElem.style.width = `${data.percentage}%`;
+        progressElem.setAttribute('aria-valuenow', data.percentage);
+
+        // Display error patterns
+        patternsElem.innerHTML = data.patterns.map(pattern => `
+            <div class="error-pattern-item">
+                <div class="d-flex justify-content-between">
+                    <span>${pattern.pattern}</span>
+                    <span class="text-muted">${pattern.count}x</span>
+                </div>
+            </div>
+        `).join('');
+    }
+
+    analyzeErrorPatterns(tasks) {
+        // Group similar error descriptions
+        const patterns = {};
+        tasks.forEach(task => {
+            const description = task.ErrorDescription || 'Unknown error';
+            // Simplified pattern matching - you could make this more sophisticated
+            const pattern = this.simplifyErrorDescription(description);
+            patterns[pattern] = (patterns[pattern] || 0) + 1;
+        });
+
+        // Convert to array and sort by frequency
+        return Object.entries(patterns)
+            .map(([pattern, count]) => ({ pattern, count }))
+            .sort((a, b) => b.count - a.count)
+            .slice(0, 3); // Show top 3 patterns
+    }
+
+    simplifyErrorDescription(description) {
+        // This could be enhanced with more sophisticated pattern matching
+        return description
+            .replace(/[0-9]+/g, 'N') // Replace numbers with 'N'
+            .replace(/(eastus|westus|northeurope|etc)/gi, 'REGION') // Replace regions
+            .replace(/("[^"]+"|'[^']+')/g, 'VALUE') // Replace quoted values
+            .trim();
+    }    populateFailedTasks(taskErrors) {
         const failedTasksContainer = document.getElementById('failed-tasks-content');
         if (!failedTasksContainer) {
             console.warn('Failed tasks container not found');
@@ -981,7 +1063,14 @@ class JobDashboard {
         } else {
             console.warn('Unexpected taskErrors format:', taskErrors);
             failedTasksArr = [];
-        }
+        }        // Group errors by category
+        const errorsByCategory = this.groupErrorsByCategory(failedTasksArr);
+
+        // Update top error category module
+        this.populateTopErrorCategory(errorsByCategory);
+        
+        // Update error categories summary
+        this.populateAllErrorCategories(errorsByCategory);
 
         // Update failed tasks count badge
         const failedTasksCountBadge = document.getElementById('failed-tasks-count');
@@ -993,14 +1082,17 @@ class JobDashboard {
         const failedTasksHTML = failedTasksArr.map(task => `
             <div class="failed-task-item">
                 <div class="row align-items-center">
-                    <div class="col-md-3">
+                    <div class="col-md-2">
                         <span class="task-name">${task.TaskID || 'Unknown Task'}</span>
                     </div>
-                    <div class="col-md-3">
+                    <div class="col-md-2">
                         <span class="error-category badge bg-danger-subtle text-danger">${task.ErrorCategory || 'General Error'}</span>
                     </div>
-                    <div class="col-md-6">
+                    <div class="col-md-3">
                         <span class="error-description">${task.ErrorDescription || 'No error description available'}</span>
+                    </div>
+                    <div class="col-md-5">
+                        <span class="error-description">${task.ErrorDetail || 'No error details available'}</span>
                     </div>
                 </div>
             </div>
@@ -1008,42 +1100,6 @@ class JobDashboard {
 
         failedTasksContainer.innerHTML = failedTasksHTML;
     }
-
-    // generateMockFailedTasks(failedCount) {
-    //     // Generate mock failed tasks for demonstration when real data isn't available
-    //     const mockErrorCategories = ['Network', 'Timeout', 'Validation', 'Configuration', 'Dependency'];
-    //     const mockTaskNames = [
-    //         'Azure Resource Deployment',
-    //         'Container Registry Setup',
-    //         'Database Configuration',
-    //         'API Gateway Setup',
-    //         'Load Balancer Configuration',
-    //         'SSL Certificate Installation',
-    //         'DNS Configuration',
-    //         'Monitoring Setup'
-    //     ];
-    //     const mockErrorDescriptions = [
-    //         'Connection timeout while establishing connection to Azure Resource Manager',
-    //         'Invalid configuration parameters provided for the service setup',
-    //         'Required dependencies are missing or incompatible versions detected',
-    //         'Authentication failed due to expired or invalid credentials',
-    //         'Resource quota exceeded for the specified subscription tier',
-    //         'Network security group rules blocking required communication ports',
-    //         'Service endpoint configuration conflicts with existing setup',
-    //         'Validation failed for resource naming conventions'
-    //     ];
-
-    //     const failedTasks = [];
-    //     for (let i = 0; i < Math.min(failedCount, 8); i++) {
-    //         failedTasks.push({
-    //             taskName: mockTaskNames[i % mockTaskNames.length],
-    //             errorCategory: mockErrorCategories[i % mockErrorCategories.length],
-    //             errorDescription: mockErrorDescriptions[i % mockErrorDescriptions.length]
-    //         });
-    //     }
-
-    //     return failedTasks;
-    // }
 
     calculateSuccessTasks(job) {
         // Use backend field if available, otherwise calculate
@@ -1127,6 +1183,89 @@ class JobDashboard {
     }
 
     async deleteJob(jobId) {
+    }
+
+    groupErrorsByCategory(failedTasks) {
+        const categories = {};
+        failedTasks.forEach(task => {
+            const category = task.ErrorCategory || 'Unknown';
+            if (!categories[category]) {
+                categories[category] = {
+                    count: 0,
+                    tasks: []
+                };
+            }
+            categories[category].count++;
+            categories[category].tasks.push(task);
+        });
+        
+        // Sort categories by count (descending)
+        return Object.entries(categories)
+            .sort(([, a], [, b]) => b.count - a.count)
+            .reduce((acc, [key, value]) => {
+                acc[key] = value;
+                return acc;
+            }, {});
+    }
+
+    populateAllErrorCategories(errorsByCategory) {
+        const errorCategoriesContainer = document.getElementById('error-categories-container');
+        if (!errorCategoriesContainer) {
+            console.warn('Error categories container not found');
+            return;
+        }
+
+        const totalErrors = Object.values(errorsByCategory)
+            .reduce((sum, data) => sum + data.count, 0);
+
+        const categoriesHTML = Object.entries(errorsByCategory).map(([category, data]) => {
+            const percentage = ((data.count / totalErrors) * 100).toFixed(1);
+            const patterns = this.analyzeErrorPatterns(data.tasks);
+            const patternsHTML = patterns.map(pattern => `
+                <div class="error-pattern-item">
+                    <div class="d-flex justify-content-between">
+                        <span>${pattern.pattern}</span>
+                        <span class="text-muted">${pattern.count}x</span>
+                    </div>
+                </div>
+            `).join('');
+
+            return `
+                <div class="col-md-6 mb-4">
+                    <div class="error-category-card">
+                        <div class="error-category-stat p-3">
+                            <div class="d-flex align-items-center mb-3">
+                                <div class="error-category-icon me-3">
+                                    <i class="bi bi-exclamation-triangle"></i>
+                                </div>
+                                <div>
+                                    <h4 class="mb-1">${category}</h4>
+                                    <div class="error-count text-muted">
+                                        ${data.count} occurrence${data.count !== 1 ? 's' : ''} (${percentage}%)
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="error-patterns">
+                                <h6 class="mb-2">Common Patterns:</h6>
+                                ${patternsHTML}
+                            </div>
+                            <div class="error-trend mt-3">
+                                <div class="progress" style="height: 6px;">
+                                    <div class="progress-bar bg-danger" role="progressbar" 
+                                        style="width: ${percentage}%" 
+                                        aria-valuenow="${percentage}" 
+                                        aria-valuemin="0" 
+                                        aria-valuemax="100">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }).join('');
+
+        errorCategoriesContainer.innerHTML = categoriesHTML;
     }
 }
 
