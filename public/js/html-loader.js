@@ -34,7 +34,8 @@ document.addEventListener('DOMContentLoaded', async () => {
             loadTemplate('jobsView', '/partials/jobs-view.html'),
             loadTemplate('jobDetail', '/partials/job-detail.html'),
             loadTemplate('modals', '/partials/modals.html'),
-            loadTemplate('reposView', '/partials/repos-view.html')
+            loadTemplate('reposView', '/partials/repos-view.html'),
+            loadTemplate('repoDetail', '/partials/repo-detail.html')
         ]);
         
         // Load templates into the page
@@ -42,6 +43,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         const jobDetailContent = document.getElementById('job-detail-content');
         const modalsContent = document.getElementById('modals-content');
         const reposContent = document.getElementById('repos-content');
+        const repoDetailContent = document.getElementById('repo-detail-view');
         
         if (jobsContent && HTMLTemplates.jobsView) {
             jobsContent.innerHTML = HTMLTemplates.jobsView;
@@ -69,6 +71,13 @@ document.addEventListener('DOMContentLoaded', async () => {
             console.log('✅ Repos view template loaded');
         } else {
             console.error('❌ repos-content element not found or template not loaded');
+        }
+
+        if (repoDetailContent && HTMLTemplates.repoDetail) {
+            repoDetailContent.innerHTML = HTMLTemplates.repoDetail;
+            console.log('✅ Repo detail template loaded');
+        } else {
+            console.error('❌ repo-detail-view element not found or template not loaded');
         }
         
         // Initialize dashboard after templates are loaded

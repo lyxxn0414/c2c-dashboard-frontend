@@ -334,19 +334,6 @@ class JobDashboard {
                         ${job.SuccessRate}
                     </span>
                 </td>
-                <td>
-                    <div class="btn-group btn-group-sm">
-                        <button class="btn btn-outline-primary btn-sm" onclick="jobDashboard.viewJob('${job.TestJobID}')" title="View Details">
-                            <i class="bi bi-eye"></i>
-                        </button>
-                        <button class="btn btn-outline-secondary btn-sm" onclick="jobDashboard.editJob('${job.TestJobID}')" title="Edit">
-                            <i class="bi bi-pencil"></i>
-                        </button>
-                        <button class="btn btn-outline-danger btn-sm" onclick="jobDashboard.deleteJob('${job.TestJobID}')" title="Delete">
-                            <i class="bi bi-trash"></i>
-                        </button>
-                    </div>
-                </td>
             `;
             tbody.appendChild(row);
         });
@@ -730,6 +717,7 @@ class JobDashboard {
         // Use the routing system to navigate to job detail
         console.log('Viewing job:', jobId);
         this.updateURL(`/job-detail/jobID=${jobId}`);
+        this.showJobDetailLoadingState();
         await this.navigateToJobDetail(jobId);
     }
 

@@ -16,3 +16,82 @@
 .sortable:hover i {
     opacity: 1;
 }
+
+/* Repo name links styling */
+.repo-name-link {
+    color: #007bff;
+    text-decoration: none;
+    font-weight: 500;
+    transition: all 0.2s ease;
+    position: relative;
+}
+
+.repo-name-link:hover {
+    color: #0056b3;
+    text-decoration: underline;
+}
+
+.repo-name-link:focus {
+    outline: 2px solid #007bff;
+    outline-offset: 2px;
+    border-radius: 2px;
+}
+
+/* Language tags styling */
+.language-tag {
+    display: inline-block;
+    background-color: #007bff;
+    color: white;
+    padding: 2px 8px;
+    border-radius: 12px;
+    font-size: 0.75rem;
+    font-weight: 500;
+    margin-right: 4px;
+    margin-bottom: 2px;
+}
+
+/* Success rate badges */
+.success-rate-badge {
+    font-size: 0.875rem;
+    padding: 4px 8px;
+    border-radius: 12px;
+    font-weight: 500;
+}
+
+/* App pattern styling */
+.app-pattern {
+    font-family: 'Courier New', monospace;
+    background-color: #f8f9fa;
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-size: 0.875rem;
+    color: #495057;
+}
+
+/* Animation for row transitions */
+.repo-row {
+    transition: all 0.3s ease;
+}
+
+.repo-row:hover {
+    transform: translateX(2px);
+}
+
+/* Accessibility improvements */
+.repo-name-link:focus-visible {
+    outline: 2px solid #007bff;
+    outline-offset: 2px;
+    border-radius: 2px;
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+    .language-tag {
+        font-size: 0.7rem;
+        padding: 1px 6px;
+    }
+    
+    .app-pattern {
+        font-size: 0.8rem;
+    }
+}

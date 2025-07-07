@@ -133,7 +133,11 @@ function displayRepos(repos) {
         const tr = document.createElement('tr');
         
         tr.innerHTML = `
-            <td>${repo.repoName}</td>
+            <td>
+                <a href="#" class="repo-name-link" data-repo-name="${repo.repoName}">
+                    ${repo.repoName}
+                </a>
+            </td>
             <td>${createLanguageTags(repo.languages)}</td>
             <td>${repo.repoType}</td>
             <td>${repo.appPattern}</td>
@@ -141,6 +145,15 @@ function displayRepos(repos) {
         `;
 
         tbody.appendChild(tr);
+    });
+
+    // Bind repo name click events
+    document.querySelectorAll('.repo-name-link').forEach(link => {
+        link.addEventListener('click', (e) => {
+            e.preventDefault();
+            const repoName = e.target.dataset.repoName;
+            navigateToRepoDetail(repoName);
+        });
     });
 }
 
@@ -153,12 +166,52 @@ function createLanguageTags(languages) {
 }
 
 function createSuccessRateBadge(rate) {
-    const percentage = (rate * 100).toFixed(1);
+    // Handle empty or zero rates
+    if (!rate || rate === 0) {
+        return '<span class="badge bg-secondary">N/A</span>';
+    }
+    
+    let percentage;
+    if (rate <= 1) {
+        // Rate is already a decimal (0-1), convert to percentage
+        percentage = (rate * 100).toFixed(1);
+    } else {
+        // Rate is already a percentage (>1), use as is
+        percentage = rate.toFixed(1);
+    }
+    
+    const numericRate = parseFloat(percentage) / 100;
     let badgeClass = 'bg-danger';
-    if (rate >= 0.8) badgeClass = 'bg-success';
-    else if (rate >= 0.6) badgeClass = 'bg-warning';
+    if (numericRate >= 0.8) badgeClass = 'bg-success';
+    else if (numericRate >= 0.6) badgeClass = 'bg-warning';
     
     return `<span class="badge ${badgeClass}">${percentage}%</span>`;
+}
+
+function navigateToRepoDetail(repoName) {
+    console.log('Navigating to repo detail:', repoName);
+    
+    // Use router navigation if available
+    if (window.navigateToRepoDetail) {
+        window.navigateToRepoDetail(repoName);
+    } else if (window.router) {
+        window.router.navigate(`/repoName/${encodeURIComponent(repoName)}`);
+    } else {
+        // Fallback: update URL manually and show detail view
+        const newPath = `/repoName/${encodeURIComponent(repoName)}`;
+        history.pushState({ repoName }, '', newPath);
+        showRepoDetailView(repoName);
+    }
+}
+
+function showRepoDetailView(repoName) {
+    // Use the global function if available
+    if (typeof showRepoDetailPage === 'function') {
+        showRepoDetailPage(repoName);
+    } else {
+        console.error('showRepoDetailPage function not found');
+        alert(`Repo detail view for: ${repoName}\n\nThis would navigate to /repoName/${repoName}`);
+    }
 }
 
 // Initialize when called by router (not automatically)

@@ -26,6 +26,12 @@ window.navigateToJobDetail = function(jobId) {
     }
 };
 
+window.navigateToRepoDetail = function(repoName) {
+    if (window.router) {
+        window.router.navigate(`/repoName/${repoName}`);
+    }
+};
+
 // Test navigation function
 window.testNavigation = function() {
     console.log('Testing navigation...');
@@ -68,8 +74,31 @@ class Router {
 
     handleRoute() {
         const path = window.location.pathname;
-        const route = this.routes[path] || this.routes['/'];
+        console.log('Handling route:', path);
         
+        // Handle dynamic routes
+        if (path.startsWith('/repoName/')) {
+            const repoName = path.split('/repoName/')[1];
+            if (repoName) {
+                this.currentRoute = path;
+                this.showRepoDetailPage(repoName);
+                this.updateNavigation();
+                return;
+            }
+        }
+        
+        if (path.startsWith('/job-detail/')) {
+            const jobId = path.split('/job-detail/')[1];
+            if (jobId) {
+                this.currentRoute = path;
+                this.showJobDetailPage(jobId);
+                this.updateNavigation();
+                return;
+            }
+        }
+        
+        // Handle static routes
+        const route = this.routes[path] || this.routes['/'];
         this.currentRoute = path;
         this.showPage(route);
         this.updateNavigation();
@@ -85,6 +114,12 @@ class Router {
                 console.log('Hiding:', pageId);
             }
         });
+
+        // Hide repo detail view if it exists
+        const repoDetailView = document.getElementById('repo-detail-view');
+        if (repoDetailView) {
+            repoDetailView.classList.add('d-none');
+        }
 
         // Show the requested page
         const targetPage = document.getElementById(`${pageName}-content`);
@@ -108,6 +143,52 @@ class Router {
             }
         } else {
             console.error('Target page not found:', `${pageName}-content`);
+        }
+    }
+
+    showRepoDetailPage(repoName) {
+        console.log('Router: Showing repo detail page for:', repoName);
+        
+        // Hide all standard pages
+        const pages = ['jobs-content', 'repos-content', 'job-detail-content'];
+        pages.forEach(pageId => {
+            const element = document.getElementById(pageId);
+            if (element) {
+                element.style.display = 'none';
+            }
+        });
+
+        // Show repo detail page if function exists
+        if (typeof showRepoDetailPage === 'function') {
+            showRepoDetailPage(repoName);
+        } else {
+            console.error('showRepoDetailPage function not found');
+        }
+    }
+
+    showJobDetailPage(jobId) {
+        console.log('Router: Showing job detail page for:', jobId);
+        
+        // Hide all standard pages
+        const pages = ['jobs-content', 'repos-content'];
+        pages.forEach(pageId => {
+            const element = document.getElementById(pageId);
+            if (element) {
+                element.style.display = 'none';
+            }
+        });
+
+        // Hide repo detail view if it exists
+        const repoDetailView = document.getElementById('repo-detail-view');
+        if (repoDetailView) {
+            repoDetailView.classList.add('d-none');
+        }
+
+        // Show job detail page if function exists
+        if (typeof showJobDetail === 'function') {
+            showJobDetail(jobId);
+        } else {
+            console.error('showJobDetail function not found');
         }
     }
 

@@ -1,0 +1,335 @@
+/* Repo Detail Page Styles */
+
+.repo-header-card {
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(10px);
+    border: 1px solid #e9ecef;
+    border-radius: 12px;
+    padding: 2rem;
+    margin-bottom: 2rem;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+}
+
+.repo-info-item {
+    margin-bottom: 1rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.repo-info-label {
+    font-weight: 600;
+    color: #495057;
+    min-width: 140px;
+    margin-bottom: 0;
+}
+
+.repo-info-item span,
+.repo-info-item a {
+    color: #212529;
+    font-weight: 500;
+}
+
+/* Success Rate Section */
+.success-rate-section {
+    background: rgba(255, 255, 255, 0.95);
+    border-radius: 12px;
+    padding: 2rem;
+    margin-bottom: 2rem;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+    text-align: left;
+}
+
+.success-rate-title {
+    color: #28a745;
+    font-size: 1.5rem;
+    font-weight: 600;
+    margin-bottom: 1rem;
+}
+
+.success-rate-display {
+    display: flex;
+    align-items: baseline;
+    gap: 1rem;
+}
+
+.success-rate-percentage {
+    font-size: 3.5rem;
+    font-weight: 700;
+    color: #28a745;
+    line-height: 1;
+}
+
+.success-rate-fraction {
+    font-size: 1.5rem;
+    color: #28a745;
+    font-weight: 500;
+}
+
+/* Related Tasks Section */
+.related-tasks-section {
+    background: rgba(255, 255, 255, 0.95);
+    border-radius: 12px;
+    padding: 2rem;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+}
+
+.filter-btn {
+    font-size: 0.875rem;
+    padding: 0.5rem 1rem;
+    border-color: #ced4da;
+}
+
+.filter-btn:hover {
+    background-color: #f8f9fa;
+    border-color: #adb5bd;
+}
+
+/* Task Table Styling */
+.related-tasks-section .table {
+    margin-bottom: 0;
+    background-color: white;
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+.related-tasks-section .table th {
+    background-color: #f8f9fa;
+    border-bottom: 2px solid #dee2e6;
+    font-weight: 600;
+    color: #495057;
+    padding: 1rem 0.75rem;
+    font-size: 0.9rem;
+}
+
+.related-tasks-section .table td {
+    padding: 0.875rem 0.75rem;
+    vertical-align: middle;
+    font-size: 0.9rem;
+}
+
+.related-tasks-section .table tbody tr:hover {
+    background-color: rgba(0, 123, 255, 0.05);
+}
+
+/* Task ID links */
+.task-id-link {
+    color: #007bff;
+    text-decoration: none;
+    font-weight: 500;
+}
+
+.task-id-link:hover {
+    text-decoration: underline;
+    color: #0056b3;
+}
+
+/* Deploy Result Badges */
+.deploy-result-badge {
+    font-size: 0.75rem;
+    padding: 0.25rem 0.5rem;
+    border-radius: 12px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.deploy-result-success {
+    background-color: #d4edda;
+    color: #155724;
+    border: 1px solid #c3e6cb;
+}
+
+.deploy-result-failed {
+    background-color: #f8d7da;
+    color: #721c24;
+    border: 1px solid #f1aeb5;
+}
+
+.deploy-result-pending {
+    background-color: #fff3cd;
+    color: #856404;
+    border: 1px solid #ffeaa7;
+}
+
+/* Task Type Styling */
+.task-type {
+    font-family: 'Courier New', monospace;
+    background-color: #f8f9fa;
+    padding: 0.25rem 0.5rem;
+    border-radius: 4px;
+    font-size: 0.8rem;
+    color: #495057;
+    border: 1px solid #e9ecef;
+}
+
+/* Iterations Styling */
+.iterations-count {
+    font-weight: 600;
+    color: #6c757d;
+    text-align: center;
+}
+
+/* Back Button */
+#back-to-repos-btn {
+    transition: all 0.3s ease;
+}
+
+#back-to-repos-btn:hover {
+    background-color: #6c757d;
+    border-color: #6c757d;
+    color: white;
+    transform: translateX(-2px);
+}
+
+/* Loading State */
+.tasks-loading {
+    text-align: center;
+    padding: 2rem;
+}
+
+.tasks-loading .spinner-border {
+    color: #007bff;
+}
+
+/* Empty State */
+.tasks-empty-state {
+    text-align: center;
+    padding: 3rem 1rem;
+    color: #6c757d;
+}
+
+.tasks-empty-state i {
+    font-size: 3rem;
+    margin-bottom: 1rem;
+    color: #dee2e6;
+}
+
+/* View Transitions */
+.repo-detail-transition {
+    opacity: 0;
+    transform: translateY(20px);
+    transition: all 0.4s ease;
+}
+
+.repo-detail-transition.active {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .repo-header-card,
+    .success-rate-section,
+    .related-tasks-section {
+        padding: 1.5rem;
+        margin-bottom: 1.5rem;
+    }
+    
+    .repo-info-item {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.25rem;
+    }
+    
+    .repo-info-label {
+        min-width: auto;
+        font-size: 0.875rem;
+    }
+    
+    .success-rate-percentage {
+        font-size: 2.5rem;
+    }
+    
+    .success-rate-fraction {
+        font-size: 1.25rem;
+    }
+    
+    .filter-btn {
+        font-size: 0.8rem;
+        padding: 0.4rem 0.8rem;
+    }
+    
+    .related-tasks-section .table th,
+    .related-tasks-section .table td {
+        padding: 0.5rem 0.4rem;
+        font-size: 0.8rem;
+    }
+    
+    /* Stack filter buttons on mobile */
+    .related-tasks-section .d-flex.gap-2 {
+        flex-direction: column;
+        gap: 0.5rem !important;
+    }
+    
+    .filter-btn {
+        width: 100%;
+    }
+}
+
+@media (max-width: 576px) {
+    .repo-header-card h1 {
+        font-size: 1.5rem;
+    }
+    
+    .success-rate-title {
+        font-size: 1.25rem;
+    }
+    
+    .success-rate-percentage {
+        font-size: 2rem;
+    }
+    
+    .success-rate-fraction {
+        font-size: 1rem;
+    }
+    
+    /* Hide some columns on very small screens */
+    .related-tasks-section .table th:nth-child(3),
+    .related-tasks-section .table td:nth-child(3),
+    .related-tasks-section .table th:nth-child(7),
+    .related-tasks-section .table td:nth-child(7) {
+        display: none;
+    }
+}
+
+/* Animation */
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(30px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.fade-in-up {
+    animation: fadeInUp 0.5s ease-out;
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+    .repo-header-card,
+    .success-rate-section,
+    .related-tasks-section {
+        border: 2px solid #000;
+        background: #fff;
+    }
+    
+    .task-id-link {
+        color: #0000EE;
+        text-decoration: underline;
+    }
+}
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+    .repo-detail-transition,
+    #back-to-repos-btn,
+    .fade-in-up {
+        transition: none;
+        animation: none;
+    }
+}

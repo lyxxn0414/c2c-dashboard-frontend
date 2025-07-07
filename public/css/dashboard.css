@@ -122,6 +122,19 @@ main {
     text-decoration: underline;
 }
 
+/* Repo name links */
+.repo-name-link {
+    color: #007bff;
+    text-decoration: none;
+    font-weight: 500;
+    transition: all 0.2s ease;
+}
+
+.repo-name-link:hover {
+    text-decoration: underline;
+    color: #0056b3;
+}
+
 /* Status badges */
 .status-badge {
     font-size: 0.875rem;
