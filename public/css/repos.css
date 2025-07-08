@@ -95,3 +95,56 @@
         font-size: 0.8rem;
     }
 }
+
+/* Dropdown functionality improvements */
+.dropdown-menu {
+    z-index: 1050;
+    min-width: 200px;
+}
+
+.dropdown-menu.show {
+    display: block !important;
+}
+
+/* Fix dropdown positioning if needed */
+.dropdown {
+    position: relative;
+}
+
+/* Style dropdown items */
+.dropdown-item {
+    cursor: pointer;
+    transition: background-color 0.15s ease-in-out;
+}
+
+.dropdown-item:hover {
+    background-color: #f8f9fa;
+    color: #212529;
+}
+
+.dropdown-item:active {
+    background-color: #007bff;
+    color: white;
+}
+
+/* Filter button styling */
+.btn-outline-secondary.dropdown-toggle {
+    border-color: #6c757d;
+    color: #6c757d;
+}
+
+.btn-outline-secondary.dropdown-toggle:hover,
+.btn-outline-secondary.dropdown-toggle:focus {
+    background-color: #6c757d;
+    border-color: #6c757d;
+    color: white;
+}
+
+/* Filter badges styling */
+.badge.bg-primary {
+    background-color: #007bff !important;
+}
+
+.badge.bg-secondary {
+    background-color: #6c757d !important;
+}

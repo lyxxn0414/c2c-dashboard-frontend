@@ -168,6 +168,66 @@
     word-wrap: break-word;
 }
 
+/* Copilot response content styling */
+.copilot-response-content {
+    max-width: 100%;
+}
+
+.copilot-response-content .response-text {
+    background-color: #f8f9fa;
+    border: 1px solid #e9ecef;
+    border-radius: 4px;
+    padding: 0.75rem;
+    margin: 0;
+    font-size: 0.8rem;
+    line-height: 1.4;
+    white-space: pre-wrap;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+    max-height: none;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+.copilot-response-content .response-preview .response-text {
+    max-height: 120px;
+    overflow: hidden;
+    position: relative;
+}
+
+.copilot-response-content .response-preview .response-text::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 20px;
+    background: linear-gradient(transparent, #f8f9fa);
+}
+
+.copilot-response-content .response-full .response-text {
+    max-height: 400px;
+    overflow-y: auto;
+}
+
+.show-details-btn,
+.hide-details-btn {
+    font-size: 0.75rem;
+    padding: 0.25rem 0.5rem;
+    line-height: 1.2;
+    transition: all 0.2s ease;
+}
+
+.show-details-btn:hover,
+.hide-details-btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.show-details-btn i,
+.hide-details-btn i {
+    font-size: 0.7rem;
+}
+
 /* Truncated text styling */
 .truncated-text {
     cursor: help;

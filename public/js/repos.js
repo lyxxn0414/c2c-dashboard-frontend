@@ -1,5 +1,6 @@
 // Repo view specific functionality
 let reposData = [];
+let dropdownsInitialized = false;
 let currentFilters = {
     repoName: '',
     repoType: 'all',
@@ -7,8 +8,19 @@ let currentFilters = {
 };
 
 function initRepoView() {
-    loadRepos();
+    console.log('Initializing repo view...');
+    // Reset initialization flag in case of re-initialization
+    dropdownsInitialized = false;
     setupRepoEventListeners();
+    loadRepos();
+}
+
+// Function to reset dropdowns if needed
+function resetDropdowns() {
+    console.log('Resetting dropdowns...');
+    dropdownsInitialized = false;
+    cleanupDropdownListeners();
+    document._outsideClickHandlerAdded = false;
 }
 
 function setupRepoEventListeners() {
@@ -18,24 +30,201 @@ function setupRepoEventListeners() {
         filterRepos();
     });
 
-    // Repo type filter dropdown
-    document.addEventListener('click', (e) => {
-        if (e.target.closest('#repo-type-dropdown .dropdown-item')) {
-            e.preventDefault();
-            const filter = e.target.getAttribute('data-filter');
-            currentFilters.repoType = filter;
-            updateDropdownButton('repo-type-filter', 'RepoType', filter);
-            filterRepos();
+    // Wait for DOM to be ready and ensure Bootstrap is available
+    setTimeout(() => {
+        // Only initialize dropdowns once
+        if (!dropdownsInitialized) {
+            // Repo type filter dropdown
+            document.addEventListener('click', (e) => {
+                if (e.target.closest('#repo-type-dropdown .dropdown-item')) {
+                    e.preventDefault();
+                    const filter = e.target.getAttribute('data-filter');
+                    currentFilters.repoType = filter;
+                    updateDropdownButton('repo-type-filter', 'RepoType', filter);
+                    filterRepos();
+                    
+                    // Close the dropdown (Bootstrap or manual)
+                    closeDropdown('repo-type-filter', 'repo-type-dropdown');
+                }
+                
+                if (e.target.closest('#language-dropdown .dropdown-item')) {
+                    e.preventDefault();
+                    const filter = e.target.getAttribute('data-filter');
+                    currentFilters.language = filter;
+                    updateDropdownButton('language-filter', 'Language', filter);
+                    filterRepos();
+                    
+                    // Close the dropdown (Bootstrap or manual)
+                    closeDropdown('language-filter', 'language-dropdown');
+                }
+            });
+
+            // Initialize Bootstrap dropdowns explicitly
+            initializeBootstrapDropdowns();
+            dropdownsInitialized = true;
+            console.log('Dropdown event listeners and initialization completed');
+        } else {
+            console.log('Dropdowns already initialized, skipping...');
         }
+    }, 100);
+}
+
+function closeDropdown(buttonId, dropdownId) {
+    try {
+        if (typeof bootstrap !== 'undefined') {
+            // Use Bootstrap method
+            const dropdown = document.getElementById(buttonId);
+            const bsDropdown = bootstrap.Dropdown.getInstance(dropdown);
+            if (bsDropdown) {
+                bsDropdown.hide();
+            }
+        } else {
+            // Use manual method
+            const dropdownMenu = document.getElementById(dropdownId);
+            if (dropdownMenu) {
+                dropdownMenu.classList.remove('show');
+            }
+        }
+    } catch (error) {
+        console.error('Error closing dropdown:', error);
+        // Fallback: just remove show class
+        const dropdownMenu = document.getElementById(dropdownId);
+        if (dropdownMenu) {
+            dropdownMenu.classList.remove('show');
+        }
+    }
+}
+
+function initializeBootstrapDropdowns() {
+    try {
+        console.log('Initializing Bootstrap dropdowns...');
+        console.log('Bootstrap available:', typeof bootstrap !== 'undefined');
         
-        if (e.target.closest('#language-dropdown .dropdown-item')) {
-            e.preventDefault();
-            const filter = e.target.getAttribute('data-filter');
-            currentFilters.language = filter;
-            updateDropdownButton('language-filter', 'Language', filter);
-            filterRepos();
+        // Clean up any existing manual event listeners first
+        cleanupDropdownListeners();
+        
+        // Initialize repo type dropdown
+        const repoTypeButton = document.getElementById('repo-type-filter');
+        if (repoTypeButton) {
+            if (typeof bootstrap !== 'undefined') {
+                // Dispose of any existing Bootstrap dropdown instance
+                const existingInstance = bootstrap.Dropdown.getInstance(repoTypeButton);
+                if (existingInstance) {
+                    existingInstance.dispose();
+                }
+                new bootstrap.Dropdown(repoTypeButton);
+                console.log('Repo type dropdown initialized with Bootstrap');
+            } else {
+                // Fallback: manual dropdown toggle
+                setupManualDropdown(repoTypeButton, 'repo-type-dropdown');
+                console.log('Repo type dropdown initialized with manual fallback');
+            }
         }
-    });
+
+        // Initialize language dropdown
+        const languageButton = document.getElementById('language-filter');
+        if (languageButton) {
+            if (typeof bootstrap !== 'undefined') {
+                // Dispose of any existing Bootstrap dropdown instance
+                const existingInstance = bootstrap.Dropdown.getInstance(languageButton);
+                if (existingInstance) {
+                    existingInstance.dispose();
+                }
+                new bootstrap.Dropdown(languageButton);
+                console.log('Language dropdown initialized with Bootstrap');
+            } else {
+                // Fallback: manual dropdown toggle
+                setupManualDropdown(languageButton, 'language-dropdown');
+                console.log('Language dropdown initialized with manual fallback');
+            }
+        }
+    } catch (error) {
+        console.error('Error initializing dropdowns:', error);
+        
+        // Fallback initialization
+        console.log('Using fallback dropdown initialization...');
+        cleanupDropdownListeners();
+        const repoTypeButton = document.getElementById('repo-type-filter');
+        const languageButton = document.getElementById('language-filter');
+        
+        if (repoTypeButton) setupManualDropdown(repoTypeButton, 'repo-type-dropdown');
+        if (languageButton) setupManualDropdown(languageButton, 'language-dropdown');
+    }
+}
+
+function cleanupDropdownListeners() {
+    // Remove any existing manual click listeners by cloning and replacing elements
+    const repoTypeButton = document.getElementById('repo-type-filter');
+    const languageButton = document.getElementById('language-filter');
+    
+    if (repoTypeButton && repoTypeButton._manualListenerAdded) {
+        const newRepoTypeButton = repoTypeButton.cloneNode(true);
+        repoTypeButton.parentNode.replaceChild(newRepoTypeButton, repoTypeButton);
+    }
+    
+    if (languageButton && languageButton._manualListenerAdded) {
+        const newLanguageButton = languageButton.cloneNode(true);
+        languageButton.parentNode.replaceChild(newLanguageButton, languageButton);
+    }
+}
+
+function setupManualDropdown(button, dropdownId) {
+    const dropdown = document.getElementById(dropdownId);
+    if (!button || !dropdown) return;
+    
+    // Mark this button as having manual listeners to avoid duplicates
+    if (button._manualListenerAdded) {
+        console.log(`Manual listener already added for ${dropdownId}, skipping...`);
+        return;
+    }
+    
+    // Add click handler to button
+    const clickHandler = (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        
+        console.log(`Manual dropdown button clicked: ${dropdownId}`);
+        
+        // Close other dropdowns first
+        document.querySelectorAll('.dropdown-menu').forEach(menu => {
+            if (menu.id !== dropdownId) {
+                menu.classList.remove('show');
+            }
+        });
+        
+        // Toggle current dropdown
+        const wasVisible = dropdown.classList.contains('show');
+        dropdown.classList.toggle('show');
+        console.log(`Manual dropdown ${dropdownId} toggled: ${!wasVisible} (was: ${wasVisible})`);
+    };
+    
+    button.addEventListener('click', clickHandler);
+    button._manualListenerAdded = true;
+    button._clickHandler = clickHandler; // Store reference for potential cleanup
+    
+    // Close dropdown when clicking outside (only add this once)
+    if (!document._outsideClickHandlerAdded) {
+        document.addEventListener('click', (e) => {
+            // Check if click is outside any dropdown
+            const allDropdownButtons = document.querySelectorAll('[data-bs-toggle="dropdown"]');
+            const allDropdownMenus = document.querySelectorAll('.dropdown-menu');
+            
+            let clickedInsideDropdown = false;
+            allDropdownButtons.forEach(btn => {
+                if (btn.contains(e.target)) clickedInsideDropdown = true;
+            });
+            allDropdownMenus.forEach(menu => {
+                if (menu.contains(e.target)) clickedInsideDropdown = true;
+            });
+            
+            if (!clickedInsideDropdown) {
+                allDropdownMenus.forEach(menu => {
+                    menu.classList.remove('show');
+                });
+            }
+        });
+        document._outsideClickHandlerAdded = true;
+    }
 }
 
 function updateDropdownButton(buttonId, label, value) {
@@ -70,6 +259,8 @@ function loadRepoFilters() {
         li.innerHTML = `<a class="dropdown-item" href="#" data-filter="${lang}">${lang}</a>`;
         languageDropdown.appendChild(li);
     });
+
+    console.log('Repo filters loaded - RepoTypes:', repoTypes.length, 'Languages:', languages.length);
 }
 
 function filterRepos() {
@@ -85,6 +276,7 @@ function filterRepos() {
 
 async function loadRepos() {
     try {
+        console.log('Loading repos...');
         const repoDetailView = document.getElementById('repo-detail-view');
         if (repoDetailView) {
             repoDetailView.classList.add('d-none');
@@ -96,6 +288,7 @@ async function loadRepos() {
             throw new Error(`HTTP error! status: ${response.status}`);
         }
         reposData = await response.json();
+        console.log('Repos data loaded:', reposData.length, 'repos');
         displayRepos(reposData);
         loadRepoFilters();
         

@@ -18,7 +18,7 @@
                     <span class="input-group-text">
                         <i class="bi bi-search"></i>
                     </span>
-                    <input type="text" class="form-control" id="filter-input" placeholder="Filter for any fields...">
+                    <input type="text" class="form-control" id="filter-input" placeholder="Filter by ID, Creator, Date, Rate, etc...">
                 </div>
                 
                 <div class="dropdown">
@@ -27,10 +27,7 @@
                     </button>
                     <ul class="dropdown-menu">
                         <li><a class="dropdown-item" href="#" data-filter="all">All</a></li>
-                        <li><a class="dropdown-item" href="#" data-filter="alias">alias</a></li>
-                        <li><a class="dropdown-item" href="#" data-filter="user2">user2</a></li>
-                        <li><a class="dropdown-item" href="#" data-filter="user3">user3</a></li>
-                        <li><a class="dropdown-item" href="#" data-filter="admin">admin</a></li>
+                        <!-- Dynamic options will be populated by JavaScript -->
                     </ul>
                 </div>
 
@@ -40,6 +37,8 @@
                     </button>
                     <ul class="dropdown-menu">
                         <li><a class="dropdown-item" href="#" data-filter="all">All</a></li>
+                        <li><a class="dropdown-item" href="#" data-filter="true">true</a></li>
+                        <li><a class="dropdown-item" href="#" data-filter="false">false</a></li>
                     </ul>
                 </div>
 
@@ -49,6 +48,8 @@
                     </button>
                     <ul class="dropdown-menu">
                         <li><a class="dropdown-item" href="#" data-filter="all">All</a></li>
+                        <li><a class="dropdown-item" href="#" data-filter="true">true</a></li>
+                        <li><a class="dropdown-item" href="#" data-filter="false">false</a></li>
                     </ul>
                 </div>
             </div>

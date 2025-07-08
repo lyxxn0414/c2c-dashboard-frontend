@@ -77,7 +77,6 @@ class TaskDetail {
         this.setElementText('task-detail-id', taskData.taskId || '123456');
         this.setElementText('task-detail-creation-time', this.formatDateTime(taskData.creationTime) || '2025-06-23 14:57');
         this.setElementText('task-detail-repo-name', taskData.repoName || this.currentRepoName || '-');
-        this.setElementText('task-detail-description', taskData.description || 'Task details loading...');
 
         // Set job link
         const jobLink = document.getElementById('task-detail-job-link');
@@ -149,7 +148,7 @@ class TaskDetail {
             return;
         }
 
-        copilotResponses.forEach(response => {
+        copilotResponses.forEach((response, index) => {
             const row = tableBody.insertRow();
             row.insertCell().textContent = this.formatDateTime(response.time) || '-';
             
@@ -168,19 +167,87 @@ class TaskDetail {
             
             row.insertCell().textContent = response.toolCall || '-';
             
-            // Copilot response cell with truncation
+            // Copilot response cell with expandable content
             const responseCell = row.insertCell();
             const responseText = response.copilotResponse || '-';
-            if (responseText.length > 200) {
-                responseCell.innerHTML = `
-                    <span class="truncated-text" title="${this.escapeHtml(responseText)}">
-                        ${this.escapeHtml(responseText.substring(0, 200))}...
-                    </span>
-                `;
+            
+            if (responseText !== '-') {
+                // Convert \\n to actual line breaks and clean up the text
+                const cleanedResponseText = responseText
+                    .replace(/\\n/g, '\n')
+                    .replace(/\\"/g, '"')
+                    .trim();
+                
+                // Create expandable content for long responses
+                if (cleanedResponseText.length > 200) {
+                    const truncatedText = cleanedResponseText.substring(0, 200);
+                    const responseId = `response-${index}`;
+                    
+                    responseCell.innerHTML = `
+                        <div class="copilot-response-content">
+                            <div class="response-preview" id="${responseId}-preview">
+                                <pre class="response-text">${this.escapeHtml(truncatedText)}...</pre>
+                                <button class="btn btn-sm btn-outline-primary mt-2 show-details-btn" 
+                                        data-target="${responseId}" 
+                                        data-expanded="false">
+                                    <i class="bi bi-chevron-down me-1"></i>Show Details
+                                </button>
+                            </div>
+                            <div class="response-full d-none" id="${responseId}-full">
+                                <pre class="response-text">${this.escapeHtml(cleanedResponseText)}</pre>
+                                <button class="btn btn-sm btn-outline-secondary mt-2 hide-details-btn" 
+                                        data-target="${responseId}" 
+                                        data-expanded="true">
+                                    <i class="bi bi-chevron-up me-1"></i>Hide Details
+                                </button>
+                            </div>
+                        </div>
+                    `;
+                } else {
+                    // For shorter responses, just display with line breaks
+                    responseCell.innerHTML = `
+                        <div class="copilot-response-content">
+                            <pre class="response-text">${this.escapeHtml(cleanedResponseText)}</pre>
+                        </div>
+                    `;
+                }
             } else {
                 responseCell.textContent = responseText;
             }
         });
+
+        // Add event listeners for show/hide details buttons
+        this.bindResponseToggleEvents();
+    }
+
+    // Bind event listeners for response toggle buttons
+    bindResponseToggleEvents() {
+        // Remove existing listeners to prevent duplicates
+        document.querySelectorAll('.show-details-btn, .hide-details-btn').forEach(btn => {
+            btn.removeEventListener('click', this.handleResponseToggle);
+        });
+
+        // Add new listeners using event delegation
+        document.addEventListener('click', this.handleResponseToggle.bind(this));
+    }
+
+    // Handle show/hide details button clicks
+    handleResponseToggle(event) {
+        if (event.target.closest('.show-details-btn')) {
+            const button = event.target.closest('.show-details-btn');
+            const targetId = button.dataset.target;
+            
+            // Hide preview and show full content
+            document.getElementById(`${targetId}-preview`).classList.add('d-none');
+            document.getElementById(`${targetId}-full`).classList.remove('d-none');
+        } else if (event.target.closest('.hide-details-btn')) {
+            const button = event.target.closest('.hide-details-btn');
+            const targetId = button.dataset.target;
+            
+            // Show preview and hide full content
+            document.getElementById(`${targetId}-preview`).classList.remove('d-none');
+            document.getElementById(`${targetId}-full`).classList.add('d-none');
+        }
     }
 
     // Download task details as JSON
@@ -356,6 +423,25 @@ window.navigateToTaskDetail = function(taskId, jobId = null, repoName = null) {
         window.router.navigate(route);
     } else {
         window.location.href = route;
+    }
+};
+
+// Global function to load task detail (for backward compatibility)
+window.loadTaskDetail = function(taskId) {
+    console.log('Global loadTaskDetail called with:', taskId);
+    
+    // Ensure taskDetail instance exists
+    if (!window.taskDetail && window.TaskDetail) {
+        console.log('Creating TaskDetail instance from global loadTaskDetail');
+        window.taskDetail = new window.TaskDetail();
+    }
+    
+    if (window.taskDetail && typeof window.taskDetail.loadTaskDetail === 'function') {
+        console.log('Calling window.taskDetail.loadTaskDetail from global function');
+        return window.taskDetail.loadTaskDetail(taskId);
+    } else {
+        console.error('TaskDetail instance not available in global loadTaskDetail');
+        return Promise.reject(new Error('TaskDetail instance not available'));
     }
 };
 

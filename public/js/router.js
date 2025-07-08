@@ -244,25 +244,40 @@ class Router {
         if (taskDetailView) {            
             taskDetailView.classList.remove('d-none');
             
-            // Check computed style
-            const computedStyle = window.getComputedStyle(taskDetailView);
+            // Initialize taskDetail instance if not exists
+            if (!window.taskDetail) {
+                console.log('Creating new TaskDetail instance');
+                window.taskDetail = new window.TaskDetail();
+            }
             
-            // Initialize task detail if available
-            if (window.taskDetail && typeof loadTaskDetail === 'function') {
-                console.log('Calling taskDetail.loadTaskDetail with:', taskId);
-                loadTaskDetail(taskId);
+            // Load task detail
+            if (window.taskDetail && typeof window.taskDetail.loadTaskDetail === 'function') {
+                console.log('Calling window.taskDetail.loadTaskDetail with:', taskId);
+                window.taskDetail.loadTaskDetail(taskId);
+            } else if (typeof window.loadTaskDetail === 'function') {
+                console.log('Calling global loadTaskDetail with:', taskId);
+                window.loadTaskDetail(taskId);
             } else {
-                console.error('taskDetail instance not found:', window.taskDetail);
-                console.log('Available window properties with "task":', 
-                    Object.keys(window).filter(key => key.toLowerCase().includes('task')));
+                console.error('TaskDetail instance or loadTaskDetail method not found');
+                console.log('window.taskDetail:', window.taskDetail);
+                console.log('window.TaskDetail:', window.TaskDetail);
+                
+                // Try to create TaskDetail instance if class exists
+                if (window.TaskDetail) {
+                    console.log('TaskDetail class found, creating instance...');
+                    window.taskDetail = new window.TaskDetail();
+                    if (typeof window.taskDetail.loadTaskDetail === 'function') {
+                        window.taskDetail.loadTaskDetail(taskId);
+                    }
+                } else {
+                    console.error('TaskDetail class not found - ensure task-detail.js is loaded');
+                }
             }
         } else {
             console.error('task-detail-view element not found');
             // Let's check what elements are available
             console.log('Available elements with "task" in ID:', 
                 Array.from(document.querySelectorAll('[id*="task"]')).map(el => el.id));
-            console.log('All available elements with IDs:', 
-                Array.from(document.querySelectorAll('[id]')).map(el => el.id));
         }
     }
 

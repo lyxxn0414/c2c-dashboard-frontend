@@ -324,13 +324,22 @@ export class ExternalJobService {
                 TaskID: taskId
             };
 
-            const response = await this.requestWithRetry<any>({
-                method: 'GET',
-                url: '/kusto/getTaskDetail',
-                data: requestBody
-            });
+            // Fetch task data and copilot steps concurrently
+            const [taskData, copilotSteps] = await Promise.all([
+                this.requestWithRetry<any>({
+                    method: 'GET',
+                    url: '/kusto/getTaskDetailsByTaskID',
+                    data: requestBody
+                }),
+                this.requestWithRetry<any>({
+                    method: 'GET',
+                    url: '/kusto/getCopilotStepsByTaskID',
+                    data: requestBody
+                })
+            ]);
 
-            return response;
+            // Parse and transform the response data
+            return this.parseTaskDetailResponse(taskData, copilotSteps, taskId);
 
         } catch (error) {
             console.error(`[ExternalAPI] Failed to fetch task ${taskId}:`, error);
@@ -338,6 +347,131 @@ export class ExternalJobService {
                 throw new Error(`Task with ID ${taskId} not found`);
             }
             throw new Error(`Failed to fetch task from external service: ${error instanceof Error ? error.message : 'Unknown error'}`);
+        }
+    }
+
+    /**
+     * Parse and transform task detail response to match the expected format
+     */
+    private parseTaskDetailResponse(taskData: any, copilotSteps: any, taskId: string): any {
+        try {
+            // Extract TaskDetails
+            const taskDetails = taskData?.TaskDetails || {};
+            const taskErrors = taskData?.TaskErrors?.data || [];
+            const aiIntegrations = taskData?.AIIntegrations?.data || [];
+            const copilotStepsData = copilotSteps?.data || [];
+
+            // Format creation time
+            const formatDate = (dateString: string) => {
+                try {
+                    const date = new Date(dateString);
+                    return date.toISOString().slice(0, 16).replace('T', ' ');
+                } catch {
+                    return dateString;
+                }
+            };
+
+            // Count tool calls from TaskDetails
+            const toolCalls = {
+                recommend: taskDetails.RecommendToolCount?.toString() || '0',
+                predeploy: taskDetails.PredeployToolCount?.toString() || '0',
+                deploy: taskDetails.DeployToolCount?.toString() || '0',
+                region: taskDetails.RegionToolCount?.toString() || '0',
+                quota: taskDetails.QuotaToolCount?.toString() || '0',
+                getLogs: '0' // Not present in the provided data structure
+            };
+
+            // Transform AI Integration data
+            const aiIntegration: { [key: string]: number } = {};
+            aiIntegrations.forEach((ai: any) => {
+                if (ai.IntegrationType && ai.callingNum) {
+                    aiIntegration[ai.IntegrationType] = ai.callingNum;
+                }
+            });
+
+            // Transform deploy failure details from task errors
+            const deployFailureDetails = taskErrors.map((error: any) => ({
+                iterationNum: error.Iteration || 0,
+                time: formatDate(error.Timestamp || ''),
+                errorCategory: error.ErrorCategory || 'Unknown',
+                errorDescription: error.ErrorDescription || 'No description',
+                errorDetail: error.ErrorDetail || 'No details'
+            }));
+
+            // Transform copilot responses from copilot steps
+            const copilotResponses = copilotStepsData.map((step: any) => ({
+                time: formatDate(step.StartTime || step.Timestamp || ''),
+                iteration: step.Iteration || 0,
+                stepType: step.StepType || 'Unknown',
+                inputCommand: step.Details || 'No input command',
+                toolCall: step.StepType || 'Unknown',
+                copilotResponse: step.CopilotRecentResponse || 'No response'
+            }));
+
+            // Create description from available fields
+            const descriptionParts = [
+                taskDetails.CopilotModel && `CopilotModel: ${taskDetails.CopilotModel}`,
+                taskDetails.TaskType && `TaskType: ${taskDetails.TaskType}`,
+                taskDetails.IsSuccessful !== undefined && `Deploy Result: ${taskDetails.IsSuccessful ? 'Success' : 'Failed'}`,
+                taskDetails.Iterations && `Iterations: ${taskDetails.Iterations}`,
+                taskDetails.VSCodeVersion && `VSCodeVersion: ${taskDetails.VSCodeVersion}`,
+                taskDetails.ExtensionVersions && `ExtensionVersion: ${taskDetails.ExtensionVersions}`,
+                taskDetails.InitialPrompt && `InitialPrompt: ${taskDetails.InitialPrompt.substring(0, 100)}...`
+            ].filter(Boolean);
+
+            return {
+                taskId: taskDetails.TaskID || taskId,
+                jobId: taskDetails.TestJobID || 'unknown-job',
+                repoName: taskDetails.RepoName || 'unknown/repo',
+                name: `Task-${taskDetails.TaskID?.split('-').pop() || 'unknown'}`,
+                creationTime: formatDate(taskDetails.CreatedDate || taskDetails.Timestamp || ''),
+                description: descriptionParts.join(', ') || 'No description available',
+                
+                // Tool call counts
+                toolCalls,
+                
+                // AI Integration counts
+                aiIntegration,
+                
+                // Deploy failure details
+                deployFailureDetails,
+                
+                // Copilot responses per iteration
+                copilotResponses,
+
+                // Additional raw data for debugging
+                rawData: {
+                    taskDetails,
+                    taskErrors: taskErrors.length,
+                    aiIntegrations: aiIntegrations.length,
+                    copilotSteps: copilotStepsData.length
+                }
+            };
+
+        } catch (parseError) {
+            console.error('[ExternalAPI] Error parsing task detail response:', parseError);
+            
+            // Return fallback structure if parsing fails
+            return {
+                taskId: taskId,
+                jobId: 'parse-error',
+                repoName: 'unknown/repo',
+                name: 'Parse Error',
+                creationTime: new Date().toISOString().slice(0, 16).replace('T', ' '),
+                description: 'Failed to parse task details from external service',
+                toolCalls: {
+                    recommend: '0',
+                    predeploy: '0',
+                    deploy: '0',
+                    region: '0',
+                    quota: '0',
+                    getLogs: '0'
+                },
+                aiIntegration: {},
+                deployFailureDetails: [],
+                copilotResponses: [],
+                parseError: parseError instanceof Error ? parseError.message : 'Unknown parsing error'
+            };
         }
     }
 }

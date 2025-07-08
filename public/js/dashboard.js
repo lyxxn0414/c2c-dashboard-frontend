@@ -6,7 +6,10 @@ class JobDashboard {
         this.currentSort = { field: 'creationTime', order: 'desc' };
         this.currentFilter = '';
         this.currentUserFilter = 'all';
+        this.currentMcpFilter = 'all';
+        this.currentTerraformFilter = 'all';
         this.externalServiceStatus = null;
+        this.jobDropdownsInitialized = false;
         
         this.init();
     }
@@ -16,6 +19,7 @@ class JobDashboard {
         setTimeout(() => {
             this.initializeElements();
             this.bindEvents();
+            this.initializeJobDropdowns();
             this.setupRouting();
             this.checkExternalServiceStatus();
             this.loadJobs();
@@ -129,7 +133,7 @@ class JobDashboard {
         this.jobDetailId = document.getElementById('job-detail-id');
         this.jobDetailCreator = document.getElementById('job-detail-creator');
         this.jobDetailCreationTime = document.getElementById('job-detail-creation-time');
-        this.jobDetailDescription = document.getElementById('job-detail-description');
+        // this.jobDetailDescription = document.getElementById('job-detail-description');
         
         // Metric elements
         this.jobCompletedTasks = document.getElementById('job-completed-tasks');
@@ -152,6 +156,15 @@ class JobDashboard {
         this.testConnectionBtn = document.getElementById('test-connection-btn');
         this.submitJobBtn = document.getElementById('submit-job-btn');
         this.editJobBtn = document.getElementById('edit-job-btn');
+        this.createJobBtn = document.getElementById('create-job-btn');
+        this.configBtn = document.getElementById('config-btn');
+        this.saveConfigBtn = document.getElementById('save-config-btn');
+        this.deleteJobDetailBtn = document.getElementById('delete-job-detail-btn');
+        
+        // Filter elements
+        this.createdByFilter = document.getElementById('created-by-filter');
+        this.useMcpFilter = document.getElementById('use-mcp-filter');
+        this.useTerraformFilter = document.getElementById('use-terraform-filter');
         
         // Form elements
         this.externalApiUrl = document.getElementById('external-api-url');
@@ -162,15 +175,194 @@ class JobDashboard {
         this.jobPoolId = document.getElementById('job-pool-id');
     }
 
+    initializeJobDropdowns() {
+        if (this.jobDropdownsInitialized) {
+            console.log('Job dropdowns already initialized, skipping...');
+            return;
+        }
+        
+        console.log('Initializing job dropdowns...');
+        
+        // Clean up any existing dropdown listeners first
+        this.cleanupJobDropdownListeners();
+        
+        // Initialize Bootstrap dropdowns
+        this.initializeBootstrapJobDropdowns();
+        
+        // Setup manual dropdown fallbacks
+        this.setupJobManualDropdowns();
+        
+        this.jobDropdownsInitialized = true;
+        console.log('Job dropdowns initialization complete');
+    }
+    
+    cleanupJobDropdownListeners() {
+        console.log('Cleaning up existing job dropdown listeners...');
+        
+        // Remove existing event listeners by cloning and replacing elements
+        const dropdownButtons = ['created-by-filter', 'use-mcp-filter', 'use-terraform-filter'];
+        
+        dropdownButtons.forEach(buttonId => {
+            const button = document.getElementById(buttonId);
+            if (button && button._manualListenerAdded) {
+                const newButton = button.cloneNode(true);
+                button.parentNode.replaceChild(newButton, button);
+                console.log(`Cleaned up listeners for ${buttonId}`);
+            }
+        });
+        
+        // Remove global click handler if it exists
+        if (window.jobDropdownOutsideClickHandler) {
+            document.removeEventListener('click', window.jobDropdownOutsideClickHandler);
+            window.jobDropdownOutsideClickHandler = null;
+        }
+    }
+    
+    initializeBootstrapJobDropdowns() {
+        console.log('Initializing Bootstrap job dropdowns...');
+        
+        const dropdownButtons = ['created-by-filter', 'use-mcp-filter', 'use-terraform-filter'];
+        
+        dropdownButtons.forEach(buttonId => {
+            const button = document.getElementById(buttonId);
+            if (!button) {
+                console.warn(`Job dropdown button ${buttonId} not found`);
+                return;
+            }
+            
+            try {
+                // Dispose of existing Bootstrap dropdown instance
+                const existingDropdown = bootstrap.Dropdown.getInstance(button);
+                if (existingDropdown) {
+                    existingDropdown.dispose();
+                    console.log(`Disposed existing Bootstrap dropdown for ${buttonId}`);
+                }
+                
+                // Create new Bootstrap dropdown
+                const dropdown = new bootstrap.Dropdown(button);
+                console.log(`Bootstrap dropdown initialized for ${buttonId}`);
+                
+                // Add Bootstrap event listeners
+                button.addEventListener('shown.bs.dropdown', () => {
+                    console.log(`Bootstrap dropdown ${buttonId} shown`);
+                });
+                
+                button.addEventListener('hidden.bs.dropdown', () => {
+                    console.log(`Bootstrap dropdown ${buttonId} hidden`);
+                });
+                
+            } catch (error) {
+                console.warn(`Failed to initialize Bootstrap dropdown for ${buttonId}:`, error);
+            }
+        });
+    }
+    
+    setupJobManualDropdowns() {
+        console.log('Setting up manual job dropdown fallbacks...');
+        
+        const dropdownConfigs = [
+            { buttonId: 'created-by-filter', menuSelector: '#created-by-filter + .dropdown-menu' },
+            { buttonId: 'use-mcp-filter', menuSelector: '#use-mcp-filter + .dropdown-menu' },
+            { buttonId: 'use-terraform-filter', menuSelector: '#use-terraform-filter + .dropdown-menu' }
+        ];
+        
+        dropdownConfigs.forEach(config => {
+            this.setupJobManualDropdown(config.buttonId, config.menuSelector);
+        });
+        
+        // Global click handler to close dropdowns when clicking outside
+        this.setupJobDropdownOutsideClickHandler();
+    }
+    
+    setupJobManualDropdown(buttonId, menuSelector) {
+        const button = document.getElementById(buttonId);
+        const menu = document.querySelector(menuSelector);
+        
+        if (!button || !menu) {
+            console.warn(`Job dropdown elements not found: ${buttonId}, ${menuSelector}`);
+            return;
+        }
+        
+        // Prevent duplicate listeners
+        if (button._manualListenerAdded) {
+            console.log(`Manual listener already added for ${buttonId}, skipping...`);
+            return;
+        }
+        
+        console.log(`Setting up manual dropdown for ${buttonId}`);
+        
+        const toggleDropdown = (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            
+            // Close other dropdowns first
+            document.querySelectorAll('.dropdown-menu.show').forEach(otherMenu => {
+                if (otherMenu !== menu) {
+                    otherMenu.classList.remove('show');
+                    console.log('Closed other dropdown menu');
+                }
+            });
+            
+            // Toggle current dropdown
+            const isCurrentlyOpen = menu.classList.contains('show');
+            menu.classList.toggle('show', !isCurrentlyOpen);
+            
+            console.log(`Manual dropdown ${buttonId} toggled: ${!isCurrentlyOpen}`);
+        };
+        
+        button.addEventListener('click', toggleDropdown);
+        button._manualListenerAdded = true;
+        
+        console.log(`Manual dropdown setup complete for ${buttonId}`);
+    }
+    
+    setupJobDropdownOutsideClickHandler() {
+        if (window.jobDropdownOutsideClickHandler) {
+            console.log('Job dropdown outside click handler already exists, skipping...');
+            return;
+        }
+        
+        window.jobDropdownOutsideClickHandler = (e) => {
+            const jobDropdowns = document.querySelectorAll('#jobs-view .dropdown-menu.show');
+            
+            jobDropdowns.forEach(menu => {
+                const button = menu.previousElementSibling;
+                if (button && !button.contains(e.target) && !menu.contains(e.target)) {
+                    menu.classList.remove('show');
+                    console.log('Closed job dropdown via outside click');
+                }
+            });
+        };
+        
+        document.addEventListener('click', window.jobDropdownOutsideClickHandler);
+        console.log('Job dropdown outside click handler setup complete');
+    }
+    
+    resetJobDropdowns() {
+        console.log('Resetting job dropdowns...');
+        this.jobDropdownsInitialized = false;
+        this.cleanupJobDropdownListeners();
+        
+        // Close all open dropdowns
+        document.querySelectorAll('#jobs-view .dropdown-menu.show').forEach(menu => {
+            menu.classList.remove('show');
+        });
+        
+        // Reinitialize
+        setTimeout(() => {
+            this.initializeJobDropdowns();
+        }, 100);
+    }
+
     bindEvents() {
         // Check if elements exist before binding events
-        if (!this.createJobBtn) {
-            console.warn('Elements not ready for event binding');
+        if (!this.filterInput) {
+            console.warn('Essential elements not ready for event binding');
             return;
         }
 
         // Create job button
-        this.createJobBtn.addEventListener('click', () => {
+        this.createJobBtn?.addEventListener('click', () => {
             this.showCreateJobModal();
         });
 
@@ -182,8 +374,11 @@ class JobDashboard {
         // Filter input
         this.filterInput?.addEventListener('input', (e) => {
             this.currentFilter = e.target.value;
-            this.currentPage = 1;
-            this.loadJobs();
+            
+            // Use client-side filtering instead of reloading from server
+            if (this.allJobs) {
+                this.renderJobs(this.allJobs);
+            }
         });
 
         // Back to jobs button
@@ -220,17 +415,8 @@ class JobDashboard {
             this.showToast('Delete functionality coming soon', 'info');
         });
 
-        // Created by filter
-        document.querySelectorAll('#created-by-filter + .dropdown-menu .dropdown-item').forEach(item => {
-            item.addEventListener('click', (e) => {
-                e.preventDefault();
-                const filter = e.target.dataset.filter;
-                this.currentUserFilter = filter;
-                this.updateFilterDisplay('created-by-filter', filter);
-                this.currentPage = 1;
-                this.loadJobs();
-            });
-        });
+        // Dropdown filter event handlers using event delegation
+        this.setupJobDropdownItemHandlers();
 
         // Table sorting
         document.querySelectorAll('.sortable').forEach(header => {
@@ -248,27 +434,132 @@ class JobDashboard {
         });
 
         // Modal form validation
-        document.getElementById('job-description').addEventListener('input', () => {
-            this.validateCreateJobForm();
-        });
+        const jobDescInput = document.getElementById('job-description');
+        if (jobDescInput) {
+            jobDescInput.addEventListener('input', () => {
+                this.validateCreateJobForm();
+            });
+        }
 
         // Test connection
-        document.getElementById('test-connection-btn').addEventListener('click', () => {
-            this.testConnection();
-        });        // Back to jobs button
-        document.getElementById('back-to-jobs-btn').addEventListener('click', () => {
-            this.showJobsView();
-        });
+        const testConnBtn = document.getElementById('test-connection-btn');
+        if (testConnBtn) {
+            testConnBtn.addEventListener('click', () => {
+                this.testConnection();
+            });
+        }
+
+        // Back to jobs button
+        const backBtn = document.getElementById('back-to-jobs-btn');
+        if (backBtn) {
+            backBtn.addEventListener('click', () => {
+                this.showJobsView();
+            });
+        }
 
         // Go to repos button
-        document.getElementById('goto-repos-btn').addEventListener('click', () => {
-            this.navigateToRepos();
-        });
+        const gotoReposBtn = document.getElementById('goto-repos-btn');
+        if (gotoReposBtn) {
+            gotoReposBtn.addEventListener('click', () => {
+                this.navigateToRepos();
+            });
+        }
 
         // Edit job button in detail view
-        document.getElementById('edit-job-btn').addEventListener('click', () => {
-            this.editCurrentJob();
+        const editJobBtn = document.getElementById('edit-job-btn');
+        if (editJobBtn) {
+            editJobBtn.addEventListener('click', () => {
+                this.editCurrentJob();
+            });
+        }
+    }
+    
+    setupJobDropdownItemHandlers() {
+        // Use event delegation for dropdown items to handle dynamic content
+        document.addEventListener('click', (e) => {
+            // Handle created-by filter
+            if (e.target.closest('#created-by-filter + .dropdown-menu .dropdown-item')) {
+                e.preventDefault();
+                const filter = e.target.dataset.filter;
+                this.currentUserFilter = filter;
+                this.updateFilterDisplay('created-by-filter', filter);
+                
+                // Use client-side filtering instead of reloading from server
+                if (this.allJobs) {
+                    this.renderJobs(this.allJobs);
+                }
+                
+                // Close dropdown
+                const menu = e.target.closest('.dropdown-menu');
+                if (menu) menu.classList.remove('show');
+            }
+            
+            // Handle use-mcp filter
+            if (e.target.closest('#use-mcp-filter + .dropdown-menu .dropdown-item')) {
+                e.preventDefault();
+                const filter = e.target.dataset.filter;
+                this.currentMcpFilter = filter;
+                this.updateFilterDisplay('use-mcp-filter', filter);
+                
+                // Use client-side filtering instead of reloading from server
+                if (this.allJobs) {
+                    this.renderJobs(this.allJobs);
+                }
+                
+                // Close dropdown
+                const menu = e.target.closest('.dropdown-menu');
+                if (menu) menu.classList.remove('show');
+            }
+            
+            // Handle use-terraform filter
+            if (e.target.closest('#use-terraform-filter + .dropdown-menu .dropdown-item')) {
+                e.preventDefault();
+                const filter = e.target.dataset.filter;
+                this.currentTerraformFilter = filter;
+                this.updateFilterDisplay('use-terraform-filter', filter);
+                
+                // Use client-side filtering instead of reloading from server
+                if (this.allJobs) {
+                    this.renderJobs(this.allJobs);
+                }
+                
+                // Close dropdown
+                const menu = e.target.closest('.dropdown-menu');
+                if (menu) menu.classList.remove('show');
+            }
         });
+    }
+
+    populateCreatedByFilter(jobs) {
+        // Extract unique CreatedBy values from the jobs data
+        const uniqueCreatedBy = new Set();
+        jobs.forEach(job => {
+            if (job.InitiatedBy && job.InitiatedBy.trim() !== '' && job.InitiatedBy !== 'Unknown') {
+                uniqueCreatedBy.add(job.InitiatedBy);
+            }
+        });
+
+        // Convert to sorted array
+        const sortedCreatedBy = Array.from(uniqueCreatedBy).sort();
+
+        // Find the CreatedBy dropdown menu
+        const createdByDropdown = document.querySelector('#created-by-filter').nextElementSibling;
+        if (!createdByDropdown) {
+            console.warn('CreatedBy dropdown menu not found');
+            return;
+        }
+
+        // Clear existing options (except "All")
+        createdByDropdown.innerHTML = '<li><a class="dropdown-item" href="#" data-filter="all">All</a></li>';
+
+        // Add dynamic options
+        sortedCreatedBy.forEach(creator => {
+            const listItem = document.createElement('li');
+            listItem.innerHTML = `<a class="dropdown-item" href="#" data-filter="${this.escapeHtml(creator)}">${this.escapeHtml(creator)}</a>`;
+            createdByDropdown.appendChild(listItem);
+        });
+
+        console.log(`Populated CreatedBy filter with ${sortedCreatedBy.length} unique creators:`, sortedCreatedBy);
     }
 
     async loadJobs() {
@@ -280,7 +571,9 @@ class JobDashboard {
                 limit: this.pageSize.toString(),
                 sortBy: this.currentSort.field,
                 sortOrder: this.currentSort.order,
-                filter: this.currentFilter
+                createdBy: this.currentUserFilter,
+                useMcp: this.currentMcpFilter,
+                useTerraform: this.currentTerraformFilter
             });
 
             // Use our backend API endpoint (not direct kusto call)
@@ -290,6 +583,13 @@ class JobDashboard {
             }
             
             const data = await response.json();
+            
+            // Store all jobs for dynamic filtering
+            this.allJobs = data.jobs || [];
+            
+            // Populate dynamic CreatedBy filter options
+            this.populateCreatedByFilter(this.allJobs);
+            
             // Backend already returns mapped data, so we can use it directly
             this.renderJobs(data.jobs);
             this.renderPagination(data);
@@ -319,10 +619,76 @@ class JobDashboard {
             return;
         }
 
-        // Apply user filter
+        // Apply all filters
         let filteredJobs = jobs;
+        
+        // Apply user filter (check both fields for compatibility)
         if (this.currentUserFilter !== 'all') {
-            filteredJobs = jobs.filter(job => job.InitiatedBy === this.currentUserFilter);
+            console.log(`Applying CreatedBy filter: "${this.currentUserFilter}"`);
+            
+            filteredJobs = filteredJobs.filter(job => {
+                const matches = job.InitiatedBy === this.currentUserFilter || 
+                               job.createdBy === this.currentUserFilter;
+                
+                if (matches) {
+                    console.log(`Job ${job.TestJobID} matches CreatedBy filter (InitiatedBy: ${job.InitiatedBy}, createdBy: ${job.createdBy})`);
+                }
+                
+                return matches;
+            });
+            
+            console.log(`CreatedBy filter results: ${filteredJobs.length} jobs match "${this.currentUserFilter}"`);
+        }
+        
+        // Apply MCP filter
+        if (this.currentMcpFilter !== 'all') {
+            const useMcp = this.currentMcpFilter === 'true';
+            filteredJobs = filteredJobs.filter(job => {
+                // Check if job has MCP usage (you might need to adjust this based on your data structure)
+                const mcpRate = parseFloat(job.MCPRate) || 0;
+                return useMcp ? mcpRate > 0 : mcpRate === 0;
+            });
+        }
+        
+        // Apply Terraform filter
+        if (this.currentTerraformFilter !== 'all') {
+            const useTerraform = this.currentTerraformFilter === 'true';
+            filteredJobs = filteredJobs.filter(job => {
+                // Check if job has Terraform usage (you might need to adjust this based on your data structure)
+                const terraformRate = parseFloat(job.TerraformRate) || 0;
+                return useTerraform ? terraformRate > 0 : terraformRate === 0;
+            });
+        }
+        
+        // Apply text filter for any field (including ID)
+        if (this.currentFilter && this.currentFilter.trim() !== '') {
+            const filterText = this.currentFilter.toLowerCase().trim();
+            console.log(`Applying text filter: "${filterText}"`);
+            
+            filteredJobs = filteredJobs.filter(job => {
+                // Search in multiple fields including ID
+                const searchFields = [
+                    job.TestJobID?.toString() || '',
+                    job.InitiatedBy || job.createdBy || '',
+                    job.MCPRate?.toString() || '',
+                    job.TerraformRate?.toString() || '',
+                    job.TaskNum?.toString() || '',
+                    job.SuccessRate?.toString() || '',
+                    this.formatDateTime(job.CreatedTime || job.creationTime) || ''
+                ];
+                
+                const matches = searchFields.some(field => 
+                    field.toLowerCase().includes(filterText)
+                );
+                
+                if (matches) {
+                    console.log(`Job ${job.TestJobID} matches filter`);
+                }
+                
+                return matches;
+            });
+            
+            console.log(`Filter results: ${filteredJobs.length} jobs match "${filterText}"`);
         }
 
         filteredJobs.forEach(job => {
@@ -424,7 +790,47 @@ class JobDashboard {
     validateCreateJobForm() {
         const description = document.getElementById('job-description').value.trim();
         const submitBtn = document.getElementById('submit-job-btn');
-        submitBtn.disabled = !description;
+        if (submitBtn) {
+            submitBtn.disabled = !description;
+        }
+    }
+
+    async createJob() {
+        const jobDescription = document.getElementById('job-description');
+        const jobPoolId = document.getElementById('job-pool-id');
+        
+        if (!jobDescription || !jobDescription.value.trim()) {
+            this.showToast('Please enter a job description', 'error');
+            return;
+        }
+
+        try {
+            const response = await fetch('/api/jobs', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    description: jobDescription.value.trim(),
+                    poolId: jobPoolId?.value || 'default'
+                })
+            });
+
+            if (response.ok) {
+                this.showToast('Job created successfully!', 'success');
+                const modal = bootstrap.Modal.getInstance(document.getElementById('createJobModal'));
+                if (modal) {
+                    modal.hide();
+                }
+                // Refresh jobs list
+                this.loadJobs();
+            } else {
+                throw new Error('Failed to create job');
+            }
+        } catch (error) {
+            console.error('Error creating job:', error);
+            this.showToast('Failed to create job', 'error');
+        }
     }
 
     updateFilterDisplay(filterId, value) {
@@ -737,6 +1143,7 @@ class JobDashboard {
         
         // Hide jobs view and show detail view
         document.getElementById('jobs-view').classList.add('d-none');
+        document.getElementById('task-detail-view').classList.add('d-none');
         const detailView = document.getElementById('job-detail-view');
         detailView.classList.remove('d-none');
         console.log('Showing job detail view for job:', job.TestJobID);
@@ -747,7 +1154,7 @@ class JobDashboard {
         document.getElementById('job-detail-id').textContent = job.TestJobID;
         document.getElementById('job-detail-creator').textContent = job.InitiatedBy;
         document.getElementById('job-detail-creation-time').textContent = this.formatDateTime(job.CreatedTime);
-        document.getElementById('job-detail-description').textContent = job.JobDiscription;
+        // document.getElementById('job-detail-description').textContent = job.JobDiscription;
         
         // Populate metrics - handle both new and old field names for compatibility
         document.getElementById('job-completed-tasks').textContent = job.TaskNum || 0;
@@ -774,6 +1181,13 @@ class JobDashboard {
 
         // Failed tasks analysis
         this.populateFailedTasks(taskErrors);
+        document.querySelectorAll('.task-name-link').forEach(link => {
+            link.addEventListener('click', (e) => {
+                e.preventDefault();
+                const taskId = e.target.dataset.taskId;
+                navigateToTaskDetail(taskId);
+            });
+        });
 
         // Trigger transition effect
         setTimeout(() => {
@@ -785,13 +1199,17 @@ class JobDashboard {
         document.getElementById('jobs-view').classList.add('d-none');
         const reposContent = document.getElementById('repos-content');
         const repoDetailView = document.getElementById('repo-detail-view');
-        
+        const taskDetailView = document.getElementById('task-detail-view');
+
         if (reposContent) reposContent.style.display = 'none';
         if (repoDetailView) {
             repoDetailView.classList.add('d-none');
             repoDetailView.classList.remove('active');
         }
-        
+        if (taskDetailView) {
+            taskDetailView.classList.add('d-none');
+        }
+
         // Show detail view with loading state
         const detailView = document.getElementById('job-detail-view');
         const detailContent = document.getElementById('job-detail-content');
@@ -804,13 +1222,13 @@ class JobDashboard {
         const jobDetailId = document.getElementById('job-detail-id');
         const jobDetailCreator = document.getElementById('job-detail-creator');
         const jobDetailCreationTime = document.getElementById('job-detail-creation-time');
-        const jobDetailDescription = document.getElementById('job-detail-description');
+        // const jobDetailDescription = document.getElementById('job-detail-description');
         
         if (jobDetailTitle) jobDetailTitle.textContent = 'Loading...';
         if (jobDetailId) jobDetailId.textContent = '...';
         if (jobDetailCreator) jobDetailCreator.textContent = '...';
         if (jobDetailCreationTime) jobDetailCreationTime.textContent = '...';
-        if (jobDetailDescription) jobDetailDescription.textContent = 'Loading job details...';
+        // if (jobDetailDescription) jobDetailDescription.textContent = 'Loading job details...';
         
         // Show loading spinner for metrics
         const loadingSpinner = '<span class="spinner-border spinner-border-sm" role="status"></span>';
@@ -847,8 +1265,12 @@ class JobDashboard {
         const detailView = document.getElementById('job-detail-view');
         const reposContent = document.getElementById('repos-content');
         const repoDetailView = document.getElementById('repo-detail-view');
+        const taskDetailView = document.getElementById('task-detail-view');
         if (repoDetailView) {
             repoDetailView.classList.add('d-none');
+        }
+        if (taskDetailView) {
+            taskDetailView.classList.add('d-none');
         }
 
         detailView.classList.remove('active');
@@ -866,6 +1288,9 @@ class JobDashboard {
             if (jobsContent) {
                 jobsContent.style.display = 'block';
             }
+            
+            // Reinitialize job dropdowns when view becomes visible
+            this.initializeJobDropdowns();
         }, 300);
         
         // Update navigation active state
@@ -883,6 +1308,7 @@ class JobDashboard {
         const jobsContent = document.getElementById('jobs-content');
         const reposContent = document.getElementById('repos-content');
         const jobDetailContent = document.getElementById('job-detail-content');
+        const taskDetailView = document.getElementById('task-detail-view');
         
         if (detailView) {
             detailView.classList.add('d-none');
@@ -896,7 +1322,11 @@ class JobDashboard {
         if (jobsView) {
             jobsView.classList.add('d-none');
         }
-        
+
+        if (taskDetailView) {
+            taskDetailView.classList.add('d-none');
+        }
+
         if (jobsContent) {
             jobsContent.style.display = 'none';
         }
@@ -1183,7 +1613,7 @@ class JobDashboard {
             <div class="failed-task-item">
                 <div class="row align-items-center">
                     <div class="col-md-2">
-                        <span class="task-name">${task.TaskID || 'Unknown Task'}</span>
+                        <a href="/task-detail/${task.TaskID}" class="task-name-link" data-task-id="${task.TaskID}"> ${task.TaskID || 'Unknown Task'}</a>
                     </div>
                     <div class="col-md-2">
                         <span class="error-category badge bg-danger-subtle text-danger">${task.ErrorCategory || 'General Error'}</span>
@@ -1233,7 +1663,7 @@ class JobDashboard {
             description: backendJob.JobDiscription || backendJob.description || 'No description',
             creationTime: backendJob.CreatedTime || backendJob.creationTime || new Date().toISOString(),
             user: backendJob.InitiatedBy || backendJob.user || 'Unknown',
-            createdBy: backendJob.InitiatedBy || backendJob.createdBy || backendJob.user || 'Unknown',
+            createdBy: backendJob.InitiatedBy || 'Unknown',
             poolName: backendJob.PoolName || backendJob.poolName || 'Default',
             taskNum: backendJob.TaskNum || backendJob.taskNum || 0,
             finishedTaskNum: backendJob.FinishedTaskNum || backendJob.finishedTaskNum || 0,
