@@ -889,6 +889,10 @@ class JobDashboard {
             detailView.classList.remove('active');
         }
 
+        if (jobDetailContent) {
+            jobDetailContent.style.display = 'none';
+        }
+
         if (jobsView) {
             jobsView.classList.add('d-none');
         }
