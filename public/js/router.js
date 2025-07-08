@@ -55,7 +55,9 @@ class Router {
             '/': 'jobs',
             '/jobs': 'jobs',
             '/repos': 'repos',
-            '/job-detail': 'job-detail'
+            '/job-detail': 'job-detail',
+            '/repo-detail': 'repoName',
+            '/task-detail': 'task-detail'
         };
         
         this.currentRoute = '/';
@@ -74,6 +76,7 @@ class Router {
 
     handleRoute() {
         const path = window.location.pathname;
+        const searchParams = new URLSearchParams(window.location.search);
         console.log('Handling route:', path);
         
         // Handle dynamic routes
@@ -96,6 +99,15 @@ class Router {
                 return;
             }
         }
+          if (path.startsWith('/task-detail/')) {
+            const taskId = path.split('/task-detail/')[1];
+            if (taskId) {
+                this.currentRoute = path;
+                this.showTaskDetailPage(taskId);
+                this.updateNavigation();
+                return;
+            }
+        }
         
         // Handle static routes
         const route = this.routes[path] || this.routes['/'];
@@ -104,9 +116,8 @@ class Router {
         this.updateNavigation();
     }    showPage(pageName) {
         console.log('Showing page:', pageName);
-        
-        // Hide all pages
-        const pages = ['jobs-content', 'repos-content', 'job-detail-content'];
+          // Hide all pages
+        const pages = ['jobs-content', 'repos-content', 'job-detail-content', 'task-detail-content'];
         pages.forEach(pageId => {
             const element = document.getElementById(pageId);
             if (element) {
@@ -114,15 +125,19 @@ class Router {
                 console.log('Hiding:', pageId);
             }
         });
-
-        // Hide repo detail view if it exists
-        const repoDetailView = document.getElementById('repo-detail-view');
-        if (repoDetailView) {
-            repoDetailView.classList.add('d-none');
-        }
+        
+        // Hide all detail views
+        const detailViews = ['job-detail-view', 'repo-detail-view', 'task-detail-view'];
+        detailViews.forEach(viewId => {
+            const element = document.getElementById(viewId);
+            if (element) {
+                element.classList.add('d-none');
+            }
+        });
 
         // Show the requested page
         const targetPage = document.getElementById(`${pageName}-content`);
+        console.log('Target page:', targetPage);
         if (targetPage) {
             targetPage.style.display = 'block';
             console.log('Showing:', `${pageName}-content`);
@@ -148,13 +163,21 @@ class Router {
 
     showRepoDetailPage(repoName) {
         console.log('Router: Showing repo detail page for:', repoName);
-        
-        // Hide all standard pages
+          // Hide all standard pages
         const pages = ['jobs-content', 'repos-content', 'job-detail-content'];
         pages.forEach(pageId => {
             const element = document.getElementById(pageId);
             if (element) {
                 element.style.display = 'none';
+            }
+        });
+        
+        // Hide all detail views
+        const detailViews = ['task-detail-view'];
+        detailViews.forEach(viewId => {
+            const element = document.getElementById(viewId);
+            if (element) {
+                element.classList.add('d-none');
             }
         });
 
@@ -168,27 +191,78 @@ class Router {
 
     showJobDetailPage(jobId) {
         console.log('Router: Showing job detail page for:', jobId);
-        
-        // Hide all standard pages
-        const pages = ['jobs-content', 'repos-content'];
+          // Hide all standard pages
+        const pages = ['jobs-content', 'repos-content', 'repo-detail-content'];
         pages.forEach(pageId => {
             const element = document.getElementById(pageId);
             if (element) {
                 element.style.display = 'none';
             }
         });
-
-        // Hide repo detail view if it exists
-        const repoDetailView = document.getElementById('repo-detail-view');
-        if (repoDetailView) {
-            repoDetailView.classList.add('d-none');
-        }
+        
+        // Hide all detail views
+        const detailViews = ['task-detail-view'];
+        detailViews.forEach(viewId => {
+            const element = document.getElementById(viewId);
+            if (element) {
+                element.classList.add('d-none');
+            }
+        });
 
         // Show job detail page if function exists
         if (typeof showJobDetail === 'function') {
             showJobDetail(jobId);
         } else {
             console.error('showJobDetail function not found');
+        }
+    }    
+    showTaskDetailPage(taskId) {
+        console.log('Router: Showing task detail page for:', taskId);
+        
+        // Hide all standard pages
+        const pages = ['jobs-content', 'repos-content', 'job-detail-content', 'repo-detail-content'];
+        pages.forEach(pageId => {
+            const element = document.getElementById(pageId);
+            if (element) {
+                element.style.display = 'none';
+                console.log('Hiding page:', pageId);
+            }
+        });
+
+        // Hide all detail views
+        const detailViews = ['job-detail-view', 'repo-detail-view'];
+        detailViews.forEach(viewId => {
+            const element = document.getElementById(viewId);
+            if (element) {
+                element.classList.add('d-none');
+                console.log('Hiding detail view:', viewId);
+            }
+        });        // Show task detail view
+        const taskDetailView = document.getElementById('task-detail-view');
+        console.log('Task detail view element:', taskDetailView);
+        
+        if (taskDetailView) {            
+            taskDetailView.classList.remove('d-none');
+            
+            // Check computed style
+            const computedStyle = window.getComputedStyle(taskDetailView);
+            
+            // Initialize task detail if available
+            if (window.taskDetail && typeof loadTaskDetail === 'function') {
+                console.log('Calling taskDetail.loadTaskDetail with:', taskId);
+                loadTaskDetail(taskId);
+            } else {
+                console.error('taskDetail instance not found:', window.taskDetail);
+                console.log('Available window properties with "task":', 
+                    Object.keys(window).filter(key => key.toLowerCase().includes('task')));
+            }
+        } else {
+            console.error('task-detail-view element not found');
+            // Let's check what elements are available
+            console.log('Available elements with "task" in ID:', 
+                Array.from(document.querySelectorAll('[id*="task"]')).map(el => el.id));
+            console.log('All available elements with IDs:', 
+                Array.from(document.querySelectorAll('[id]')).map(el => el.id));
         }
     }
 
@@ -203,13 +277,18 @@ class Router {
             document.getElementById('job-view')?.classList.add('active');
         } else if (this.currentRoute === '/repos') {
             document.getElementById('repo-view')?.classList.add('active');
+        }else if (this.currentRoute.startsWith('/job-detail/')) {
+            document.getElementById('job-detail-view')?.classList.add('active');
+        } else if (this.currentRoute.startsWith('/repoName/')) {
+            document.getElementById('repo-detail-view')?.classList.add('active');
+        } else if (this.currentRoute.startsWith('/task-detail/')) {
+            document.getElementById('task-detail-view')?.classList.add('active');
         }
-    }    navigate(path) {
+    }    
+    navigate(path) {
         console.log('Navigating to:', path, 'from:', this.currentRoute);
-        if (path !== this.currentRoute) {
-            history.pushState({}, '', path);
-            this.handleRoute();
-        }
+        history.pushState({}, '', path);
+        this.handleRoute();
     }
 
     back() {

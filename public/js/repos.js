@@ -85,6 +85,10 @@ function filterRepos() {
 
 async function loadRepos() {
     try {
+        const repoDetailView = document.getElementById('repo-detail-view');
+        if (repoDetailView) {
+            repoDetailView.classList.add('d-none');
+        }
         document.getElementById('repos-loading-indicator').classList.remove('d-none');
         
         const response = await fetch('/api/repos');
@@ -152,6 +156,7 @@ function displayRepos(repos) {
         link.addEventListener('click', (e) => {
             e.preventDefault();
             const repoName = e.target.dataset.repoName;
+            showRepoDetailLoadingState(repoName);
             navigateToRepoDetail(repoName);
         });
     });
@@ -193,10 +198,13 @@ function navigateToRepoDetail(repoName) {
     
     // Use router navigation if available
     if (window.navigateToRepoDetail) {
+        console.log('Using global navigateToRepoDetail function');
         window.navigateToRepoDetail(repoName);
     } else if (window.router) {
+        console.log('Using window.router for navigation');
         window.router.navigate(`/repoName/${encodeURIComponent(repoName)}`);
     } else {
+        console.warn('No router or navigateToRepoDetail function available, falling back to manual navigation');
         // Fallback: update URL manually and show detail view
         const newPath = `/repoName/${encodeURIComponent(repoName)}`;
         history.pushState({ repoName }, '', newPath);

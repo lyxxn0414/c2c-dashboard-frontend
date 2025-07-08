@@ -18,6 +18,7 @@ router.get('/', async (req, res) => {
 // GET /api/repos/:repoName
 router.get('/:repoName', async (req, res) => {
     try {
+        console.log('Fetching repository details for:', req.params.repoName);
         const { repoName } = req.params;
         const repo = await repoService.getRepositoryDetails(repoName);
         if (repo) {
@@ -34,6 +35,7 @@ router.get('/:repoName', async (req, res) => {
 // GET /api/repos/:repoName/tasks
 router.get('/:repoName/tasks', async (req, res) => {
     try {
+        console.log('Fetching related tasks for repository:', req.params.repoName);
         const { repoName } = req.params;
         const tasks = await repoService.getRelatedTasks(repoName);
         res.json(tasks);

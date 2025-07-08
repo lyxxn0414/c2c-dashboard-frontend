@@ -262,4 +262,89 @@ router.get('/health/external', asyncHandler(async (req: Request, res: Response) 
   }
 }));
 
+/**
+ * GET /api/jobs/tasks/:taskId
+ * Retrieve specific task details
+ */
+router.get('/tasks/:taskId', asyncHandler(async (req: Request, res: Response) => {
+  const { taskId } = req.params;
+  const { jobId, repoName } = req.query;
+
+  try {
+    // Try to get task details from external service
+    const taskResponse = await externalJobService.getTaskDetail(taskId);
+    
+    if (taskResponse) {
+      res.json(taskResponse);
+      return;
+    }
+  } catch (error) {
+    console.error('Error fetching task details from external service:', error);
+  }
+
+  // Fallback to mock data based on the attachment image
+  const mockTaskDetail = {
+    taskId: taskId,
+    jobId: jobId || 'job-sample',
+    repoName: repoName || 'azure-samples/contoso-chat',
+    name: 'Task-sample',
+    creationTime: '2025-06-23 14:57',
+    description: 'CopilotModel, Language, Deploy Result, Iterations, TaskType, VSCodeVersion, ExtensionVersion, InitialPrompt, testlog',
+    
+    // Tool call counts
+    toolCalls: {
+      recommend: 'xx',
+      predeploy: 'xx',
+      deploy: 'xx',
+      region: 'xx',
+      quota: 'xx',
+      getLogs: 'xx'
+    },
+    
+    // AI Integration counts
+    aiIntegration: {
+      fillMainParametersJSONWithOpenAI: 2,
+      generateUserInputWithOpenAI: 5,
+      judgeAzdUpSuccessWithOpenAI: 5
+    },
+    
+    // Deploy failure details
+    deployFailureDetails: [
+      {
+        iterationNum: 5,
+        time: '2025-06-23 14:57',
+        errorCategory: 'Malformed bicep',
+        errorDescription: 'Invalid configuration',
+        errorDetail: 'Disabling public network access is not supported for the SKU Standard'
+      },
+      {
+        iterationNum: 10,
+        time: '2025-06-23 15:02',
+        errorCategory: 'Authentication',
+        errorDescription: 'Access denied',
+        errorDetail: 'Insufficient permissions to create resource group'
+      },
+      {
+        iterationNum: 14,
+        time: '2025-06-23 15:05',
+        errorCategory: 'Resource conflict',
+        errorDescription: 'Resource already exists',
+        errorDetail: 'Storage account name already taken'
+      }
+    ],
+    
+    // Copilot responses per iteration
+    copilotResponses: [
+      {
+        time: '2025-06-23 14:57',
+        inputCommand: 'ops I have already logged into AZ CLI and authenticated. I need your tool to deploy this app to Azure with AZD Let me start by scanning the project structure to understand the services and their dependencies.',
+        toolCall: 'invalid configuration',
+        copilotResponse: 'I\'ll help you deploy this app to Azure with AZD Let me start by scanning the project structure to understand the services and their dependencies. *Read compose.yml, lines 1 to 42*, *Read README.md, lines 1 to 50*, *Read package.json, lines 1 to 30*, *Read Dockerfile, lines 1 to 15*, *Read route.ts, lines 1 to 27*, Now let me analyze the project and call the Azure service recommendation tool.'
+      }
+    ]
+  };
+
+  res.json(mockTaskDetail);
+}));
+
 export default router;

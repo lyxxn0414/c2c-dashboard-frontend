@@ -315,6 +315,31 @@ export class ExternalJobService {
             throw new Error(`Failed to fetch classified results from external service: ${error instanceof Error ? error.message : 'Unknown error'}`);
         }
     }
+
+    async getTaskDetail(taskId: string): Promise<any> {
+        try {
+            console.log(`[ExternalAPI] Fetching task detail for task: ${taskId}`);
+            
+            const requestBody = {
+                TaskID: taskId
+            };
+
+            const response = await this.requestWithRetry<any>({
+                method: 'GET',
+                url: '/kusto/getTaskDetail',
+                data: requestBody
+            });
+
+            return response;
+
+        } catch (error) {
+            console.error(`[ExternalAPI] Failed to fetch task ${taskId}:`, error);
+            if (error instanceof Error && error.message.includes('404')) {
+                throw new Error(`Task with ID ${taskId} not found`);
+            }
+            throw new Error(`Failed to fetch task from external service: ${error instanceof Error ? error.message : 'Unknown error'}`);
+        }
+    }
 }
 
 // Export singleton instance

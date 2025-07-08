@@ -5,10 +5,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>C2C Dashboard - Job Management</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" rel="stylesheet">
-    <link href="/css/dashboard.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" rel="stylesheet">    <link href="/css/dashboard.css" rel="stylesheet">
     <link href="/css/repos.css" rel="stylesheet">
     <link href="/css/repo-detail.css" rel="stylesheet">
+    <link href="/css/task-detail.css" rel="stylesheet">
 </head>
 <body>
     <div class="container-fluid">
@@ -52,10 +52,13 @@
                 <!-- Job Detail Content -->
                 <div id="job-detail-content">
                     <!-- Content will be loaded dynamically -->
+                </div>                <!-- Repo Detail View -->
+                <div id="repo-detail-view" class="d-none">
+                    <!-- Content will be loaded dynamically -->
                 </div>
 
-                <!-- Repo Detail View -->
-                <div id="repo-detail-view" class="d-none">
+                <!-- Task Detail View -->
+                <div id="task-detail-view" class="d-none">
                     <!-- Content will be loaded dynamically -->
                 </div>
             </main>
@@ -69,11 +72,9 @@
 
     <!-- Scripts -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="/js/html-loader.js"></script>
-    <script src="/js/utils.js"></script>
-    <script src="/js/repos.js"></script>
-    <script src="/js/repo-detail.js"></script>
-    <script src="/js/router.js"></script>
-    <script src="/js/dashboard.js"></script>
+    <script src="/js/html-loader.js"></script>    <script src="/js/utils.js"></script>    <script src="/js/repos.js"></script>
+    <script src="/js/repo-detail.js"></script>    <script src="/js/task-detail.js"></script>
+    <script src="/js/router.js"></script>    <script src="/js/dashboard.js"></script>
+    <script src="/js/test-task-navigation.js"></script>
 </body>
 </html>

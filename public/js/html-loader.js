@@ -35,7 +35,8 @@ document.addEventListener('DOMContentLoaded', async () => {
             loadTemplate('jobDetail', '/partials/job-detail.html'),
             loadTemplate('modals', '/partials/modals.html'),
             loadTemplate('reposView', '/partials/repos-view.html'),
-            loadTemplate('repoDetail', '/partials/repo-detail.html')
+            loadTemplate('repoDetail', '/partials/repo-detail.html'),
+            loadTemplate('taskDetail', '/partials/task-detail.html')
         ]);
         
         // Load templates into the page
@@ -78,9 +79,20 @@ document.addEventListener('DOMContentLoaded', async () => {
             console.log('✅ Repo detail template loaded');
         } else {
             console.error('❌ repo-detail-view element not found or template not loaded');
+        }        const taskDetailContent = document.getElementById('task-detail-view');
+        if (taskDetailContent && HTMLTemplates.taskDetail) {
+            taskDetailContent.innerHTML = HTMLTemplates.taskDetail;
+            console.log('✅ Task detail template loaded');
+            console.log('Task detail content length:', HTMLTemplates.taskDetail.length);
+        } else {
+            console.error('❌ task-detail-view element not found or template not loaded');
+            console.log('task-detail-view element:', taskDetailContent);
+            console.log('taskDetail template exists:', !!HTMLTemplates.taskDetail);
+            if (HTMLTemplates.taskDetail) {
+                console.log('taskDetail template length:', HTMLTemplates.taskDetail.length);
+            }
         }
-        
-        // Initialize dashboard after templates are loaded
+          // Initialize dashboard after templates are loaded
         setTimeout(() => {
             console.log('🔧 Initializing JobDashboard...');
             if (window.JobDashboard) {
@@ -88,6 +100,15 @@ document.addEventListener('DOMContentLoaded', async () => {
                 console.log('✅ JobDashboard initialized');
             } else {
                 console.error('❌ JobDashboard class not found');
+            }
+            
+            // Initialize TaskDetail
+            console.log('🔧 Initializing TaskDetail...');
+            if (window.TaskDetail) {
+                window.taskDetail = new TaskDetail();
+                console.log('✅ TaskDetail initialized');
+            } else {
+                console.error('❌ TaskDetail class not found');
             }
         }, 100);
         

@@ -53,7 +53,13 @@ class JobDashboard {
         } else if (path === '/repos' || path.startsWith('/repos')) {
             console.log('Routing to repos view');
             this.showReposView();
-        } else {
+        } else if (path.startsWith('/repoName/')) {
+            const repoName = path.split('/repoName/')[1];
+            console.log('Routing to repo detail:', repoName);
+            navigateToRepoDetail(repoName);
+            showRepoDetailLoadingState();
+        }
+        else {
             // Default to jobs view
             this.showJobsView();
             // Update URL if needed
@@ -195,9 +201,12 @@ class JobDashboard {
             this.saveConfig();
         });
 
-        // Test connection
-        this.testConnectionBtn?.addEventListener('click', () => {
-            this.testConnection();
+        // See task details link (delegated event handling since the link is in dynamic content)
+        document.addEventListener('click', (e) => {
+            if (e.target && e.target.id === 'see-task-details-link') {
+                e.preventDefault();
+                this.showSampleTaskDetail();
+            }
         });
 
         // Edit and delete job buttons
@@ -327,7 +336,8 @@ class JobDashboard {
                 </td>
                 <td>${this.escapeHtml(job.InitiatedBy)}</td>
                 <td>${this.formatDateTime(job.CreatedTime)}</td>
-                <td>${this.escapeHtml(job.JobDiscription)}</td>
+                <td>${this.escapeHtml(job.MCPRate)}</td>
+                <td>${this.escapeHtml(job.TerraformRate)}</td>
                 <td>${job.TaskNum}</td>
                 <td>
                     <span class="success-rate ${this.getSuccessRateClass(job.SuccessRate)}">
@@ -729,6 +739,7 @@ class JobDashboard {
         document.getElementById('jobs-view').classList.add('d-none');
         const detailView = document.getElementById('job-detail-view');
         detailView.classList.remove('d-none');
+        console.log('Showing job detail view for job:', job.TestJobID);
         detailView.classList.add('view-transition');
         
         // Populate job detail fields
@@ -768,14 +779,23 @@ class JobDashboard {
         setTimeout(() => {
             detailView.classList.add('active');
         }, 10);
-    }
-
+    }    
     showJobDetailLoadingState() {
-        // Hide jobs view immediately
+        // Hide all other views
         document.getElementById('jobs-view').classList.add('d-none');
+        const reposContent = document.getElementById('repos-content');
+        const repoDetailView = document.getElementById('repo-detail-view');
+        
+        if (reposContent) reposContent.style.display = 'none';
+        if (repoDetailView) {
+            repoDetailView.classList.add('d-none');
+            repoDetailView.classList.remove('active');
+        }
         
         // Show detail view with loading state
         const detailView = document.getElementById('job-detail-view');
+        const detailContent = document.getElementById('job-detail-content');
+        detailContent.style.display = 'block';
         detailView.classList.remove('d-none');
         detailView.classList.add('view-transition');
         
@@ -818,16 +838,21 @@ class JobDashboard {
         setTimeout(() => {
             detailView.classList.add('active');
         }, 10);
-    }    showJobsView() {
+    }    
+    showJobsView() {
         // Update URL to root path
         this.updateURL('/');
         
         // Hide detail view and show jobs view
         const detailView = document.getElementById('job-detail-view');
         const reposContent = document.getElementById('repos-content');
-        
+        const repoDetailView = document.getElementById('repo-detail-view');
+        if (repoDetailView) {
+            repoDetailView.classList.add('d-none');
+        }
+
         detailView.classList.remove('active');
-        
+
         if (reposContent) {
             reposContent.style.display = 'none';
         }
@@ -857,12 +882,13 @@ class JobDashboard {
         const jobsView = document.getElementById('jobs-view');
         const jobsContent = document.getElementById('jobs-content');
         const reposContent = document.getElementById('repos-content');
+        const jobDetailContent = document.getElementById('job-detail-content');
         
         if (detailView) {
             detailView.classList.add('d-none');
             detailView.classList.remove('active');
         }
-        
+
         if (jobsView) {
             jobsView.classList.add('d-none');
         }
@@ -1337,6 +1363,38 @@ class JobDashboard {
 
         errorCategoriesContainer.innerHTML = categoriesHTML;
     }
+
+    showSampleTaskDetail() {
+        // Navigate to a sample task detail page
+        const sampleTaskId = '123456';
+        const currentJobId = this.getCurrentJobId(); // Get current job ID if available
+        
+        if (window.router) {
+            const route = currentJobId ? `/task-detail/${sampleTaskId}?jobId=${currentJobId}` : `/task-detail/${sampleTaskId}`;
+            window.router.navigate(route);
+        } else {
+            // Fallback navigation
+            window.location.href = `/task-detail/${sampleTaskId}`;
+        }
+    }
+
+    getCurrentJobId() {
+        // Try to get current job ID from the detail view
+        const jobIdElement = document.getElementById('job-detail-id');
+        if (jobIdElement) {
+            return jobIdElement.textContent;
+        }
+        
+        // Try to get from URL if we're in job detail view
+        const path = window.location.pathname;
+        if (path.startsWith('/job-detail/')) {
+            return path.split('/job-detail/')[1];
+        }
+        
+        return null;
+    }
+
+    // ...existing code...
 }
 
 // Initialize dashboard when DOM is loaded

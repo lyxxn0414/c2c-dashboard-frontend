@@ -7,6 +7,7 @@ export interface ApiRepoData {
     RepoURL: string;
     TotalTasks: number;
     SuccessTasks: number;
+    RepoType: string;
 }
 
 export interface ApiRepoResponse {
@@ -14,11 +15,31 @@ export interface ApiRepoResponse {
     data: ApiRepoData[];
 }
 
+// New API interfaces for task/error list
+export interface ApiTaskErrorData {
+    TaskID: string;
+    JobID: string;
+    CopilotModel: string;
+    TaskType: string;
+    UseTerraform: boolean;
+    ErrorCategory: string;
+    ErrorDescription: string;
+    ErrorDetail: string;
+    CreatedDate: string;
+    IsSuccessful: boolean;
+    Iterations: number;
+}
+
+export interface ApiTaskErrorResponse {
+    name: string;
+    data: ApiTaskErrorData[];
+}
+
 // Frontend interfaces
 export interface Repository {
     repoName: string;
     languages: string[];
-    repoType: RepoType;
+    repoType: string;
     appPattern: string;
     successRate: number;
     repoURL?: string;
@@ -53,4 +74,11 @@ export interface RelatedTask {
     taskType: string;
     iterations: number;
     createdBy: string;
+    // New fields from the API
+    jobId?: string;
+    useTerraform?: boolean;
+    errorCategory?: string;
+    errorDescription?: string;
+    errorDetail?: string;
+    isSuccessful?: boolean;
 }

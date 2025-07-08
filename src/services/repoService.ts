@@ -1,10 +1,89 @@
-import { Repository, RepoType, ApiRepoResponse, ApiRepoData, RelatedTask } from '../types/repo.types';
+import axios, { AxiosInstance, AxiosRequestConfig } from 'axios';
+import { Repository, RepoType, ApiRepoResponse, ApiRepoData, RelatedTask, ApiTaskErrorResponse, ApiTaskErrorData } from '../types/repo.types';
 
 export class RepoService {
     private static instance: RepoService;
+    private client: AxiosInstance;
     private apiBaseUrl = 'https://c2c-test-dashboard-d8feccd5dgbmd7a2.eastus-01.azurewebsites.net';
     
-    private constructor() {}
+    private constructor() {
+        // Configure axios client similar to externalJobService
+        this.client = axios.create({
+            baseURL: this.apiBaseUrl,
+            timeout: 30000,
+            headers: {
+                'Content-Type': 'application/json',
+                'Accept': 'application/json',
+                'User-Agent': 'C2C-Dashboard/1.0'
+            }
+        });
+
+        // Add request interceptor for logging
+        this.client.interceptors.request.use(
+            (config: any) => {
+                console.log(`[RepoService] Making request to: ${config.url}`);
+                if (config.data) {
+                    console.log(`[RepoService] Request Body:`, JSON.stringify(config.data, null, 2));
+                }
+                return config;
+            },
+            (error: any) => {
+                console.error('[RepoService] Request error:', error);
+                return Promise.reject(error);
+            }
+        );
+
+        // Add response interceptor for error handling
+        this.client.interceptors.response.use(
+            (response: any) => {
+                console.log(`[RepoService] Response status: ${response.status}`);
+                return response;
+            },
+            (error: any) => {
+                console.log('=== RepoService API Error Debug ===');
+                console.error(`Error Status: ${error.response?.status}`);
+                console.error(`Error URL: ${error.config?.url}`);
+                console.error(`Error Message: ${error.message}`);
+                if (error.response?.data) {
+                    console.error(`Error Response:`, JSON.stringify(error.response.data, null, 2));
+                }                console.log('===================================');
+                return Promise.reject(error);
+            }
+        );
+    }
+
+    /**
+     * Make a request with retry logic
+     */
+    private async requestWithRetry<T>(config: AxiosRequestConfig, attempts: number = 3): Promise<T> {
+        try {
+            const response = await this.client.request<T>(config);
+            return response.data;
+        } catch (error: any) {
+            if (attempts > 1 && this.shouldRetry(error)) {
+                console.log(`[RepoService] Retrying request, ${attempts - 1} attempts left`);
+                await this.delay(1000 * (3 - attempts + 1)); // Progressive delay
+                return this.requestWithRetry<T>(config, attempts - 1);
+            }
+            throw error;
+        }
+    }
+
+    /**
+     * Determine if a request should be retried
+     */
+    private shouldRetry(error: any): boolean {
+        if (!error.response) return true; // Network error
+        const status = error.response.status;
+        return status >= 500 || status === 408 || status === 429;
+    }
+
+    /**
+     * Delay function for retry logic
+     */
+    private delay(ms: number): Promise<void> {
+        return new Promise(resolve => setTimeout(resolve, ms));
+    }
 
     public static getInstance(): RepoService {
         if (!RepoService.instance) {
@@ -46,7 +125,7 @@ export class RepoService {
         return {
             repoName: apiRepo.RepoName,
             languages: this.parseLanguages(apiRepo.Language),
-            repoType: this.inferRepoType(apiRepo.RepoName, apiRepo.Language),
+            repoType: apiRepo.RepoType,
             appPattern: apiRepo.AppPattern,
             successRate: this.parseSuccessRate(apiRepo.SuccessRate),
             repoURL: apiRepo.RepoURL,
@@ -170,7 +249,7 @@ export class RepoService {
             
             // Try to fetch specific repository details using the dedicated API endpoint
             const response = await fetch(`${this.apiBaseUrl}/kusto/getRepoList`, {
-                method: 'POST',
+                method: 'GET',
                 headers: {
                     'Content-Type': 'application/json'
                 },
@@ -224,61 +303,87 @@ export class RepoService {
             
             return null;
         }
-    }
-
-    async getRelatedTasks(repoName: string): Promise<RelatedTask[]> {
+    }    async getRelatedTasks(repoName: string): Promise<RelatedTask[]> {
         try {
-            console.log('Fetching related tasks for:', repoName);
+            console.log('From repoService: Fetching related tasks for:', repoName);
             
-            // For now, return mock data
-            // In a real implementation, you would call an API endpoint
-            return this.getMockTasksData(repoName);
+            // Call the getRepoErrorList API endpoint using axios with retry logic
+            const response = await this.requestWithRetry<ApiTaskErrorResponse>({
+                method: 'GET',
+                url: '/kusto/getRepoErrorList',
+                data: {
+                    RepoName: repoName
+                }
+            });
             
+            console.log('Related tasks API response:', response);
+            
+            if (response.data) {
+                // Transform API data to frontend format
+                const tasks = response.data.map(apiTask => this.transformApiTaskToRelatedTask(apiTask, repoName));
+                console.log('Transformed related tasks:', tasks);
+                return tasks;
+            }
+            return [];
         } catch (error) {
-            console.error('Error fetching related tasks:', error);
-            return this.getMockTasksData(repoName);
+            console.error('Error in getRelatedTasks:', error);
+            throw error; // Re-throw to see the actual error
         }
     }
 
-
-
-    private inferComputeResource(repo: Repository): string {
-        const name = repo.repoName.toLowerCase();
-        const languages = repo.languages.map(l => l.toLowerCase());
+    /**
+     * Transform API task error data to RelatedTask format
+     * @param apiTask - Raw task data from API
+     * @param repoName - Repository name
+     * @returns RelatedTask - Transformed task object
+     */
+    private transformApiTaskToRelatedTask(apiTask: ApiTaskErrorData, repoName: string): RelatedTask {
+        // Parse created date to a more readable format
+        const createdDate = new Date(apiTask.CreatedDate);
+        const formattedDate = createdDate.getFullYear() + '-' + 
+            String(createdDate.getMonth() + 1).padStart(2, '0') + '-' + 
+            String(createdDate.getDate()).padStart(2, '0') + ' ' +
+            String(createdDate.getHours()).padStart(2, '0') + ':' + 
+            String(createdDate.getMinutes()).padStart(2, '0');
         
-        if (languages.includes('javascript') || languages.includes('typescript') || languages.includes('react')) {
-            return 'App Service';
-        }
-        if (languages.includes('python') || languages.includes('java')) {
-            return 'Container Apps';
-        }
-        if (name.includes('function') || name.includes('lambda')) {
-            return 'Azure Functions';
-        }
-        
-        return 'App Service';
-    }
-
-    private inferBindingResource(repo: Repository): string {
-        const bindingResources = [];
-        
-        // Common patterns
-        if (repo.repoName.toLowerCase().includes('cache') || repo.languages.includes('Redis')) {
-            bindingResources.push('Redis');
-        }
-        if (repo.repoName.toLowerCase().includes('db') || repo.repoName.toLowerCase().includes('data')) {
-            bindingResources.push('CosmosDB');
+        // Determine deploy result based on IsSuccessful and error information
+        let deployResult: string;
+        if (apiTask.IsSuccessful) {
+            deployResult = 'Success';
+        } else {
+            deployResult = 'Failed';
         }
         
-        // Default bindings
-        bindingResources.push('KeyVault');
-        
-        // Add storage for certain types
-        if (repo.languages.includes('JavaScript') || repo.languages.includes('TypeScript')) {
-            bindingResources.push('Storage');
+        // Extract language from task type or use a default
+        let language = 'Unknown';
+        if (apiTask.TaskType.toLowerCase().includes('terraform')) {
+            language = 'HCL';
+        } else if (apiTask.TaskType.toLowerCase().includes('bicep')) {
+            language = 'Bicep';
+        } else if (apiTask.TaskType.toLowerCase().includes('kubernetes')) {
+            language = 'YAML';
+        } else {
+            language = 'TypeScript'; // Default for most tasks
         }
         
-        return bindingResources.slice(0, 2).join(', '); // Limit to 2 resources
+        return {
+            taskId: apiTask.TaskID,
+            repoName: repoName,
+            creationTime: formattedDate,
+            copilotModel: apiTask.CopilotModel,
+            language: language,
+            deployResult: deployResult,
+            taskType: apiTask.TaskType+"/"+(apiTask.UseTerraform ? 'terraform' : 'bicep'), // Use task type and terraform flag
+            iterations: apiTask.Iterations, // API doesn't provide this, use default
+            createdBy: 'system', // API doesn't provide this, use default
+            // Include additional fields from the API
+            jobId: apiTask.JobID,
+            useTerraform: apiTask.UseTerraform,
+            errorCategory: apiTask.ErrorCategory,
+            errorDescription: apiTask.ErrorDescription,
+            errorDetail: apiTask.ErrorDetail,
+            isSuccessful: apiTask.IsSuccessful
+        };
     }
 
     private getMockTasksData(repoName: string): RelatedTask[] {

@@ -259,38 +259,6 @@ function inferBindingResourceFromRepoName(repoName) {
     return resources.slice(0, 3).join(', ');
 }
 
-function generateSuccessRateFromRepoName(repoName) {
-    // Generate a consistent success rate based on repo name
-    let hash = 0;
-    for (let i = 0; i < repoName.length; i++) {
-        const char = repoName.charCodeAt(i);
-        hash = ((hash << 5) - hash) + char;
-        hash = hash & hash;
-    }
-    
-    // Convert to a success rate between 60% and 95%
-    const normalizedHash = Math.abs(hash) % 100;
-    const successRate = 0.6 + (normalizedHash / 100) * 0.35;
-    
-    return Math.round(successRate * 100) / 100; // Round to 2 decimal places
-}
-
-function generateTotalTasksFromRepoName(repoName) {
-    // Generate a consistent total tasks count based on repo name
-    let hash = 0;
-    for (let i = 0; i < repoName.length; i++) {
-        const char = repoName.charCodeAt(i);
-        hash = ((hash << 5) - hash) + char;
-        hash = hash & hash;
-    }
-    
-    // Convert to a task count between 5 and 25
-    const normalizedHash = Math.abs(hash) % 100;
-    const totalTasks = 5 + Math.floor((normalizedHash / 100) * 20);
-    
-    return totalTasks;
-}
-
 function populateRepoDetails(repoDetails) {
     console.log('Populating repo details:', repoDetails);
     
@@ -470,7 +438,6 @@ async function loadRelatedTasks(repoName) {
 }
 
 function createMockTasksData(repoName) {
-    const repoId = generateConsistentId(repoName);
     const languages = inferLanguagesFromRepoName(repoName);
     const primaryLanguage = languages[0] || 'Java';
     
@@ -598,10 +565,8 @@ function displayRelatedTasks(tasks) {
                     ${task.taskId}
                 </a>
             </td>
-            <td>${task.repoName}</td>
             <td>${task.creationTime}</td>
             <td>${task.copilotModel}</td>
-            <td>${task.language}</td>
             <td>
                 <span class="deploy-result-badge deploy-result-${task.deployResult.toLowerCase()}">
                     ${task.deployResult}
@@ -612,6 +577,9 @@ function displayRelatedTasks(tasks) {
             </td>
             <td>
                 <span class="iterations-count">${task.iterations}</span>
+            </td>
+            <td>
+                <span class="iterations-count">${task.errorDescription}</span>
             </td>
         `;
         
@@ -630,9 +598,37 @@ function displayRelatedTasks(tasks) {
 
 function navigateToTaskDetail(taskId) {
     console.log('Navigating to task detail:', taskId);
-    // You can implement task detail navigation here
-    // For now, show an alert
-    alert(`Task detail view for: ${taskId}`);
+    console.log('Current repo name:', currentRepoName);
+    
+    // Get the current repo name to pass as context
+    const repoName = currentRepoName || getCurrentRepoNameFromURL();
+    console.log('Using repo name:', repoName);
+    
+    // Use the router to navigate to task detail view
+    if (window.router) {
+        const route = repoName ? `/task-detail/${taskId}?repoName=${encodeURIComponent(repoName)}` : `/task-detail/${taskId}`;
+        console.log('Navigating to route:', route);
+        window.router.navigate(route);
+    } else if (window.navigateToTaskDetail) {
+        // Fallback to global navigation function
+        console.log('Using global navigation function');
+        window.navigateToTaskDetail(taskId, null, repoName);
+    } else {
+        // Final fallback
+        console.log('Using window.location fallback');
+        window.location.href = `/task-detail/${taskId}`;
+    }
+}
+
+function getCurrentRepoNameFromURL() {
+    // Extract repo name from current URL if we're in repo detail view
+    const path = window.location.pathname;
+    if (path.startsWith('/repoName/')) {
+        const repoName = decodeURIComponent(path.split('/repoName/')[1]);
+        console.log('Extracted repo name from URL:', repoName);
+        return repoName;
+    }
+    return null;
 }
 
 function navigateBackToRepos() {
@@ -651,6 +647,81 @@ function navigateBackToRepos() {
     if (window.jobDashboard) {
         window.jobDashboard.updateNavigationState('repos');
     }
+}
+
+function showRepoDetailLoadingState() {
+    console.log('Showing repo detail loading state');
+    
+    // Hide other views and show repo detail view
+    const jobsContent = document.getElementById('jobs-content');
+    const reposContent = document.getElementById('repos-content');
+    const jobDetailView = document.getElementById('job-detail-view');
+    const repoDetailView = document.getElementById('repo-detail-view');
+    
+    if (jobsContent) jobsContent.style.display = 'none';
+    if (reposContent) reposContent.style.display = 'none';
+    if (jobDetailView) jobDetailView.classList.add('d-none');
+    
+    if (repoDetailView) {
+        repoDetailView.classList.remove('d-none');
+        repoDetailView.classList.add('repo-detail-transition');
+    }
+    
+    // Clear previous content and show loading state
+    const repoDetailTitle = document.getElementById('repo-detail-title');
+    const repoDetailName = document.getElementById('repo-detail-name');
+    const repoDetailLanguage = document.getElementById('repo-detail-language');
+    const repoDetailAppPattern = document.getElementById('repo-detail-app-pattern');
+    const repoDetailTotalTasks = document.getElementById('repo-detail-total-tasks');
+    const repoDetailSuccessRate = document.getElementById('repo-detail-success-rate');
+    const repoDetailSuccessTasks = document.getElementById('repo-detail-success-tasks');
+    const repoDetailLink = document.getElementById('repo-detail-link');
+    
+    if (repoDetailTitle) repoDetailTitle.textContent = 'Loading...';
+    if (repoDetailName) repoDetailName.textContent = 'Loading...';
+    if (repoDetailLanguage) repoDetailLanguage.textContent = 'Loading...';
+    if (repoDetailAppPattern) repoDetailAppPattern.textContent = 'Loading...';
+    if (repoDetailTotalTasks) repoDetailTotalTasks.textContent = '...';
+    if (repoDetailSuccessRate) repoDetailSuccessRate.textContent = '...';
+    if (repoDetailSuccessTasks) repoDetailSuccessTasks.textContent = '...';
+    if (repoDetailLink) {
+        repoDetailLink.textContent = 'Loading...';
+        repoDetailLink.href = '#';
+    }
+    
+    // Show loading spinner for success rate section
+    const loadingSpinner = '<span class="spinner-border spinner-border-sm" role="status"></span>';
+    
+    const repoSuccessRate = document.getElementById('repo-success-rate');
+    const repoSuccessFraction = document.getElementById('repo-success-fraction');
+    
+    if (repoSuccessRate) repoSuccessRate.innerHTML = loadingSpinner;
+    if (repoSuccessFraction) repoSuccessFraction.innerHTML = loadingSpinner;
+    
+    // Show loading state for related tasks table
+    const relatedTasksTableBody = document.getElementById('related-tasks-table-body');
+    if (relatedTasksTableBody) {
+        relatedTasksTableBody.innerHTML = `
+            <tr>
+                <td colspan="8" class="text-center py-4">
+                    ${loadingSpinner} Loading related tasks...
+                </td>
+            </tr>
+        `;
+    }
+    
+    // Hide the tasks loading indicator if it's visible
+    const tasksLoadingIndicator = document.getElementById('tasks-loading-indicator');
+    if (tasksLoadingIndicator) {
+        tasksLoadingIndicator.classList.add('d-none');
+    }
+    
+    // Trigger transition effect
+    setTimeout(() => {
+        if (repoDetailView) {
+            repoDetailView.classList.add('active');
+        }
+    }, 10);
 }
 
 function showRepoDetailPage(repoName) {
@@ -683,4 +754,5 @@ function showRepoDetailPage(repoName) {
 
 // Export functions for global access
 window.showRepoDetailPage = showRepoDetailPage;
+window.showRepoDetailLoadingState = showRepoDetailLoadingState;
 window.initRepoDetailView = initRepoDetailView;
