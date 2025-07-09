@@ -6,7 +6,7 @@ import morgan from 'morgan';
 import path from 'path';
 import dotenv from 'dotenv';
 
-// Load environment variables
+// Load environment variables from .env, to config server environment
 dotenv.config();
 
 // Import routes
@@ -24,6 +24,7 @@ class App {
     this.port = parseInt(process.env.PORT || '8080');
     this.initializeMiddlewares();
     this.initializeRoutes();
+    // Handling global errors
     this.initializeErrorHandling();
   }
 
@@ -76,10 +77,12 @@ class App {
         environment: process.env.NODE_ENV || 'development',
       });    });
 
-    // API routes
+    // API routes, 内部的api路由交给对应的路由文件处理
     this.app.use('/api/jobs', jobRoutes);
     this.app.use('/api/config', configRoutes);
     this.app.use('/api/repos', repoRoutes);    // Specific route for job details
+
+    // 到来的get请求全部重定向到index.html
     this.app.get('/job-detail/*', (req: Request, res: Response) => {
       console.log(`Serving index.html for job detail route: ${req.path}`);
       res.sendFile(path.join(__dirname, '../public/index.html'));
@@ -119,7 +122,7 @@ class App {
       res.sendFile(path.join(__dirname, '../public/index.html'));
     });
 
-    // 404 handler for API routes and static files that weren't found
+    // 除了以上的get路由，其余全部是404错误
     this.app.use('*', (req: Request, res: Response) => {
       res.status(404).json({
         error: 'Not Found',

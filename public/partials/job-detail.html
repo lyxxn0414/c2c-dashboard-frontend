@@ -180,10 +180,38 @@
             <div class="row" id="error-categories-container">
                 <!-- Error category cards will be dynamically populated here -->
             </div>
-        </div>
-        
+        </div>        
         <div class="failed-tasks-card">
             <div class="failed-tasks-header">
+                <!-- Title -->
+                <div class="row mb-3">
+                    <div class="col-md-12">
+                        <h5 class="mb-0">Failed Tasks</h5>
+                    </div>
+                </div>
+                
+                <!-- Filter Controls -->
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <div class="filter-controls">
+                            <label for="task-search" class="form-label me-2">Search Tasks:</label>
+                            <input type="text" class="form-control" id="task-search" placeholder="Search by task name...">
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="filter-controls justify-content-end">
+                            <label for="category-filter" class="form-label me-2">Filter by Category:</label>
+                            <select class="form-select" id="category-filter">
+                                <option value="all">All Categories</option>
+                            </select>
+                            <button class="btn btn-outline-secondary btn-sm ms-2" id="clear-filter-btn" style="display: none;">
+                                <i class="bi bi-x-circle"></i> Clear
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Table Header -->
                 <div class="row fw-bold text-muted">
                     <div class="col-md-2">Task Name</div>
                     <div class="col-md-2">Error Category</div>
