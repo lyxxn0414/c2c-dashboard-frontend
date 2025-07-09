@@ -1593,7 +1593,12 @@ class JobDashboard {
         } else {
             console.warn('Unexpected taskErrors format:', taskErrors);
             failedTasksArr = [];
-        }        // Group errors by category
+        }
+
+        // Store original data for filtering
+        this.originalFailedTasks = failedTasksArr;
+
+        // Group errors by category
         const errorsByCategory = this.groupErrorsByCategory(failedTasksArr);
 
         // Update top error category module
@@ -1608,27 +1613,230 @@ class JobDashboard {
             failedTasksCountBadge.textContent = `${failedTasksArr.length} Failed Task${failedTasksArr.length !== 1 ? 's' : ''}`;
         }
 
+        // Populate category filter dropdown
+        this.populateCategoryFilter(errorsByCategory);
+
+        // Render failed tasks
+        this.renderFailedTasks(failedTasksArr);
+
+        // Setup filter event listeners
+        this.setupFilterEventListeners();    }    populateCategoryFilter(errorsByCategory) {
+        console.log('populateCategoryFilter called with:', errorsByCategory);
+        
+        const categoryFilter = document.getElementById('category-filter');
+        if (!categoryFilter) return;
+
+        // Get unique categories from the data, filter out undefined/null values
+        const categories = Object.keys(errorsByCategory)
+            .filter(category => category && category !== 'undefined' && category !== 'null')
+            .sort();
+        
+        console.log('Filtered categories:', categories);
+        
+        // Clear existing options except "All Categories"
+        const options = categoryFilter.querySelectorAll('option:not([value="all"])');
+        options.forEach(option => option.remove());
+
+        // Add categories from actual data
+        categories.forEach(category => {
+            const option = document.createElement('option');
+            option.value = category;
+            const count = errorsByCategory[category].count;
+            console.log(`Category: ${category}, Count: ${count}`);
+            option.textContent = `${category} (${count})`;
+            categoryFilter.appendChild(option);
+        });
+    }
+
+    renderFailedTasks(tasks) {
+        const failedTasksContainer = document.getElementById('failed-tasks-content');
+        if (!failedTasksContainer) return;
+
+        if (tasks.length === 0) {
+            failedTasksContainer.innerHTML = `
+                <div class="text-center py-4">
+                    <i class="bi bi-search text-muted" style="font-size: 2rem;"></i>
+                    <p class="text-muted mt-2">No failed tasks found for the current filters.</p>
+                </div>
+            `;
+            return;
+        }
+
         // Generate HTML for failed tasks using Bootstrap row/col structure
-        const failedTasksHTML = failedTasksArr.map(task => `
-            <div class="failed-task-item">
-                <div class="row align-items-center">
-                    <div class="col-md-2">
-                        <a href="/task-detail/${task.TaskID}" class="task-name-link" data-task-id="${task.TaskID}"> ${task.TaskID || 'Unknown Task'}</a>
-                    </div>
-                    <div class="col-md-2">
-                        <span class="error-category badge bg-danger-subtle text-danger">${task.ErrorCategory || 'General Error'}</span>
-                    </div>
-                    <div class="col-md-3">
-                        <span class="error-description">${task.ErrorDescription || 'No error description available'}</span>
-                    </div>
-                    <div class="col-md-5">
-                        <span class="error-description">${task.ErrorDetail || 'No error details available'}</span>
+        const failedTasksHTML = tasks.map(task => {
+            // Normalize error category, handle undefined/null cases
+            const errorCategory = task.ErrorCategory || 'General Error';
+            const taskName = task.TaskID || 'Unknown Task';
+            
+            return `
+                <div class="failed-task-item" data-category="${errorCategory}" data-task-name="${taskName.toLowerCase()}">
+                    <div class="row align-items-center">
+                        <div class="col-md-2">
+                            <a href="/task-detail/${task.TaskID}" class="task-name-link" data-task-id="${task.TaskID}">${taskName}</a>
+                        </div>
+                        <div class="col-md-2">
+                            <span class="error-category badge bg-danger-subtle text-danger">${errorCategory}</span>
+                        </div>
+                        <div class="col-md-3">
+                            <span class="error-description">${task.ErrorDescription || 'No error description available'}</span>
+                        </div>
+                        <div class="col-md-5">
+                            <span class="error-description">${task.ErrorDetail || 'No error details available'}</span>
+                        </div>
                     </div>
                 </div>
-            </div>
-        `).join('');
+            `;
+        }).join('');
 
         failedTasksContainer.innerHTML = failedTasksHTML;
+    }
+
+    setupFilterEventListeners() {
+        const categoryFilter = document.getElementById('category-filter');
+        const clearFilterBtn = document.getElementById('clear-filter-btn');
+        const taskSearch = document.getElementById('task-search');
+
+        if (categoryFilter) {
+            // Remove existing event listener to avoid duplicates
+            categoryFilter.removeEventListener('change', this.handleCategoryFilter);
+            
+            // Add new event listener
+            this.handleCategoryFilter = (e) => {
+                const selectedCategory = e.target.value;
+                this.applyFilters();
+            };
+            
+            categoryFilter.addEventListener('change', this.handleCategoryFilter);
+        }
+
+        if (taskSearch) {
+            // Remove existing event listener to avoid duplicates
+            taskSearch.removeEventListener('input', this.handleTaskSearch);
+            
+            // Add new event listener with debounce
+            this.handleTaskSearch = this.debounce((e) => {
+                this.applyFilters();
+            }, 300);
+            
+            taskSearch.addEventListener('input', this.handleTaskSearch);
+        }
+
+        if (clearFilterBtn) {
+            // Remove existing event listener to avoid duplicates
+            clearFilterBtn.removeEventListener('click', this.handleClearFilter);
+            
+            // Add new event listener
+            this.handleClearFilter = () => {
+                this.clearFilters();
+            };
+            
+            clearFilterBtn.addEventListener('click', this.handleClearFilter);
+        }
+    }
+
+    // Debounce function for search input
+    debounce(func, wait) {
+        let timeout;
+        return function executedFunction(...args) {
+            const later = () => {
+                clearTimeout(timeout);
+                func(...args);
+            };
+            clearTimeout(timeout);
+            timeout = setTimeout(later, wait);
+        };
+    }
+
+    applyFilters() {
+        if (!this.originalFailedTasks) return;
+
+        const categoryFilter = document.getElementById('category-filter');
+        const taskSearch = document.getElementById('task-search');
+        
+        const selectedCategory = categoryFilter ? categoryFilter.value : 'all';
+        const searchTerm = taskSearch ? taskSearch.value.toLowerCase().trim() : '';
+
+        let filteredTasks = this.originalFailedTasks;
+        
+        // Apply category filter
+        if (selectedCategory !== 'all') {
+            filteredTasks = filteredTasks.filter(task => {
+                const errorCategory = task.ErrorCategory || 'General Error';
+                return errorCategory === selectedCategory;
+            });
+        }
+
+        // Apply search filter
+        if (searchTerm) {
+            filteredTasks = filteredTasks.filter(task => {
+                const taskName = (task.TaskID || '').toLowerCase();
+                return taskName.includes(searchTerm);
+            });
+        }
+
+        // Update the display
+        this.renderFailedTasks(filteredTasks);
+
+        // Update the count badge
+        this.updateTaskCountBadge(filteredTasks.length, selectedCategory, searchTerm);
+
+        // Show/hide clear button
+        this.updateClearButtonVisibility(selectedCategory, searchTerm);
+    }
+
+    updateTaskCountBadge(filteredCount, selectedCategory, searchTerm) {
+        const failedTasksCountBadge = document.getElementById('failed-tasks-count');
+        if (!failedTasksCountBadge || !this.originalFailedTasks) return;
+
+        const totalTasks = this.originalFailedTasks.length;
+        
+        if (selectedCategory === 'all' && !searchTerm) {
+            failedTasksCountBadge.textContent = `${totalTasks} Failed Task${totalTasks !== 1 ? 's' : ''}`;
+        } else {
+            let filterDesc = [];
+            if (selectedCategory !== 'all') {
+                filterDesc.push(selectedCategory);
+            }
+            if (searchTerm) {
+                filterDesc.push(`"${searchTerm}"`);
+            }
+            
+            failedTasksCountBadge.textContent = `${filteredCount} of ${totalTasks} Failed Tasks (${filterDesc.join(', ')})`;
+        }
+    }
+
+    updateClearButtonVisibility(selectedCategory, searchTerm) {
+        const clearFilterBtn = document.getElementById('clear-filter-btn');
+        if (clearFilterBtn) {
+            const hasActiveFilters = selectedCategory !== 'all' || searchTerm.length > 0;
+            clearFilterBtn.style.display = hasActiveFilters ? 'inline-block' : 'none';
+        }
+    }
+
+    filterTasksByCategory(category) {
+        // This method is kept for backward compatibility
+        // but now delegates to the unified applyFilters method
+        const categoryFilter = document.getElementById('category-filter');
+        if (categoryFilter) {
+            categoryFilter.value = category;
+        }
+        this.applyFilters();
+    }
+
+    clearFilters() {
+        const categoryFilter = document.getElementById('category-filter');
+        const taskSearch = document.getElementById('task-search');
+        
+        if (categoryFilter) {
+            categoryFilter.value = 'all';
+        }
+        
+        if (taskSearch) {
+            taskSearch.value = '';
+        }
+
+        // Reset to show all tasks
+        this.applyFilters();
     }
 
     calculateSuccessTasks(job) {
@@ -1713,12 +1921,15 @@ class JobDashboard {
     }
 
     async deleteJob(jobId) {
-    }
-
-    groupErrorsByCategory(failedTasks) {
+    }    groupErrorsByCategory(failedTasks) {
         const categories = {};
         failedTasks.forEach(task => {
-            const category = task.ErrorCategory || 'Unknown';
+            // Normalize category, handle undefined/null/empty cases
+            let category = task.ErrorCategory;
+            if (!category || category === 'undefined' || category === 'null' || category.trim() === '') {
+                category = 'General Error';
+            }
+            
             if (!categories[category]) {
                 categories[category] = {
                     count: 0,
@@ -1826,9 +2037,38 @@ class JobDashboard {
         }
         
         return null;
+    }    // Test function for filter functionality (can be removed in production)
+    testCategoryFilter() {
+        console.log('Testing enhanced filter functionality...');
+        
+        // Mock test data with various scenarios including undefined categories
+        const testTasks = [
+            { TaskID: 'deploy-task-1', ErrorCategory: 'Deployment Error', ErrorDescription: 'Failed to deploy container', ErrorDetail: 'Resource quota exceeded' },
+            { TaskID: 'config-task-2', ErrorCategory: 'Configuration Error', ErrorDescription: 'Invalid configuration', ErrorDetail: 'Missing required parameter' },
+            { TaskID: 'deploy-task-3', ErrorCategory: 'Deployment Error', ErrorDescription: 'Deploy timeout', ErrorDetail: 'Network timeout occurred' },
+            { TaskID: 'network-task-4', ErrorCategory: 'Network Error', ErrorDescription: 'Connection failed', ErrorDetail: 'DNS resolution failed' },
+            { TaskID: 'undefined-task-5', ErrorCategory: undefined, ErrorDescription: 'Unknown error', ErrorDetail: 'No details available' },
+            { TaskID: 'null-task-6', ErrorCategory: null, ErrorDescription: 'Null category error', ErrorDetail: 'Category is null' },
+            { TaskID: 'empty-task-7', ErrorCategory: '', ErrorDescription: 'Empty category error', ErrorDetail: 'Category is empty' },
+            { TaskID: 'validation-task-8', ErrorCategory: 'Validation Error', ErrorDescription: 'Schema validation failed', ErrorDetail: 'Invalid input format' },
+            { TaskID: 'search-test-task', ErrorCategory: 'Deployment Error', ErrorDescription: 'Search test task', ErrorDetail: 'For testing search functionality' }
+        ];
+        
+        // Populate with test data
+        this.populateFailedTasks(testTasks);
+        
+        console.log('Enhanced filter test data loaded with the following features:');
+        console.log('✅ Category filter with proper undefined handling');
+        console.log('✅ Task name search functionality'); 
+        console.log('✅ Combined filtering capabilities');
+        console.log('✅ Clear filters button');
+        console.log('');
+        console.log('Test scenarios:');
+        console.log('1. Try filtering by different categories');
+        console.log('2. Search for "deploy" or "search" in task names');
+        console.log('3. Combine category and search filters');
+        console.log('4. Notice undefined categories are handled as "General Error"');
     }
-
-    // ...existing code...
 }
 
 // Initialize dashboard when DOM is loaded

@@ -338,7 +338,7 @@ function displayRepos(repos) {
             <td>${createLanguageTags(repo.languages)}</td>
             <td>${repo.repoType}</td>
             <td>${repo.appPattern}</td>
-            <td>${createSuccessRateBadge(repo.successRate)}</td>
+            <td>${createSuccessRateBadge(repo.successRate)}  (${repo.successfulTasks}/${repo.totalTasks})</td>
         `;
 
         tbody.appendChild(tr);

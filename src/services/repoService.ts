@@ -129,8 +129,8 @@ export class RepoService {
             appPattern: apiRepo.AppPattern,
             successRate: this.parseSuccessRate(apiRepo.SuccessRate),
             repoURL: apiRepo.RepoURL,
-            totalTasks: apiRepo.TotalTasks,
-            successfulTasks: apiRepo.SuccessTasks
+            totalTasks: apiRepo.TotalTasks || 0,
+            successfulTasks: apiRepo.SuccessTasks || 0
         };
     }
 
