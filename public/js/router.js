@@ -91,7 +91,7 @@ class Router {
         }
         
         if (path.startsWith('/job-detail/')) {
-            const jobId = path.split('/job-detail/')[1];
+            const jobId = path.split('/job-detail/jobID=')[1];
             if (jobId) {
                 this.currentRoute = path;
                 this.showJobDetailPage(jobId);
@@ -210,8 +210,9 @@ class Router {
         });
 
         // Show job detail page if function exists
-        if (typeof showJobDetail === 'function') {
-            showJobDetail(jobId);
+        if (typeof window.jobDashboard.viewJob === 'function') {
+            console.log('Calling window.jobDashboard.viewJob with:', jobId);
+            window.jobDashboard.viewJob(jobId);
         } else {
             console.error('showJobDetail function not found');
         }

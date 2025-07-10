@@ -24,7 +24,6 @@ class JobDashboard {
             this.checkExternalServiceStatus();
             this.loadJobs();
             this.loadConfig();
-            this.handleInitialRoute();
         }, 200);
     }
 
@@ -34,43 +33,6 @@ class JobDashboard {
             console.log('Popstate event:', event.state);
             this.handleRoute(window.location.pathname + window.location.search);
         });
-    }
-
-    handleInitialRoute() {
-        // Handle the initial page load route
-        const currentPath = window.location.pathname + window.location.search;
-        console.log('Initial route:', currentPath);
-        this.handleRoute(currentPath);
-    }    handleRoute(path) {
-        console.log('Handling route:', path);
-        
-        // Parse job detail routes: /job-detail/jobID=#id or ?jobID=#id
-        const jobDetailMatch = path.match(/\/job-detail\/jobID=([^&?#]+)/);
-        const jobDetailQueryMatch = path.match(/[?&]jobID=([^&]+)/);
-        
-        if (jobDetailMatch || jobDetailQueryMatch) {
-            const jobId = jobDetailMatch ? jobDetailMatch[1] : jobDetailQueryMatch[1];
-            console.log('Routing to job detail:', jobId);
-            // Immediately show detail view with loading state instead of jobs view
-            this.showJobDetailLoadingState();
-            this.navigateToJobDetail(jobId);
-        } else if (path === '/repos' || path.startsWith('/repos')) {
-            console.log('Routing to repos view');
-            this.showReposView();
-        } else if (path.startsWith('/repoName/')) {
-            const repoName = path.split('/repoName/')[1];
-            console.log('Routing to repo detail:', repoName);
-            navigateToRepoDetail(repoName);
-            showRepoDetailLoadingState();
-        }
-        else {
-            // Default to jobs view
-            this.showJobsView();
-            // Update URL if needed
-            if (path !== '/' && path !== '/jobs' && path !== '') {
-                this.updateURL('/');
-            }
-        }
     }
 
     async navigateToJobDetail(jobId) {
