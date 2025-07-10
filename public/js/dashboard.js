@@ -669,7 +669,7 @@ class JobDashboard {
                 <td>${job.TaskNum}</td>
                 <td>
                     <span class="success-rate ${this.getSuccessRateClass(job.SuccessRate)}">
-                        ${job.SuccessRate}
+                        ${job.SuccessRate} (${job.SuccessTasks}/${job.TaskNum})
                     </span>
                 </td>
             `;
@@ -1389,8 +1389,7 @@ class JobDashboard {
             <div class="classification-item">
                 <span class="model-name">${item.Type}</span>
                 <span class="model-stats">
-                    Tasks: ${item.TaskNum || 0} |
-                    Success Rate: ${item.SuccessRate || '0%'} |
+                    Success Rate: ${item.SuccessRate || '0%'} (${item.SuccessNum || 0}/${item.TaskNum || 0}) |
                     Avg Iteration: ${item.AvgSuccessIteration || 0}
                 </span>
             </div>
@@ -1537,7 +1536,8 @@ class JobDashboard {
             .replace(/(eastus|westus|northeurope|etc)/gi, 'REGION') // Replace regions
             .replace(/("[^"]+"|'[^']+')/g, 'VALUE') // Replace quoted values
             .trim();
-    }    populateFailedTasks(taskErrors) {
+    }    
+    populateFailedTasks(taskErrors) {
         const failedTasksContainer = document.getElementById('failed-tasks-content');
         if (!failedTasksContainer) {
             console.warn('Failed tasks container not found');
@@ -1636,7 +1636,10 @@ class JobDashboard {
                         <div class="col-md-2">
                             <a href="/task-detail/${task.TaskID}" class="task-name-link" data-task-id="${task.TaskID}">${taskName}</a>
                         </div>
-                        <div class="col-md-2">
+                        <div class="col-md-1">
+                            <span class="error-category">${this.formatDateTime(task.CreatedDate)}</span>
+                        </div>
+                        <div class="col-md-1">
                             <span class="error-category badge bg-danger-subtle text-danger">${errorCategory}</span>
                         </div>
                         <div class="col-md-3">
@@ -1821,37 +1824,6 @@ class JobDashboard {
         if (!job.finishedTaskNum) return 0;
         const successTasks = this.calculateSuccessTasks(job);
         return job.finishedTaskNum - successTasks;
-    }
-
-    // Map backend response fields to frontend compatible format
-    mapBackendJob(backendJob) {
-        if (!backendJob) return {};
-        
-        return {
-            id: backendJob.TestJobID || backendJob.id || 'N/A',
-            name: backendJob.TestJobName || backendJob.name || 'Unnamed Job',
-            description: backendJob.JobDiscription || backendJob.description || 'No description',
-            creationTime: backendJob.CreatedTime || backendJob.creationTime || new Date().toISOString(),
-            user: backendJob.InitiatedBy || backendJob.user || 'Unknown',
-            createdBy: backendJob.InitiatedBy || 'Unknown',
-            poolName: backendJob.PoolName || backendJob.poolName || 'Default',
-            taskNum: backendJob.TaskNum || backendJob.taskNum || 0,
-            finishedTaskNum: backendJob.FinishedTaskNum || backendJob.finishedTaskNum || 0,
-            successRate: this.formatSuccessRate(backendJob.SuccessRate || backendJob.successRate),
-            // Backend fields for direct access
-            TestJobID: backendJob.TestJobID,
-            InitiatedBy: backendJob.InitiatedBy,
-            CreatedTime: backendJob.CreatedTime,
-            JobDiscription: backendJob.JobDiscription,
-            PoolName: backendJob.PoolName,
-            TaskNum: backendJob.TaskNum,
-            SuccessTasks: backendJob.SuccessTasks,
-            SuccessRate: backendJob.SuccessRate,
-            FailedTasks: backendJob.FailedTasks,
-            AvgSuccessIteration: backendJob.AvgSuccessIteration,
-            AIIntegration: backendJob.AIIntegration,
-            AvgInfraChanges: backendJob.AvgInfraChanges
-        };
     }
 
     formatSuccessRate(rate) {

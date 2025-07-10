@@ -350,9 +350,9 @@ class TaskDetail {
 
     navigateToJobDetail(jobId) {
         if (window.router) {
-            window.router.navigate(`/job-detail/${jobId}`);
+            window.router.navigate(`/job-detail/jobID=${jobId}`);
         } else {
-            window.location.href = `/job-detail/${jobId}`;
+            window.location.href = `/job-detail/jobID=${jobId}`;
         }
     }
 
