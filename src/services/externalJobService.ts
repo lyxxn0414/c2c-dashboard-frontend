@@ -474,6 +474,37 @@ export class ExternalJobService {
             };
         }
     }
+
+    /**
+     * Get task list by Job ID
+     * @param jobId - The job ID to get tasks for
+     * @returns Promise<TaskListResponse> - List of tasks for the job
+     */
+    async getTaskListByJobID(jobId: string): Promise<any> {
+        try {
+            console.log(`[ExternalAPI] Fetching task list for job: ${jobId}`);
+            
+            const requestBody = {
+                TestJobID: jobId
+            };
+
+            const response = await this.requestWithRetry<any>({
+                method: 'GET',
+                url: '/kusto/getTaskListByJobID',
+                data: requestBody
+            });
+
+            console.log(`[ExternalAPI] Successfully fetched ${response?.data?.length || 0} tasks for job ${jobId}`);
+            return response;
+
+        } catch (error) {
+            console.error(`[ExternalAPI] Failed to fetch task list for job ${jobId}:`, error);
+            if (error instanceof Error && error.message.includes('404')) {
+                throw new Error(`Job with ID ${jobId} not found`);
+            }
+            throw new Error(`Failed to fetch task list from external service: ${error instanceof Error ? error.message : 'Unknown error'}`);
+        }
+    }
 }
 
 // Export singleton instance

@@ -126,14 +126,179 @@
                 </div>
             </div>
         </div>
-    </div>
-
-    <!-- Classification Results -->
+    </div>    <!-- Classification Results -->
     <div class="classification-section">
         <div class="row" id="classification-container">
             <!-- Classification cards will be dynamically generated here -->
         </div>
-    </div>    <!-- Failed Tasks Section -->
+    </div>
+
+    <!-- Two-Dimensional Results Analysis -->
+    <div class="two-dimension-analysis-section">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <h4><i class="bi bi-grid-3x3 me-2"></i>Two-Dimensional Results Analysis</h4>
+        </div>
+
+        <!-- Dimension Selection Card -->
+        <div class="dimension-selection-card mb-4">
+            <div class="dimension-controls">
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="dimension-selector">
+                            <label for="x-dimension" class="form-label">X-Axis Dimension:</label>
+                            <select class="form-select" id="x-dimension">
+                                <option value="IaCType">IaC Type</option>
+                                <option value="Model" selected>Model</option>
+                                <option value="Language">Language</option>
+                                <option value="RepoType">Repository Type</option>
+                                <option value="AppPattern">Application Pattern</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="dimension-selector">
+                            <label for="y-dimension" class="form-label">Y-Axis Dimension:</label>
+                            <select class="form-select" id="y-dimension">
+                                <option value="IaCType" selected>IaC Type</option>
+                                <option value="Model">Model</option>
+                                <option value="Language">Language</option>
+                                <option value="RepoType">Repository Type</option>
+                                <option value="AppPattern">Application Pattern</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+                <div class="row mt-3">
+                    <div class="col-md-4">
+                        <div class="metric-selector">
+                            <label for="metric-type" class="form-label">Metric to Display:</label>
+                            <select class="form-select" id="metric-type">
+                                <option value="successRate" selected>Success Rate (%)</option>
+                                <option value="taskCount">Task Count</option>
+                                <option value="avgInteractions">Avg Interactions</option>
+                                <option value="avgChanges">Avg Code Changes</option>
+                                <option value="avgToolCalls">Avg Tool Calls</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="visualization-options">
+                            <label class="form-label">Display Options:</label>
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" id="show-values" checked>
+                                <label class="form-check-label" for="show-values">Show values in cells</label>
+                            </div>
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" id="color-coding" checked>
+                                <label class="form-check-label" for="color-coding">Color coding</label>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="control-buttons mt-4">
+                            <button class="btn btn-primary" id="generate-matrix-btn">
+                                <i class="bi bi-arrow-clockwise me-2"></i>Generate Matrix
+                            </button>
+                            <button class="btn btn-outline-secondary ms-2" id="export-matrix-btn">
+                                <i class="bi bi-download me-2"></i>Export
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Matrix Results Card -->
+        <div class="matrix-results-card">
+            <!-- Loading State -->
+            <div class="matrix-loading-state text-center py-5" id="matrix-loading" style="display: none;">
+                <div class="spinner-border text-primary mb-3" role="status">
+                    <span class="visually-hidden">Loading...</span>
+                </div>
+                <p class="text-muted">Generating two-dimensional analysis...</p>
+            </div>
+
+            <!-- Matrix Table Container -->
+            <div class="matrix-container" id="matrix-container">
+                <div class="table-responsive">
+                    <table class="table table-bordered matrix-table" id="matrix-table">
+                        <thead>
+                            <tr id="matrix-header">
+                                <!-- Dynamic header will be generated -->
+                            </tr>
+                        </thead>
+                        <tbody id="matrix-body">
+                            <!-- Dynamic matrix content will be generated -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Legend -->
+            <div class="matrix-legend mt-3" id="matrix-legend" style="display: none;">
+                <div class="legend-title">
+                    <strong>Color Legend:</strong>
+                </div>
+                <div class="legend-items">
+                    <div class="legend-item">
+                        <span class="legend-color high-performance"></span>
+                        <span class="legend-text">High Performance (≥80%)</span>
+                    </div>
+                    <div class="legend-item">
+                        <span class="legend-color medium-performance"></span>
+                        <span class="legend-text">Medium Performance (50-79%)</span>
+                    </div>
+                    <div class="legend-item">
+                        <span class="legend-color low-performance"></span>
+                        <span class="legend-text">Low Performance (<50%)</span>
+                    </div>
+                    <div class="legend-item">
+                        <span class="legend-color no-data"></span>
+                        <span class="legend-text">No Data</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Summary Statistics -->
+            <div class="matrix-summary mt-4" id="matrix-summary" style="display: none;">
+                <div class="row">
+                    <div class="col-md-3">
+                        <div class="summary-stat">
+                            <div class="stat-value" id="matrix-total-combinations">0</div>
+                            <div class="stat-label">Total Combinations</div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="summary-stat">
+                            <div class="stat-value" id="matrix-covered-combinations">0</div>
+                            <div class="stat-label">Covered Combinations</div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="summary-stat">
+                            <div class="stat-value" id="matrix-best-combination">N/A</div>
+                            <div class="stat-label">Best Combination</div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="summary-stat">
+                            <div class="stat-value" id="matrix-coverage-percentage">0%</div>
+                            <div class="stat-label">Coverage</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Empty State -->
+            <div class="matrix-empty-state text-center py-5" id="matrix-empty" style="display: none;">
+                <i class="bi bi-grid display-1 text-muted mb-3"></i>
+                <h5 class="text-muted">No data available</h5>
+                <p class="text-muted">Select dimensions and click "Generate Matrix" to view the analysis.</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Failed Tasks Section -->
     <div class="failed-tasks-section">
         <div class="d-flex justify-content-between align-items-center mb-3">
             <h4><i class="bi bi-exclamation-triangle text-warning me-2"></i>Failed Tasks Analysis</h4>

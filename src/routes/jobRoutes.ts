@@ -1,6 +1,6 @@
 import { Router, Request, Response } from 'express';
 import { asyncHandler } from '../middleware/errorHandler';
-import { Job, JobQueryParams, JobListResponse, CreateJobRequest } from '../types/job.types';
+import { Job, JobQueryParams, JobListResponse, CreateJobRequest, Task, TaskListResponse } from '../types/job.types';
 import { externalJobService } from '../services/externalJobService';
 
 const router = Router();
@@ -345,6 +345,97 @@ router.get('/tasks/:taskId', asyncHandler(async (req: Request, res: Response) =>
   };
 
   res.json(mockTaskDetail);
+}));
+
+/**
+ * GET /api/jobs/:jobId/tasks
+ * Get all tasks for a specific job by Job ID
+ */
+router.get('/:jobId/tasks', asyncHandler(async (req: Request, res: Response) => {
+  const { jobId } = req.params;
+
+  try {
+    console.log(`Fetching task list for job: ${jobId}`);
+    
+    // Call external service to get task list
+    const taskListResponse = await externalJobService.getTaskListByJobID(jobId);
+    
+    if (taskListResponse && taskListResponse.data) {
+      console.log(`Successfully fetched ${taskListResponse.data.length} tasks for job ${jobId}`);
+      res.json(taskListResponse);
+      return;
+    }
+    
+    // If no data returned, return empty response
+    res.json({
+      name: "PrimaryResult",
+      data: []
+    });
+    
+  } catch (error) {
+    console.error(`Error fetching task list for job ${jobId}:`, error);
+    
+    // Return mock fallback data based on the provided example
+    const fallbackResponse: TaskListResponse = {
+      name: "PrimaryResult",
+      data: [
+        {
+          Timestamp: "2025-07-09T07:18:32.125Z",
+          TaskID: `${jobId}-defangsampleslan-b1ae823f`,
+          TestJobID: jobId,
+          RepoName: "defang-samples/langchain",
+          VSCodeVersion: "vscode@1.101.0",
+          ExtensionVersions: "fallback-extension.vsix",
+          TaskType: "Agent Tool",
+          InitialPrompt: "Fallback data - External service unavailable. Recommend me some service configurations and help me deploy my project to Azure.",
+          CopilotModel: "Claude Sonnet 4",
+          CommandLine: "npx",
+          IsSuccessful: true,
+          UseTerraform: false,
+          FileEditsNum: 3,
+          CreatedDate: new Date().toISOString(),
+          RecommendToolCount: 0,
+          Iterations: 9,
+          QuotaToolCount: 0,
+          RegionToolCount: 0,
+          PredeployToolCount: 0,
+          DeployToolCount: 0,
+          AIIntegration: 24,
+          IsThrottled: false,
+          UseBicepSchemasTool: false,
+          UseAzureAgentBestPractices: false
+        },
+        {
+          Timestamp: "2025-07-09T07:03:07.662Z",
+          TaskID: `${jobId}-defangsamplesjav-925c699d`,
+          TestJobID: jobId,
+          RepoName: "defang-samples/javalin",
+          VSCodeVersion: "vscode@1.101.0",
+          ExtensionVersions: "fallback-extension.vsix",
+          TaskType: "Agent Tool",
+          InitialPrompt: "Fallback data - External service unavailable. Recommend me some service configurations and help me deploy my project to Azure.",
+          CopilotModel: "Claude Sonnet 4",
+          CommandLine: "npx",
+          IsSuccessful: true,
+          UseTerraform: false,
+          FileEditsNum: 1,
+          CreatedDate: new Date().toISOString(),
+          RecommendToolCount: 0,
+          Iterations: 4,
+          QuotaToolCount: 0,
+          RegionToolCount: 0,
+          PredeployToolCount: 0,
+          DeployToolCount: 0,
+          AIIntegration: 7,
+          IsThrottled: false,
+          UseBicepSchemasTool: false,
+          UseAzureAgentBestPractices: false
+        }
+      ]
+    };
+    
+    res.json(fallbackResponse);
+  }
 }));
 
 export default router;

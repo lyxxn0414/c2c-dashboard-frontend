@@ -103,3 +103,36 @@ export interface ErrorResponse {
   timestamp?: string;
   path?: string;
 }
+
+// Task related types
+export interface Task {
+  Timestamp: string;
+  TaskID: string;
+  TestJobID: string;
+  RepoName: string;
+  VSCodeVersion: string;
+  ExtensionVersions: string;
+  TaskType: string;
+  InitialPrompt: string;
+  CopilotModel: string;
+  CommandLine: string;
+  IsSuccessful: boolean;
+  UseTerraform: boolean;
+  FileEditsNum: number;
+  CreatedDate: string;
+  RecommendToolCount: number;
+  Iterations: number;
+  QuotaToolCount: number;
+  RegionToolCount: number;
+  PredeployToolCount: number;
+  DeployToolCount: number;
+  AIIntegration: number;
+  IsThrottled: boolean;
+  UseBicepSchemasTool: boolean;
+  UseAzureAgentBestPractices: boolean;
+}
+
+export interface TaskListResponse {
+  name: string;
+  data: Task[];
+}

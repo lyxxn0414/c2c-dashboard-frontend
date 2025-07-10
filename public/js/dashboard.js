@@ -1139,9 +1139,7 @@ class JobDashboard {
         document.getElementById('tool-quota').textContent = job.QuotaCalls || 0;
 
         // Model statistics (using mock data for now - will be replaced with real API data)
-        this.populateModelStatistics(classifiedResults);
-
-        // Failed tasks analysis
+        this.populateModelStatistics(classifiedResults);        // Failed tasks analysis
         this.populateFailedTasks(taskErrors);
         document.querySelectorAll('.task-name-link').forEach(link => {
             link.addEventListener('click', (e) => {
@@ -1149,7 +1147,8 @@ class JobDashboard {
                 const taskId = e.target.dataset.taskId;
                 navigateToTaskDetail(taskId);
             });
-        });
+        });        // Load two-dimensional analysis data
+        this.loadTwoDimensionalAnalysis(job.TestJobID);
 
         // Trigger transition effect
         setTimeout(() => {
@@ -1335,33 +1334,27 @@ class JobDashboard {
             return;
         }
 
-        console.log("Populating model statistics with classified results:", classifiedResults);
-
-        // Define classification categories with their data sources
+        console.log("Populating model statistics with classified results:", classifiedResults);        // Define classification categories with their data sources
         const classificationCategories = [
             {
                 title: 'Result classified by Model',
                 subtitle: '',
-                data: classifiedResults['Model']&& classifiedResults['Model'].data || this.getMockModelStats(),
-                tags: ['Language model', 'all', 'Compute Resource Note', 'result']
+                data: classifiedResults['Model']&& classifiedResults['Model'].data || this.getMockModelStats()
             },
             {
                 title: 'Result classified by Language',
                 subtitle: '',
-                data: classifiedResults['Language']&& classifiedResults['Language'].data || this.getMockLanguageStats(),
-                tags: ['Model', 'result', 'all', 'Compute Resource Note']
+                data: classifiedResults['Language']&& classifiedResults['Language'].data || this.getMockLanguageStats()
             },
             {
                 title: 'Result classified by Resource Type',
                 subtitle: 'Num of Compute Resource + Num of Binding Resource',
-                data: classifiedResults['AppPattern']&& classifiedResults['AppPattern'].data || this.getMockResourceStats(),
-                tags: ['Language', 'result', 'all', 'Model']
+                data: classifiedResults['AppPattern']&& classifiedResults['AppPattern'].data || this.getMockResourceStats()
             },
             {
                 title: 'Result classified by Repo Type',
                 subtitle: 'Task Name',
-                data: classifiedResults['RepoType']&& classifiedResults['RepoType'].data || this.getMockRepoStats(),
-                tags: ['Model', 'result', 'all']
+                data: classifiedResults['RepoType']&& classifiedResults['RepoType'].data || this.getMockRepoStats()
             }
         ];
 
@@ -1378,11 +1371,8 @@ class JobDashboard {
                 console.log(`Added classification card for: ${category.title}`);
             }
         });
-    }
-
-    generateClassificationCard(category) {
+    }    generateClassificationCard(category) {
         console.log(`Generating classification card for: ${category.title}`);
-        const tagsHTML = category.tags.map(tag => `<span class="tag">${tag}</span>`).join('');
         const subtitleHTML = category.subtitle ? `<div class="classification-subtitle">${category.subtitle}</div>` : '';
         
         const itemsHTML = category.data.map(item => `
@@ -1400,9 +1390,6 @@ class JobDashboard {
                 <div class="classification-card">
                     <div class="classification-header">
                         <h5>${category.title}</h5>
-                        <div class="tags">
-                            ${tagsHTML}
-                        </div>
                     </div>
                     <div class="classification-content">
                         ${subtitleHTML}
@@ -1943,35 +1930,7 @@ class JobDashboard {
         errorCategoriesContainer.innerHTML = categoriesHTML;
     }
 
-    showSampleTaskDetail() {
-        // Navigate to a sample task detail page
-        const sampleTaskId = '123456';
-        const currentJobId = this.getCurrentJobId(); // Get current job ID if available
-        
-        if (window.router) {
-            const route = currentJobId ? `/task-detail/${sampleTaskId}?jobId=${currentJobId}` : `/task-detail/${sampleTaskId}`;
-            window.router.navigate(route);
-        } else {
-            // Fallback navigation
-            window.location.href = `/task-detail/${sampleTaskId}`;
-        }
-    }
-
-    getCurrentJobId() {
-        // Try to get current job ID from the detail view
-        const jobIdElement = document.getElementById('job-detail-id');
-        if (jobIdElement) {
-            return jobIdElement.textContent;
-        }
-        
-        // Try to get from URL if we're in job detail view
-        const path = window.location.pathname;
-        if (path.startsWith('/job-detail/')) {
-            return path.split('/job-detail/')[1];
-        }
-        
-        return null;
-    }    // Test function for filter functionality (can be removed in production)
+    // Test function for filter functionality (can be removed in production)
     testCategoryFilter() {
         console.log('Testing enhanced filter functionality...');
         
@@ -2002,6 +1961,512 @@ class JobDashboard {
         console.log('2. Search for "deploy" or "search" in task names');
         console.log('3. Combine category and search filters');
         console.log('4. Notice undefined categories are handled as "General Error"');
+    }    // ============================================================
+    // Two-Dimensional Analysis Methods
+    // ============================================================
+
+    async loadTwoDimensionalAnalysis(jobId) {
+        try {
+            console.log('Loading two-dimensional analysis for job:', jobId);
+            
+            // Fetch tasks data from the API
+            const response = await fetch(`/api/jobs/${jobId}/tasks`);
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            
+            const tasksData = await response.json();
+            console.log('Fetched tasks data for analysis:', tasksData);
+            
+            // Store the tasks data for analysis
+            this.analysisTasksData = tasksData.tasks || tasksData;
+            
+            // Setup event listeners for the controls
+            this.setupTwoDimensionalControls();
+            
+            // Initialize with default matrix (Model vs IaCType)
+            this.generateMatrix();
+            
+        } catch (error) {
+            console.error('Error loading two-dimensional analysis:', error);
+            this.showMatrixErrorState();
+        }
+    }
+
+    setupTwoDimensionalControls() {
+        // Dimension selectors
+        const xDimension = document.getElementById('x-dimension');
+        const yDimension = document.getElementById('y-dimension');
+        const metricType = document.getElementById('metric-type');
+        const showValues = document.getElementById('show-values');
+        const colorCoding = document.getElementById('color-coding');
+        const generateBtn = document.getElementById('generate-matrix-btn');
+        const exportBtn = document.getElementById('export-matrix-btn');
+
+        if (xDimension) {
+            xDimension.addEventListener('change', () => this.onDimensionChange());
+        }
+        
+        if (yDimension) {
+            yDimension.addEventListener('change', () => this.onDimensionChange());
+        }
+        
+        if (metricType) {
+            metricType.addEventListener('change', () => this.generateMatrix());
+        }
+        
+        if (showValues) {
+            showValues.addEventListener('change', () => this.updateMatrixDisplay());
+        }
+        
+        if (colorCoding) {
+            colorCoding.addEventListener('change', () => this.updateMatrixDisplay());
+        }
+        
+        if (generateBtn) {
+            generateBtn.addEventListener('click', () => this.generateMatrix());
+        }
+        
+        if (exportBtn) {
+            exportBtn.addEventListener('click', () => this.exportMatrix());
+        }
+    }
+
+    onDimensionChange() {
+        const xDimension = document.getElementById('x-dimension')?.value;
+        const yDimension = document.getElementById('y-dimension')?.value;
+        
+        // Prevent same dimension selection
+        if (xDimension === yDimension) {
+            // Find a different dimension for y-axis
+            const dimensions = ['IaCType', 'Model', 'Language', 'RepoType', 'AppPattern'];
+            const availableY = dimensions.find(d => d !== xDimension);
+            if (availableY) {
+                document.getElementById('y-dimension').value = availableY;
+            }
+        }
+        
+        this.generateMatrix();
+    }
+
+    showMatrixLoadingState() {
+        const loadingEl = document.getElementById('matrix-loading');
+        const containerEl = document.getElementById('matrix-container');
+        const emptyEl = document.getElementById('matrix-empty');
+        const legendEl = document.getElementById('matrix-legend');
+        const summaryEl = document.getElementById('matrix-summary');
+        
+        if (loadingEl) loadingEl.style.display = 'block';
+        if (containerEl) containerEl.style.display = 'none';
+        if (emptyEl) emptyEl.style.display = 'none';
+        if (legendEl) legendEl.style.display = 'none';
+        if (summaryEl) summaryEl.style.display = 'none';
+    }
+
+    showMatrixErrorState() {
+        const loadingEl = document.getElementById('matrix-loading');
+        const containerEl = document.getElementById('matrix-container');
+        const emptyEl = document.getElementById('matrix-empty');
+        const legendEl = document.getElementById('matrix-legend');
+        const summaryEl = document.getElementById('matrix-summary');
+        
+        if (loadingEl) loadingEl.style.display = 'none';
+        if (containerEl) containerEl.style.display = 'none';
+        if (emptyEl) emptyEl.style.display = 'block';
+        if (legendEl) legendEl.style.display = 'none';
+        if (summaryEl) summaryEl.style.display = 'none';
+    }
+
+    generateMatrix() {
+        if (!this.analysisTasksData || this.analysisTasksData.length === 0) {
+            this.showMatrixErrorState();
+            return;
+        }
+
+        this.showMatrixLoadingState();
+
+        // Get selected dimensions and metric
+        const xDimension = document.getElementById('x-dimension')?.value || 'Model';
+        const yDimension = document.getElementById('y-dimension')?.value || 'IaCType';
+        const metricType = document.getElementById('metric-type')?.value || 'successRate';
+
+        console.log('Generating matrix:', { xDimension, yDimension, metricType });
+
+        // Process data and create matrix
+        const matrixData = this.processMatrixData(xDimension, yDimension, metricType);
+        
+        // Render the matrix
+        this.renderMatrix(matrixData, xDimension, yDimension, metricType);
+        
+        // Update summary statistics
+        this.updateMatrixSummary(matrixData);
+        
+        // Show results
+        const loadingEl = document.getElementById('matrix-loading');
+        const containerEl = document.getElementById('matrix-container');
+        const legendEl = document.getElementById('matrix-legend');
+        const summaryEl = document.getElementById('matrix-summary');
+        
+        if (loadingEl) loadingEl.style.display = 'none';
+        if (containerEl) containerEl.style.display = 'block';
+        if (legendEl) legendEl.style.display = 'block';
+        if (summaryEl) summaryEl.style.display = 'block';
+    }
+
+    processMatrixData(xDimension, yDimension, metricType) {
+        const tasks = this.analysisTasksData;
+        
+        // Get unique values for each dimension
+        const xValues = [...new Set(tasks.map(task => this.getDimensionValue(task, xDimension)).filter(Boolean))].sort();
+        const yValues = [...new Set(tasks.map(task => this.getDimensionValue(task, yDimension)).filter(Boolean))].sort();
+        
+        // Create matrix
+        const matrix = {};
+        const cellData = {};
+        
+        yValues.forEach(yVal => {
+            matrix[yVal] = {};
+            cellData[yVal] = {};
+            
+            xValues.forEach(xVal => {
+                // Find tasks matching this combination
+                const matchingTasks = tasks.filter(task => 
+                    this.getDimensionValue(task, xDimension) === xVal && 
+                    this.getDimensionValue(task, yDimension) === yVal
+                );
+                
+                if (matchingTasks.length > 0) {
+                    const value = this.calculateMetricValue(matchingTasks, metricType);
+                    matrix[yVal][xVal] = value;
+                    cellData[yVal][xVal] = {
+                        tasks: matchingTasks,
+                        count: matchingTasks.length,
+                        value: value
+                    };
+                } else {
+                    matrix[yVal][xVal] = null;
+                    cellData[yVal][xVal] = {
+                        tasks: [],
+                        count: 0,
+                        value: null
+                    };
+                }
+            });
+        });
+        
+        return {
+            matrix,
+            cellData,
+            xValues,
+            yValues,
+            xDimension,
+            yDimension,
+            metricType
+        };
+    }
+
+    getDimensionValue(task, dimension) {
+        switch (dimension) {
+            case 'IaCType':
+                return task.IaCType || task.InfrastructureType || 'Unknown';
+            case 'Model':
+                return task.CopilotModel || task.Model || 'Unknown';
+            case 'Language':
+                return task.Language || task.ProgrammingLanguage || 'Unknown';
+            case 'RepoType':
+                return task.RepoType || task.RepositoryType || 'Unknown';
+            case 'AppPattern':
+                return task.AppPattern || task.ApplicationPattern || 'Unknown';
+            default:
+                return 'Unknown';
+        }
+    }
+
+    calculateMetricValue(tasks, metricType) {
+        if (tasks.length === 0) return null;
+        
+        switch (metricType) {
+            case 'successRate':
+                const successful = tasks.filter(task => this.isTaskSuccessful(task)).length;
+                return Math.round((successful / tasks.length) * 100);
+                
+            case 'taskCount':
+                return tasks.length;
+                
+            case 'avgInteractions':
+                const totalInteractions = tasks.reduce((sum, task) => sum + (task.CopilotInteractions || 0), 0);
+                return Math.round(totalInteractions / tasks.length);
+                
+            case 'avgChanges':
+                const totalChanges = tasks.reduce((sum, task) => sum + (task.InfraChanges || 0), 0);
+                return Math.round((totalChanges / tasks.length) * 10) / 10; // One decimal place
+                
+            case 'avgToolCalls':
+                const totalCalls = tasks.reduce((sum, task) => sum + this.calculateTotalCalls(task), 0);
+                return Math.round(totalCalls / tasks.length);
+                
+            default:
+                return tasks.length;
+        }
+    }
+
+    renderMatrix(matrixData, xDimension, yDimension, metricType) {
+        const table = document.getElementById('matrix-table');
+        if (!table) return;
+        
+        const { matrix, cellData, xValues, yValues } = matrixData;
+        
+        // Create header
+        const headerRow = document.getElementById('matrix-header');
+        if (headerRow) {
+            let headerHTML = `<th scope="col">${yDimension} \\ ${xDimension}</th>`;
+            xValues.forEach(xVal => {
+                headerHTML += `<th scope="col">${xVal}</th>`;
+            });
+            headerRow.innerHTML = headerHTML;
+        }
+        
+        // Create body
+        const tbody = document.getElementById('matrix-body');
+        if (tbody) {
+            let bodyHTML = '';
+            
+            yValues.forEach(yVal => {
+                bodyHTML += `<tr><th scope="row">${yVal}</th>`;
+                
+                xValues.forEach(xVal => {
+                    const cellInfo = cellData[yVal][xVal];
+                    const value = cellInfo.value;
+                    const count = cellInfo.count;
+                    
+                    let cellClass = 'matrix-cell';
+                    let displayValue = '-';
+                    let cellContent = '';
+                    
+                    if (value !== null && count > 0) {
+                        // Determine performance class based on metric type
+                        cellClass += ' ' + this.getPerformanceClass(value, metricType);
+                        
+                        // Format display value
+                        displayValue = this.formatMetricValue(value, metricType);
+                        
+                        const showValues = document.getElementById('show-values')?.checked !== false;
+                        
+                        cellContent = `
+                            <div class="matrix-cell-value">${showValues ? displayValue : ''}</div>
+                            <div class="matrix-cell-count">${count} task${count !== 1 ? 's' : ''}</div>
+                        `;
+                    } else {
+                        cellClass += ' no-data';
+                        cellContent = `
+                            <div class="matrix-cell-value">-</div>
+                            <div class="matrix-cell-count">0 tasks</div>
+                        `;
+                    }
+                    
+                    bodyHTML += `<td><div class="${cellClass}" title="${this.getCellTooltip(cellInfo, xVal, yVal, metricType)}">${cellContent}</div></td>`;
+                });
+                
+                bodyHTML += '</tr>';
+            });
+            
+            tbody.innerHTML = bodyHTML;
+        }
+    }
+
+    getPerformanceClass(value, metricType) {
+        switch (metricType) {
+            case 'successRate':
+                if (value >= 80) return 'high-performance';
+                if (value >= 50) return 'medium-performance';
+                return 'low-performance';
+                
+            case 'taskCount':
+                if (value >= 10) return 'high-performance';
+                if (value >= 5) return 'medium-performance';
+                return 'low-performance';
+                
+            case 'avgInteractions':
+            case 'avgToolCalls':
+                // Lower is better for these metrics
+                if (value <= 5) return 'high-performance';
+                if (value <= 10) return 'medium-performance';
+                return 'low-performance';
+                
+            case 'avgChanges':
+                // Lower is better
+                if (value <= 3) return 'high-performance';
+                if (value <= 6) return 'medium-performance';
+                return 'low-performance';
+                
+            default:
+                return 'medium-performance';
+        }
+    }
+
+    formatMetricValue(value, metricType) {
+        switch (metricType) {
+            case 'successRate':
+                return `${value}%`;
+            case 'avgChanges':
+                return value.toFixed(1);
+            default:
+                return value.toString();
+        }
+    }
+
+    getCellTooltip(cellInfo, xVal, yVal, metricType) {
+        if (cellInfo.count === 0) {
+            return `No tasks found for ${yVal} + ${xVal}`;
+        }
+        
+        const metricName = this.getMetricDisplayName(metricType);
+        const formattedValue = this.formatMetricValue(cellInfo.value, metricType);
+        
+        return `${yVal} + ${xVal}\n${cellInfo.count} task(s)\n${metricName}: ${formattedValue}`;
+    }
+
+    getMetricDisplayName(metricType) {
+        switch (metricType) {
+            case 'successRate': return 'Success Rate';
+            case 'taskCount': return 'Task Count';
+            case 'avgInteractions': return 'Avg Interactions';
+            case 'avgChanges': return 'Avg Changes';
+            case 'avgToolCalls': return 'Avg Tool Calls';
+            default: return 'Value';
+        }
+    }
+
+    updateMatrixDisplay() {
+        // Re-render matrix with current settings
+        if (this.lastMatrixData) {
+            this.renderMatrix(this.lastMatrixData, 
+                this.lastMatrixData.xDimension, 
+                this.lastMatrixData.yDimension, 
+                this.lastMatrixData.metricType);
+        }
+    }
+
+    updateMatrixSummary(matrixData) {
+        const { cellData, xValues, yValues } = matrixData;
+        
+        let totalCombinations = xValues.length * yValues.length;
+        let coveredCombinations = 0;
+        let bestValue = null;
+        let bestCombination = '';
+        const metricType = matrixData.metricType;
+        
+        // Count covered combinations and find best
+        yValues.forEach(yVal => {
+            xValues.forEach(xVal => {
+                const cellInfo = cellData[yVal][xVal];
+                if (cellInfo.count > 0) {
+                    coveredCombinations++;
+                    
+                    const value = cellInfo.value;
+                    if (value !== null) {
+                        const isBetter = this.isValueBetter(value, bestValue, metricType);
+                        if (bestValue === null || isBetter) {
+                            bestValue = value;
+                            bestCombination = `${yVal} + ${xVal}`;
+                        }
+                    }
+                }
+            });
+        });
+        
+        const coverage = Math.round((coveredCombinations / totalCombinations) * 100);
+        
+        // Update summary elements
+        const totalEl = document.getElementById('matrix-total-combinations');
+        const coveredEl = document.getElementById('matrix-covered-combinations');
+        const bestEl = document.getElementById('matrix-best-combination');
+        const coverageEl = document.getElementById('matrix-coverage-percentage');
+        
+        if (totalEl) totalEl.textContent = totalCombinations;
+        if (coveredEl) coveredEl.textContent = coveredCombinations;
+        if (bestEl) {
+            bestEl.textContent = bestValue !== null ? 
+                `${bestCombination} (${this.formatMetricValue(bestValue, metricType)})` : 'N/A';
+        }
+        if (coverageEl) coverageEl.textContent = `${coverage}%`;
+        
+        // Store for potential re-rendering
+        this.lastMatrixData = matrixData;
+    }
+
+    isValueBetter(value, bestValue, metricType) {
+        if (bestValue === null) return true;
+        
+        switch (metricType) {
+            case 'successRate':
+            case 'taskCount':
+                return value > bestValue; // Higher is better
+            case 'avgInteractions':
+            case 'avgChanges':
+            case 'avgToolCalls':
+                return value < bestValue; // Lower is better
+            default:
+                return value > bestValue;
+        }
+    }
+
+    exportMatrix() {
+        if (!this.lastMatrixData) {
+            alert('No matrix data to export. Please generate a matrix first.');
+            return;
+        }
+        
+        const { matrix, xValues, yValues, xDimension, yDimension, metricType } = this.lastMatrixData;
+        
+        // Create CSV content
+        let csvContent = `${yDimension}\\${xDimension},${xValues.join(',')}\n`;
+        
+        yValues.forEach(yVal => {
+            const row = [yVal];
+            xValues.forEach(xVal => {
+                const value = matrix[yVal][xVal];
+                row.push(value !== null ? this.formatMetricValue(value, metricType) : '-');
+            });
+            csvContent += row.join(',') + '\n';
+        });
+        
+        // Download CSV
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+        const link = document.createElement('a');
+        const url = URL.createObjectURL(blob);
+        link.setAttribute('href', url);
+        link.setAttribute('download', `matrix_${xDimension}_vs_${yDimension}_${metricType}.csv`);
+        link.style.visibility = 'hidden';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    }
+
+    // Helper method for task success determination (used by matrix analysis)
+    isTaskSuccessful(task) {
+        // Determine if a task is successful based on available fields
+        if (task.Success !== undefined) return task.Success;
+        if (task.IsSuccess !== undefined) return task.IsSuccess;
+        if (task.Status) {
+            return task.Status.toLowerCase() === 'success' || 
+                   task.Status.toLowerCase() === 'completed' || 
+                   task.Status.toLowerCase() === 'passed';
+        }
+        // Default assumption: if no failure indicator, consider successful
+        return !task.ErrorMessage && !task.FailureReason;
+    }
+
+    // Helper method for calculating total tool calls (used by matrix analysis)
+    calculateTotalCalls(task) {
+        // Sum up all tool calls for this task
+        let total = 0;
+        if (task.RecommendCalls) total += task.RecommendCalls;
+        if (task.PredeployCalls) total += task.PredeployCalls;
+        if (task.DeployCalls) total += task.DeployCalls;
+        if (task.RegionCalls) total += task.RegionCalls;
+        if (task.QuotaCalls) total += task.QuotaCalls;
+        return total;
     }
 }
 
