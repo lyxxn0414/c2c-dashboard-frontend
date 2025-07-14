@@ -143,13 +143,12 @@
         <div class="dimension-selection-card mb-4">
             <div class="dimension-controls">
                 <div class="row">
-                    <div class="col-md-6">
-                        <div class="dimension-selector">
+                    <div class="col-md-6">                        <div class="dimension-selector">
                             <label for="x-dimension" class="form-label">X-Axis Dimension:</label>
                             <select class="form-select" id="x-dimension">
                                 <option value="IaCType">IaC Type</option>
-                                <option value="Model" selected>Model</option>
-                                <option value="Language">Language</option>
+                                <option value="CopilotModel" selected>Copilot Model</option>
+                                <option value="Languages">Languages</option>
                                 <option value="RepoType">Repository Type</option>
                                 <option value="AppPattern">Application Pattern</option>
                             </select>
@@ -159,29 +158,16 @@
                         <div class="dimension-selector">
                             <label for="y-dimension" class="form-label">Y-Axis Dimension:</label>
                             <select class="form-select" id="y-dimension">
-                                <option value="IaCType" selected>IaC Type</option>
-                                <option value="Model">Model</option>
-                                <option value="Language">Language</option>
+                                <option value="IaCType">IaC Type</option>
+                                <option value="CopilotModel">Copilot Model</option>
+                                <option value="Languages" selected>Languages</option>
                                 <option value="RepoType">Repository Type</option>
                                 <option value="AppPattern">Application Pattern</option>
                             </select>
                         </div>
                     </div>
-                </div>
-                <div class="row mt-3">
-                    <div class="col-md-4">
-                        <div class="metric-selector">
-                            <label for="metric-type" class="form-label">Metric to Display:</label>
-                            <select class="form-select" id="metric-type">
-                                <option value="successRate" selected>Success Rate (%)</option>
-                                <option value="taskCount">Task Count</option>
-                                <option value="avgInteractions">Avg Interactions</option>
-                                <option value="avgChanges">Avg Code Changes</option>
-                                <option value="avgToolCalls">Avg Tool Calls</option>
-                            </select>
-                        </div>
-                    </div>
-                    <div class="col-md-4">
+                </div>                <div class="row mt-3">
+                    <div class="col-md-6">
                         <div class="visualization-options">
                             <label class="form-label">Display Options:</label>
                             <div class="form-check form-switch">
@@ -194,7 +180,7 @@
                             </div>
                         </div>
                     </div>
-                    <div class="col-md-4">
+                    <div class="col-md-6">
                         <div class="control-buttons mt-4">
                             <button class="btn btn-primary" id="generate-matrix-btn">
                                 <i class="bi bi-arrow-clockwise me-2"></i>Generate Matrix

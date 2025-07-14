@@ -1146,15 +1146,18 @@ class JobDashboard {
                 e.preventDefault();
                 const taskId = e.target.dataset.taskId;
                 navigateToTaskDetail(taskId);
-            });
-        });        // Load two-dimensional analysis data
-        this.loadTwoDimensionalAnalysis(job.TestJobID);
+            });        });
+
+        // Load two-dimensional analysis data
+        this.loadTwoDimensionalAnalysis(job.TestJobID).catch(error => {
+            console.error('Error loading two-dimensional analysis:', error);
+        });
 
         // Trigger transition effect
         setTimeout(() => {
             detailView.classList.add('active');
         }, 10);
-    }    
+    }
     showJobDetailLoadingState() {
         // Hide all other views
         document.getElementById('jobs-view').classList.add('d-none');
@@ -1928,91 +1931,42 @@ class JobDashboard {
         }).join('');
 
         errorCategoriesContainer.innerHTML = categoriesHTML;
-    }
-
-    // Test function for filter functionality (can be removed in production)
-    testCategoryFilter() {
-        console.log('Testing enhanced filter functionality...');
-        
-        // Mock test data with various scenarios including undefined categories
-        const testTasks = [
-            { TaskID: 'deploy-task-1', ErrorCategory: 'Deployment Error', ErrorDescription: 'Failed to deploy container', ErrorDetail: 'Resource quota exceeded' },
-            { TaskID: 'config-task-2', ErrorCategory: 'Configuration Error', ErrorDescription: 'Invalid configuration', ErrorDetail: 'Missing required parameter' },
-            { TaskID: 'deploy-task-3', ErrorCategory: 'Deployment Error', ErrorDescription: 'Deploy timeout', ErrorDetail: 'Network timeout occurred' },
-            { TaskID: 'network-task-4', ErrorCategory: 'Network Error', ErrorDescription: 'Connection failed', ErrorDetail: 'DNS resolution failed' },
-            { TaskID: 'undefined-task-5', ErrorCategory: undefined, ErrorDescription: 'Unknown error', ErrorDetail: 'No details available' },
-            { TaskID: 'null-task-6', ErrorCategory: null, ErrorDescription: 'Null category error', ErrorDetail: 'Category is null' },
-            { TaskID: 'empty-task-7', ErrorCategory: '', ErrorDescription: 'Empty category error', ErrorDetail: 'Category is empty' },
-            { TaskID: 'validation-task-8', ErrorCategory: 'Validation Error', ErrorDescription: 'Schema validation failed', ErrorDetail: 'Invalid input format' },
-            { TaskID: 'search-test-task', ErrorCategory: 'Deployment Error', ErrorDescription: 'Search test task', ErrorDetail: 'For testing search functionality' }
-        ];
-        
-        // Populate with test data
-        this.populateFailedTasks(testTasks);
-        
-        console.log('Enhanced filter test data loaded with the following features:');
-        console.log('✅ Category filter with proper undefined handling');
-        console.log('✅ Task name search functionality'); 
-        console.log('✅ Combined filtering capabilities');
-        console.log('✅ Clear filters button');
-        console.log('');
-        console.log('Test scenarios:');
-        console.log('1. Try filtering by different categories');
-        console.log('2. Search for "deploy" or "search" in task names');
-        console.log('3. Combine category and search filters');
-        console.log('4. Notice undefined categories are handled as "General Error"');
-    }    // ============================================================
-    // Two-Dimensional Analysis Methods
-    // ============================================================
-
-    async loadTwoDimensionalAnalysis(jobId) {
+    }    async loadTwoDimensionalAnalysis(jobId) {
         try {
             console.log('Loading two-dimensional analysis for job:', jobId);
             
-            // Fetch tasks data from the API
-            const response = await fetch(`/api/jobs/${jobId}/tasks`);
-            if (!response.ok) {
-                throw new Error(`HTTP error! status: ${response.status}`);
-            }
-            
-            const tasksData = await response.json();
-            console.log('Fetched tasks data for analysis:', tasksData);
-            
-            // Store the tasks data for analysis
-            this.analysisTasksData = tasksData.tasks || tasksData;
+            // Store the current job ID for generateMatrix to use
+            this.currentJobId = jobId;
             
             // Setup event listeners for the controls
             this.setupTwoDimensionalControls();
             
-            // Initialize with default matrix (Model vs IaCType)
-            this.generateMatrix();
+            // Initialize with default matrix (CopilotModel vs Languages)
+            await this.generateMatrix();
             
         } catch (error) {
             console.error('Error loading two-dimensional analysis:', error);
             this.showMatrixErrorState();
         }
-    }
-
-    setupTwoDimensionalControls() {
+    }    setupTwoDimensionalControls() {
         // Dimension selectors
         const xDimension = document.getElementById('x-dimension');
         const yDimension = document.getElementById('y-dimension');
-        const metricType = document.getElementById('metric-type');
         const showValues = document.getElementById('show-values');
         const colorCoding = document.getElementById('color-coding');
         const generateBtn = document.getElementById('generate-matrix-btn');
         const exportBtn = document.getElementById('export-matrix-btn');
 
         if (xDimension) {
-            xDimension.addEventListener('change', () => this.onDimensionChange());
+            xDimension.addEventListener('change', async () => {
+                await this.onDimensionChange();
+            });
         }
         
         if (yDimension) {
-            yDimension.addEventListener('change', () => this.onDimensionChange());
-        }
-        
-        if (metricType) {
-            metricType.addEventListener('change', () => this.generateMatrix());
+            yDimension.addEventListener('change', async () => {
+                await this.onDimensionChange();
+            });
         }
         
         if (showValues) {
@@ -2022,31 +1976,31 @@ class JobDashboard {
         if (colorCoding) {
             colorCoding.addEventListener('change', () => this.updateMatrixDisplay());
         }
-        
+
         if (generateBtn) {
-            generateBtn.addEventListener('click', () => this.generateMatrix());
+            generateBtn.addEventListener('click', async () => {
+                await this.generateMatrix();
+            });
         }
         
         if (exportBtn) {
             exportBtn.addEventListener('click', () => this.exportMatrix());
         }
-    }
-
-    onDimensionChange() {
+    }async onDimensionChange() {
         const xDimension = document.getElementById('x-dimension')?.value;
         const yDimension = document.getElementById('y-dimension')?.value;
         
         // Prevent same dimension selection
         if (xDimension === yDimension) {
             // Find a different dimension for y-axis
-            const dimensions = ['IaCType', 'Model', 'Language', 'RepoType', 'AppPattern'];
+            const dimensions = ['IaCType', 'CopilotModel', 'Languages', 'RepoType', 'AppPattern'];
             const availableY = dimensions.find(d => d !== xDimension);
             if (availableY) {
                 document.getElementById('y-dimension').value = availableY;
             }
         }
         
-        this.generateMatrix();
+        await this.generateMatrix();
     }
 
     showMatrixLoadingState() {
@@ -2075,46 +2029,105 @@ class JobDashboard {
         if (emptyEl) emptyEl.style.display = 'block';
         if (legendEl) legendEl.style.display = 'none';
         if (summaryEl) summaryEl.style.display = 'none';
-    }
-
-    generateMatrix() {
-        if (!this.analysisTasksData || this.analysisTasksData.length === 0) {
-            this.showMatrixErrorState();
-            return;
-        }
-
+    }    async generateMatrix() {
         this.showMatrixLoadingState();
 
-        // Get selected dimensions and metric
-        const xDimension = document.getElementById('x-dimension')?.value || 'Model';
-        const yDimension = document.getElementById('y-dimension')?.value || 'IaCType';
-        const metricType = document.getElementById('metric-type')?.value || 'successRate';
+        try {
+            // Get current job ID - look for it in various ways
+            let jobId = null;
+            
+            // Try to get from URL hash first
+            const urlHash = window.location.hash;
+            if (urlHash.includes('job/')) {
+                jobId = urlHash.split('job/')[1].split('/')[0];
+            }
+            
+            // Try to get from the current job detail view
+            if (!jobId) {
+                const jobDetailElement = document.querySelector('#job-detail-view [data-job-id]');
+                if (jobDetailElement) {
+                    jobId = jobDetailElement.dataset.jobId;
+                }
+            }
+            
+            // Try to get from the detail view title or other elements
+            if (!jobId) {
+                const jobLinkElement = document.querySelector('#job-detail-job-link');
+                if (jobLinkElement && jobLinkElement.dataset.jobId) {
+                    jobId = jobLinkElement.dataset.jobId;
+                }
+            }
+            
+            // If we still don't have a jobId, try to get it from this.currentJobId or fallback
+            if (!jobId && this.currentJobId) {
+                jobId = this.currentJobId;
+            }
+            
+            if (!jobId) {
+                console.warn('No job ID found for generating matrix');
+                this.showMatrixErrorState();
+                return;
+            }
 
-        console.log('Generating matrix:', { xDimension, yDimension, metricType });
+            console.log('Fetching fresh task data for job:', jobId);
 
-        // Process data and create matrix
-        const matrixData = this.processMatrixData(xDimension, yDimension, metricType);
-        
-        // Render the matrix
-        this.renderMatrix(matrixData, xDimension, yDimension, metricType);
-        
-        // Update summary statistics
-        this.updateMatrixSummary(matrixData);
-        
-        // Show results
-        const loadingEl = document.getElementById('matrix-loading');
-        const containerEl = document.getElementById('matrix-container');
-        const legendEl = document.getElementById('matrix-legend');
-        const summaryEl = document.getElementById('matrix-summary');
-        
-        if (loadingEl) loadingEl.style.display = 'none';
-        if (containerEl) containerEl.style.display = 'block';
-        if (legendEl) legendEl.style.display = 'block';
-        if (summaryEl) summaryEl.style.display = 'block';
-    }
+            // Call the /:jobId/tasks route to get fresh data
+            const response = await fetch(`/api/jobs/${jobId}/tasks`);
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            
+            const tasksResponse = await response.json();
+            console.log('Fresh tasks data received:', tasksResponse);
+            
+            // Extract tasks data from response
+            const tasksData = tasksResponse.data || tasksResponse.tasks || tasksResponse;
+            
+            if (!tasksData || tasksData.length === 0) {
+                console.warn('No task data available for matrix generation');
+                this.showMatrixErrorState();
+                return;
+            }
 
-    processMatrixData(xDimension, yDimension, metricType) {
+            // Update the stored analysis data
+            this.analysisTasksData = tasksData;            // Get selected dimensions (no metric type needed anymore)
+            const xDimension = document.getElementById('x-dimension')?.value || 'CopilotModel';
+            const yDimension = document.getElementById('y-dimension')?.value || 'Languages';
+
+            console.log('Generating matrix with fresh data:', { 
+                jobId, 
+                taskCount: tasksData.length, 
+                xDimension, 
+                yDimension 
+            });
+
+            // Process data and create matrix
+            const matrixData = this.processMatrixData(xDimension, yDimension);
+            
+            // Render the matrix
+            this.renderMatrix(matrixData, xDimension, yDimension);
+            
+            // Update summary statistics
+            this.updateMatrixSummary(matrixData);
+            
+            // Show results
+            const loadingEl = document.getElementById('matrix-loading');
+            const containerEl = document.getElementById('matrix-container');
+            const legendEl = document.getElementById('matrix-legend');
+            const summaryEl = document.getElementById('matrix-summary');
+            
+            if (loadingEl) loadingEl.style.display = 'none';
+            if (containerEl) containerEl.style.display = 'block';
+            if (legendEl) legendEl.style.display = 'block';
+            if (summaryEl) summaryEl.style.display = 'block';
+            
+        } catch (error) {
+            console.error('Error generating matrix with fresh data:', error);
+            this.showMatrixErrorState();
+        }
+    }    processMatrixData(xDimension, yDimension) {
         const tasks = this.analysisTasksData;
+        console.log('Processing matrix data with dimensions:', xDimension, yDimension);
         
         // Get unique values for each dimension
         const xValues = [...new Set(tasks.map(task => this.getDimensionValue(task, xDimension)).filter(Boolean))].sort();
@@ -2136,19 +2149,20 @@ class JobDashboard {
                 );
                 
                 if (matchingTasks.length > 0) {
-                    const value = this.calculateMetricValue(matchingTasks, metricType);
-                    matrix[yVal][xVal] = value;
+                    // Calculate all metrics for this cell
+                    const metrics = this.calculateCellMetrics(matchingTasks);
+                    matrix[yVal][xVal] = metrics;
                     cellData[yVal][xVal] = {
                         tasks: matchingTasks,
                         count: matchingTasks.length,
-                        value: value
+                        metrics: metrics
                     };
                 } else {
                     matrix[yVal][xVal] = null;
                     cellData[yVal][xVal] = {
                         tasks: [],
                         count: 0,
-                        value: null
+                        metrics: null
                     };
                 }
             });
@@ -2160,18 +2174,20 @@ class JobDashboard {
             xValues,
             yValues,
             xDimension,
-            yDimension,
-            metricType
+            yDimension
         };
     }
-
     getDimensionValue(task, dimension) {
         switch (dimension) {
             case 'IaCType':
-                return task.IaCType || task.InfrastructureType || 'Unknown';
-            case 'Model':
+                return task.IaCType || task.InfrastructureType || (task.UseTerraform ? 'Terraform' : 'Bicep') || 'Unknown';
+            case 'CopilotModel':
                 return task.CopilotModel || task.Model || 'Unknown';
-            case 'Language':
+            case 'Languages':
+                // Handle Languages array (from new API response) or single Language field
+                if (task.Languages && Array.isArray(task.Languages)) {
+                    return task.Languages.join(', ');
+                }
                 return task.Language || task.ProgrammingLanguage || 'Unknown';
             case 'RepoType':
                 return task.RepoType || task.RepositoryType || 'Unknown';
@@ -2187,46 +2203,43 @@ class JobDashboard {
         
         switch (metricType) {
             case 'successRate':
-                const successful = tasks.filter(task => this.isTaskSuccessful(task)).length;
+                const successful = tasks.filter(task => task.IsSuccessful).length;
                 return Math.round((successful / tasks.length) * 100);
                 
-            case 'taskCount':
-                return tasks.length;
-                
             case 'avgInteractions':
-                const totalInteractions = tasks.reduce((sum, task) => sum + (task.CopilotInteractions || 0), 0);
+                const totalInteractions = tasks.reduce((sum, task) => sum + (task.Iterations || 0), 0);
                 return Math.round(totalInteractions / tasks.length);
                 
             case 'avgChanges':
-                const totalChanges = tasks.reduce((sum, task) => sum + (task.InfraChanges || 0), 0);
+                const totalChanges = tasks.reduce((sum, task) => sum + (task.FileEditsNum || 0), 0);
                 return Math.round((totalChanges / tasks.length) * 10) / 10; // One decimal place
-                
-            case 'avgToolCalls':
-                const totalCalls = tasks.reduce((sum, task) => sum + this.calculateTotalCalls(task), 0);
-                return Math.round(totalCalls / tasks.length);
                 
             default:
                 return tasks.length;
         }
-    }
-
-    renderMatrix(matrixData, xDimension, yDimension, metricType) {
+    }    renderMatrix(matrixData, xDimension, yDimension) {
         const table = document.getElementById('matrix-table');
         if (!table) return;
         
         const { matrix, cellData, xValues, yValues } = matrixData;
         
-        // Create header
+        // Calculate totals
+        const xTotals = this.calculateXTotals(cellData, xValues, yValues);
+        const yTotals = this.calculateYTotals(cellData, xValues, yValues);
+        const grandTotal = this.calculateGrandTotal(cellData, xValues, yValues);
+        
+        // Create header with totals column
         const headerRow = document.getElementById('matrix-header');
         if (headerRow) {
             let headerHTML = `<th scope="col">${yDimension} \\ ${xDimension}</th>`;
             xValues.forEach(xVal => {
                 headerHTML += `<th scope="col">${xVal}</th>`;
             });
+            headerHTML += `<th scope="col" class="total-column"><strong>Total</strong></th>`;
             headerRow.innerHTML = headerHTML;
         }
         
-        // Create body
+        // Create body with totals for each row
         const tbody = document.getElementById('matrix-body');
         if (tbody) {
             let bodyHTML = '';
@@ -2234,41 +2247,130 @@ class JobDashboard {
             yValues.forEach(yVal => {
                 bodyHTML += `<tr><th scope="row">${yVal}</th>`;
                 
+                // Regular data cells
                 xValues.forEach(xVal => {
                     const cellInfo = cellData[yVal][xVal];
-                    const value = cellInfo.value;
+                    const metrics = cellInfo.metrics;
                     const count = cellInfo.count;
                     
                     let cellClass = 'matrix-cell';
-                    let displayValue = '-';
                     let cellContent = '';
                     
-                    if (value !== null && count > 0) {
-                        // Determine performance class based on metric type
-                        cellClass += ' ' + this.getPerformanceClass(value, metricType);
-                        
-                        // Format display value
-                        displayValue = this.formatMetricValue(value, metricType);
+                    if (metrics !== null && count > 0) {
+                        // Determine performance class based on success rate
+                        cellClass += ' ' + this.getPerformanceClass(metrics.successRate, 'successRate');
                         
                         const showValues = document.getElementById('show-values')?.checked !== false;
                         
-                        cellContent = `
-                            <div class="matrix-cell-value">${showValues ? displayValue : ''}</div>
-                            <div class="matrix-cell-count">${count} task${count !== 1 ? 's' : ''}</div>
-                        `;
+                        if (showValues) {
+                            cellContent = `
+                                <div class="matrix-cell-content">
+                                    <div class="matrix-metric-line">Success Rate: ${metrics.successRate}% (${metrics.successfulCount}/${metrics.totalTasks})</div>
+                                    <div class="matrix-metric-line">Avg Interactions: ${metrics.avgInteractions}</div>
+                                    <div class="matrix-metric-line">Avg File Edits: ${metrics.avgFileEdits}</div>
+                                </div>
+                            `;
+                        } else {
+                            cellContent = `
+                                <div class="matrix-cell-content">
+                                    <div class="matrix-cell-count">${count} task${count !== 1 ? 's' : ''}</div>
+                                </div>
+                            `;
+                        }
                     } else {
                         cellClass += ' no-data';
                         cellContent = `
-                            <div class="matrix-cell-value">-</div>
-                            <div class="matrix-cell-count">0 tasks</div>
+                            <div class="matrix-cell-content">
+                                <div class="matrix-metric-line">No data</div>
+                                <div class="matrix-cell-count">0 tasks</div>
+                            </div>
                         `;
                     }
                     
-                    bodyHTML += `<td><div class="${cellClass}" title="${this.getCellTooltip(cellInfo, xVal, yVal, metricType)}">${cellContent}</div></td>`;
+                    bodyHTML += `<td><div class="${cellClass}" title="${this.getCellTooltip(cellInfo, xVal, yVal)}">${cellContent}</div></td>`;
                 });
                 
+                // Row total cell
+                const yTotal = yTotals[yVal];
+                const showValues = document.getElementById('show-values')?.checked !== false;
+                let totalCellClass = 'matrix-cell total-cell';
+                totalCellClass += ' ' + this.getPerformanceClass(yTotal.successRate, 'successRate');
+                
+                let totalCellContent = '';
+                if (showValues) {
+                    totalCellContent = `
+                        <div class="matrix-cell-content">
+                            <div class="matrix-metric-line"><strong>Success Rate: ${yTotal.successRate}% (${yTotal.successfulCount}/${yTotal.totalTasks})</strong></div>
+                            <div class="matrix-metric-line"><strong>Avg Interactions: ${yTotal.avgInteractions}</strong></div>
+                            <div class="matrix-metric-line"><strong>Avg File Edits: ${yTotal.avgFileEdits}</strong></div>
+                        </div>
+                    `;
+                } else {
+                    totalCellContent = `
+                        <div class="matrix-cell-content">
+                            <div class="matrix-cell-count"><strong>${yTotal.totalTasks} task${yTotal.totalTasks !== 1 ? 's' : ''}</strong></div>
+                        </div>
+                    `;
+                }
+                
+                bodyHTML += `<td><div class="${totalCellClass}" title="Row total for ${yVal}">${totalCellContent}</div></td>`;
                 bodyHTML += '</tr>';
             });
+            
+            // Add total row
+            bodyHTML += `<tr class="total-row"><th scope="row"><strong>Total</strong></th>`;
+            
+            // Column totals
+            xValues.forEach(xVal => {
+                const xTotal = xTotals[xVal];
+                const showValues = document.getElementById('show-values')?.checked !== false;
+                let totalCellClass = 'matrix-cell total-cell';
+                totalCellClass += ' ' + this.getPerformanceClass(xTotal.successRate, 'successRate');
+                
+                let totalCellContent = '';
+                if (showValues) {
+                    totalCellContent = `
+                        <div class="matrix-cell-content">
+                            <div class="matrix-metric-line"><strong>Success Rate: ${xTotal.successRate}% (${xTotal.successfulCount}/${xTotal.totalTasks})</strong></div>
+                            <div class="matrix-metric-line"><strong>Avg Interactions: ${xTotal.avgInteractions}</strong></div>
+                            <div class="matrix-metric-line"><strong>Avg File Edits: ${xTotal.avgFileEdits}</strong></div>
+                        </div>
+                    `;
+                } else {
+                    totalCellContent = `
+                        <div class="matrix-cell-content">
+                            <div class="matrix-cell-count"><strong>${xTotal.totalTasks} task${xTotal.totalTasks !== 1 ? 's' : ''}</strong></div>
+                        </div>
+                    `;
+                }
+                
+                bodyHTML += `<td><div class="${totalCellClass}" title="Column total for ${xVal}">${totalCellContent}</div></td>`;
+            });
+            
+            // Grand total cell
+            const showValues = document.getElementById('show-values')?.checked !== false;
+            let grandTotalCellClass = 'matrix-cell grand-total-cell';
+            grandTotalCellClass += ' ' + this.getPerformanceClass(grandTotal.successRate, 'successRate');
+            
+            let grandTotalCellContent = '';
+            if (showValues) {
+                grandTotalCellContent = `
+                    <div class="matrix-cell-content">
+                        <div class="matrix-metric-line"><strong>Success Rate: ${grandTotal.successRate}% (${grandTotal.successfulCount}/${grandTotal.totalTasks})</strong></div>
+                        <div class="matrix-metric-line"><strong>Avg Interactions: ${grandTotal.avgInteractions}</strong></div>
+                        <div class="matrix-metric-line"><strong>Avg File Edits: ${grandTotal.avgFileEdits}</strong></div>
+                    </div>
+                `;
+            } else {
+                grandTotalCellContent = `
+                    <div class="matrix-cell-content">
+                        <div class="matrix-cell-count"><strong>${grandTotal.totalTasks} task${grandTotal.totalTasks !== 1 ? 's' : ''}</strong></div>
+                    </div>
+                `;
+            }
+            
+            bodyHTML += `<td><div class="${grandTotalCellClass}" title="Grand total">${grandTotalCellContent}</div></td>`;
+            bodyHTML += '</tr>';
             
             tbody.innerHTML = bodyHTML;
         }
@@ -2313,61 +2415,52 @@ class JobDashboard {
             default:
                 return value.toString();
         }
-    }
-
-    getCellTooltip(cellInfo, xVal, yVal, metricType) {
+    }    getCellTooltip(cellInfo, xVal, yVal) {
         if (cellInfo.count === 0) {
             return `No tasks found for ${yVal} + ${xVal}`;
         }
         
-        const metricName = this.getMetricDisplayName(metricType);
-        const formattedValue = this.formatMetricValue(cellInfo.value, metricType);
+        const metrics = cellInfo.metrics;
+        if (metrics) {
+            return `${yVal} + ${xVal}\n${cellInfo.count} task(s)\nSuccess Rate: ${metrics.successRate}%\nAvg Interactions: ${metrics.avgInteractions}\nAvg File Edits: ${metrics.avgFileEdits}`;
+        }
         
-        return `${yVal} + ${xVal}\n${cellInfo.count} task(s)\n${metricName}: ${formattedValue}`;
+        return `${yVal} + ${xVal}\n${cellInfo.count} task(s)`;
     }
 
     getMetricDisplayName(metricType) {
         switch (metricType) {
             case 'successRate': return 'Success Rate';
-            case 'taskCount': return 'Task Count';
             case 'avgInteractions': return 'Avg Interactions';
             case 'avgChanges': return 'Avg Changes';
-            case 'avgToolCalls': return 'Avg Tool Calls';
             default: return 'Value';
         }
-    }
-
-    updateMatrixDisplay() {
+    }    updateMatrixDisplay() {
         // Re-render matrix with current settings
         if (this.lastMatrixData) {
             this.renderMatrix(this.lastMatrixData, 
                 this.lastMatrixData.xDimension, 
-                this.lastMatrixData.yDimension, 
-                this.lastMatrixData.metricType);
+                this.lastMatrixData.yDimension);
         }
-    }
-
-    updateMatrixSummary(matrixData) {
+    }    updateMatrixSummary(matrixData) {
         const { cellData, xValues, yValues } = matrixData;
         
         let totalCombinations = xValues.length * yValues.length;
         let coveredCombinations = 0;
-        let bestValue = null;
+        let bestSuccessRate = null;
         let bestCombination = '';
-        const metricType = matrixData.metricType;
         
-        // Count covered combinations and find best
+        // Count covered combinations and find best success rate
         yValues.forEach(yVal => {
             xValues.forEach(xVal => {
                 const cellInfo = cellData[yVal][xVal];
                 if (cellInfo.count > 0) {
                     coveredCombinations++;
                     
-                    const value = cellInfo.value;
-                    if (value !== null) {
-                        const isBetter = this.isValueBetter(value, bestValue, metricType);
-                        if (bestValue === null || isBetter) {
-                            bestValue = value;
+                    const metrics = cellInfo.metrics;
+                    if (metrics && metrics.successRate !== null) {
+                        if (bestSuccessRate === null || metrics.successRate > bestSuccessRate) {
+                            bestSuccessRate = metrics.successRate;
                             bestCombination = `${yVal} + ${xVal}`;
                         }
                     }
@@ -2386,8 +2479,8 @@ class JobDashboard {
         if (totalEl) totalEl.textContent = totalCombinations;
         if (coveredEl) coveredEl.textContent = coveredCombinations;
         if (bestEl) {
-            bestEl.textContent = bestValue !== null ? 
-                `${bestCombination} (${this.formatMetricValue(bestValue, metricType)})` : 'N/A';
+            bestEl.textContent = bestSuccessRate !== null ? 
+                `${bestCombination} (${bestSuccessRate}%)` : 'N/A';
         }
         if (coverageEl) coverageEl.textContent = `${coverage}%`;
         
@@ -2409,24 +2502,27 @@ class JobDashboard {
             default:
                 return value > bestValue;
         }
-    }
-
-    exportMatrix() {
+    }    exportMatrix() {
         if (!this.lastMatrixData) {
             alert('No matrix data to export. Please generate a matrix first.');
             return;
         }
         
-        const { matrix, xValues, yValues, xDimension, yDimension, metricType } = this.lastMatrixData;
+        const { cellData, xValues, yValues, xDimension, yDimension } = this.lastMatrixData;
         
-        // Create CSV content
+        // Create CSV content with all metrics
         let csvContent = `${yDimension}\\${xDimension},${xValues.join(',')}\n`;
         
         yValues.forEach(yVal => {
             const row = [yVal];
             xValues.forEach(xVal => {
-                const value = matrix[yVal][xVal];
-                row.push(value !== null ? this.formatMetricValue(value, metricType) : '-');
+                const cellInfo = cellData[yVal][xVal];
+                if (cellInfo.metrics && cellInfo.count > 0) {
+                    const metrics = cellInfo.metrics;
+                    row.push(`"Success: ${metrics.successRate}% (${metrics.successfulCount}/${metrics.totalTasks}), Interactions: ${metrics.avgInteractions}, Edits: ${metrics.avgFileEdits}"`);
+                } else {
+                    row.push('-');
+                }
             });
             csvContent += row.join(',') + '\n';
         });
@@ -2436,7 +2532,7 @@ class JobDashboard {
         const link = document.createElement('a');
         const url = URL.createObjectURL(blob);
         link.setAttribute('href', url);
-        link.setAttribute('download', `matrix_${xDimension}_vs_${yDimension}_${metricType}.csv`);
+        link.setAttribute('download', `matrix_${xDimension}_vs_${yDimension}_metrics.csv`);
         link.style.visibility = 'hidden';
         document.body.appendChild(link);
         link.click();
@@ -2445,16 +2541,23 @@ class JobDashboard {
 
     // Helper method for task success determination (used by matrix analysis)
     isTaskSuccessful(task) {
-        // Determine if a task is successful based on available fields
-        if (task.Success !== undefined) return task.Success;
-        if (task.IsSuccess !== undefined) return task.IsSuccess;
-        if (task.Status) {
-            return task.Status.toLowerCase() === 'success' || 
-                   task.Status.toLowerCase() === 'completed' || 
-                   task.Status.toLowerCase() === 'passed';
+        // Prioritize new IsSuccessful field if available
+        if (task.IsSuccessful !== undefined && task.IsSuccessful !== null) {
+            return task.IsSuccessful === true || task.IsSuccessful === 'true';
         }
-        // Default assumption: if no failure indicator, consider successful
-        return !task.ErrorMessage && !task.FailureReason;
+        
+        // Fallback to legacy success determination logic
+        if (task.success !== undefined && task.success !== null) {
+            return task.success === true || task.success === 'true';
+        }
+        
+        // Fallback to iteration-based logic
+        if (task.iterations !== undefined && task.iterations !== null) {
+            return task.iterations > 0;
+        }
+        
+        // Default to false if no success indicators found
+        return false;
     }
 
     // Helper method for calculating total tool calls (used by matrix analysis)
@@ -2467,6 +2570,165 @@ class JobDashboard {
         if (task.RegionCalls) total += task.RegionCalls;
         if (task.QuotaCalls) total += task.QuotaCalls;
         return total;
+    }
+
+    calculateCellMetrics(tasks) {
+        if (tasks.length === 0) return null;
+        
+        // Separate successful and all tasks
+        const successfulTasks = tasks.filter(task => this.isTaskSuccessful(task));
+        const totalTasks = tasks.length;
+        const successfulCount = successfulTasks.length;
+        
+        // Calculate success rate
+        const successRate = Math.round((successfulCount / totalTasks) * 100);
+        
+        // Calculate average interactions for successful tasks only
+        let avgInteractions = 0;
+        if (successfulTasks.length > 0) {
+            const totalInteractions = successfulTasks.reduce((sum, task) => {
+                return sum + (task.Iterations|| 0);
+            }, 0);
+            avgInteractions = Math.round((totalInteractions / successfulTasks.length) * 10) / 10;
+        }
+        
+        // Calculate average file edits for successful tasks only
+        let avgFileEdits = 0;
+        if (successfulTasks.length > 0) {
+            const totalEdits = successfulTasks.reduce((sum, task) => {
+                return sum + (task.FileEditsNum || 0);
+            }, 0);
+            avgFileEdits = Math.round((totalEdits / successfulTasks.length) * 10) / 10;
+        }
+        
+        return {
+            successRate,
+            successfulCount,
+            totalTasks,
+            avgInteractions,
+            avgFileEdits
+        };
+    }
+
+    // Helper function to calculate totals for X dimension (columns)
+    calculateXTotals(cellData, xValues, yValues) {
+        const xTotals = {};
+        
+        xValues.forEach(xVal => {
+            let totalTasks = 0;
+            let totalSuccessful = 0;
+            let totalInteractions = 0;
+            let totalFileEdits = 0;
+            let successfulTasksCount = 0;
+            
+            yValues.forEach(yVal => {
+                const cellInfo = cellData[yVal][xVal];
+                if (cellInfo.metrics && cellInfo.count > 0) {
+                    totalTasks += cellInfo.metrics.totalTasks;
+                    totalSuccessful += cellInfo.metrics.successfulCount;
+                    
+                    // Only count interactions and edits from successful tasks
+                    if (cellInfo.metrics.successfulCount > 0) {
+                        totalInteractions += cellInfo.metrics.avgInteractions * cellInfo.metrics.successfulCount;
+                        totalFileEdits += cellInfo.metrics.avgFileEdits * cellInfo.metrics.successfulCount;
+                        successfulTasksCount += cellInfo.metrics.successfulCount;
+                    }
+                }
+            });
+            
+            const successRate = totalTasks > 0 ? Math.round((totalSuccessful / totalTasks) * 100) : 0;
+            const avgInteractions = successfulTasksCount > 0 ? Math.round((totalInteractions / successfulTasksCount) * 10) / 10 : 0;
+            const avgFileEdits = successfulTasksCount > 0 ? Math.round((totalFileEdits / successfulTasksCount) * 10) / 10 : 0;
+            
+            xTotals[xVal] = {
+                totalTasks,
+                successfulCount: totalSuccessful,
+                successRate,
+                avgInteractions,
+                avgFileEdits
+            };
+        });
+        
+        return xTotals;
+    }
+    
+    // Helper function to calculate totals for Y dimension (rows)
+    calculateYTotals(cellData, xValues, yValues) {
+        const yTotals = {};
+        
+        yValues.forEach(yVal => {
+            let totalTasks = 0;
+            let totalSuccessful = 0;
+            let totalInteractions = 0;
+            let totalFileEdits = 0;
+            let successfulTasksCount = 0;
+            
+            xValues.forEach(xVal => {
+                const cellInfo = cellData[yVal][xVal];
+                if (cellInfo.metrics && cellInfo.count > 0) {
+                    totalTasks += cellInfo.metrics.totalTasks;
+                    totalSuccessful += cellInfo.metrics.successfulCount;
+                    
+                    // Only count interactions and edits from successful tasks
+                    if (cellInfo.metrics.successfulCount > 0) {
+                        totalInteractions += cellInfo.metrics.avgInteractions * cellInfo.metrics.successfulCount;
+                        totalFileEdits += cellInfo.metrics.avgFileEdits * cellInfo.metrics.successfulCount;
+                        successfulTasksCount += cellInfo.metrics.successfulCount;
+                    }
+                }
+            });
+            
+            const successRate = totalTasks > 0 ? Math.round((totalSuccessful / totalTasks) * 100) : 0;
+            const avgInteractions = successfulTasksCount > 0 ? Math.round((totalInteractions / successfulTasksCount) * 10) / 10 : 0;
+            const avgFileEdits = successfulTasksCount > 0 ? Math.round((totalFileEdits / successfulTasksCount) * 10) / 10 : 0;
+            
+            yTotals[yVal] = {
+                totalTasks,
+                successfulCount: totalSuccessful,
+                successRate,
+                avgInteractions,
+                avgFileEdits
+            };
+        });
+        
+        return yTotals;
+    }
+    
+    // Helper function to calculate grand total
+    calculateGrandTotal(cellData, xValues, yValues) {
+        let totalTasks = 0;
+        let totalSuccessful = 0;
+        let totalInteractions = 0;
+        let totalFileEdits = 0;
+        let successfulTasksCount = 0;
+        
+        yValues.forEach(yVal => {
+            xValues.forEach(xVal => {
+                const cellInfo = cellData[yVal][xVal];
+                if (cellInfo.metrics && cellInfo.count > 0) {
+                    totalTasks += cellInfo.metrics.totalTasks;
+                    totalSuccessful += cellInfo.metrics.successfulCount;
+                    
+                    if (cellInfo.metrics.successfulCount > 0) {
+                        totalInteractions += cellInfo.metrics.avgInteractions * cellInfo.metrics.successfulCount;
+                        totalFileEdits += cellInfo.metrics.avgFileEdits * cellInfo.metrics.successfulCount;
+                        successfulTasksCount += cellInfo.metrics.successfulCount;
+                    }
+                }
+            });
+        });
+        
+        const successRate = totalTasks > 0 ? Math.round((totalSuccessful / totalTasks) * 100) : 0;
+        const avgInteractions = successfulTasksCount > 0 ? Math.round((totalInteractions / successfulTasksCount) * 10) / 10 : 0;
+        const avgFileEdits = successfulTasksCount > 0 ? Math.round((totalFileEdits / successfulTasksCount) * 10) / 10 : 0;
+        
+        return {
+            totalTasks,
+            successfulCount: totalSuccessful,
+            successRate,
+            avgInteractions,
+            avgFileEdits
+        };
     }
 }
 

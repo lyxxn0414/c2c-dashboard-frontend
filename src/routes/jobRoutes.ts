@@ -376,61 +376,31 @@ router.get('/:jobId/tasks', asyncHandler(async (req: Request, res: Response) => 
     console.error(`Error fetching task list for job ${jobId}:`, error);
     
     // Return mock fallback data based on the provided example
-    const fallbackResponse: TaskListResponse = {
+    const fallbackResponse = {
       name: "PrimaryResult",
       data: [
-        {
-          Timestamp: "2025-07-09T07:18:32.125Z",
-          TaskID: `${jobId}-defangsampleslan-b1ae823f`,
-          TestJobID: jobId,
-          RepoName: "defang-samples/langchain",
-          VSCodeVersion: "vscode@1.101.0",
-          ExtensionVersions: "fallback-extension.vsix",
-          TaskType: "Agent Tool",
-          InitialPrompt: "Fallback data - External service unavailable. Recommend me some service configurations and help me deploy my project to Azure.",
-          CopilotModel: "Claude Sonnet 4",
-          CommandLine: "npx",
-          IsSuccessful: true,
-          UseTerraform: false,
-          FileEditsNum: 3,
-          CreatedDate: new Date().toISOString(),
-          RecommendToolCount: 0,
-          Iterations: 9,
-          QuotaToolCount: 0,
-          RegionToolCount: 0,
-          PredeployToolCount: 0,
-          DeployToolCount: 0,
-          AIIntegration: 24,
-          IsThrottled: false,
-          UseBicepSchemasTool: false,
-          UseAzureAgentBestPractices: false
-        },
-        {
-          Timestamp: "2025-07-09T07:03:07.662Z",
-          TaskID: `${jobId}-defangsamplesjav-925c699d`,
-          TestJobID: jobId,
-          RepoName: "defang-samples/javalin",
-          VSCodeVersion: "vscode@1.101.0",
-          ExtensionVersions: "fallback-extension.vsix",
-          TaskType: "Agent Tool",
-          InitialPrompt: "Fallback data - External service unavailable. Recommend me some service configurations and help me deploy my project to Azure.",
-          CopilotModel: "Claude Sonnet 4",
-          CommandLine: "npx",
-          IsSuccessful: true,
-          UseTerraform: false,
-          FileEditsNum: 1,
-          CreatedDate: new Date().toISOString(),
-          RecommendToolCount: 0,
-          Iterations: 4,
-          QuotaToolCount: 0,
-          RegionToolCount: 0,
-          PredeployToolCount: 0,
-          DeployToolCount: 0,
-          AIIntegration: 7,
-          IsThrottled: false,
-          UseBicepSchemasTool: false,
-          UseAzureAgentBestPractices: false
-        }
+            {
+      "TaskID": "yueli6-defangsamplesdja-424da5c8",
+      "Languages": [
+        "Python"
+      ],
+      "CopilotModel": "GPT-4.1",
+      "RepoType": "Defang",
+      "AppPattern": "1+0",
+      "UseTerraform": false,
+      "IsSuccessful": false
+    },
+    {
+      "TaskID": "yueli6-defangsamplesmet-fe2cd766",
+      "Languages": [
+        "TS/JS"
+      ],
+      "CopilotModel": "GPT-4.1",
+      "RepoType": "Defang",
+      "AppPattern": "1+0",
+      "UseTerraform": false,
+      "IsSuccessful": true
+    },
       ]
     };
     
