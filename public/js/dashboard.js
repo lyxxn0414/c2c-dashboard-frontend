@@ -1159,27 +1159,7 @@ class JobDashboard {
         }, 10);
     }
     showJobDetailLoadingState() {
-        // Hide all other views
-        document.getElementById('jobs-view').classList.add('d-none');
-        const reposContent = document.getElementById('repos-content');
-        const repoDetailView = document.getElementById('repo-detail-view');
-        const taskDetailView = document.getElementById('task-detail-view');
-
-        if (reposContent) reposContent.style.display = 'none';
-        if (repoDetailView) {
-            repoDetailView.classList.add('d-none');
-            repoDetailView.classList.remove('active');
-        }
-        if (taskDetailView) {
-            taskDetailView.classList.add('d-none');
-        }
-
-        // Show detail view with loading state
-        const detailView = document.getElementById('job-detail-view');
-        const detailContent = document.getElementById('job-detail-content');
-        detailContent.style.display = 'block';
-        detailView.classList.remove('d-none');
-        detailView.classList.add('view-transition');
+        window.viewManager.showView('job-detail');
         
         // Clear previous content and show loading state
         const jobDetailTitle = document.getElementById('job-detail-title');
@@ -1220,102 +1200,69 @@ class JobDashboard {
         setTimeout(() => {
             detailView.classList.add('active');
         }, 10);
-    }    
+    }      
     showJobsView() {
+        // Using ViewManager - much cleaner!
+        if (window.viewManager) {
+            window.viewManager.showView('jobs');
+            this.updateURL('/');
+            this.updateNavigationState('jobs');
+        } else {
+            // Fallback to old method if ViewManager not available
+            console.warn('ViewManager not available, using fallback method');
+            this.showJobsViewFallback();
+        }
+    }
+
+    // Keep original method as fallback
+    showJobsViewFallback() {
         // Update URL to root path
         this.updateURL('/');
         
         // Hide detail view and show jobs view
-        const detailView = document.getElementById('job-detail-view');
-        const reposContent = document.getElementById('repos-content');
-        const repoDetailView = document.getElementById('repo-detail-view');
-        const taskDetailView = document.getElementById('task-detail-view');
-        if (repoDetailView) {
-            repoDetailView.classList.add('d-none');
-        }
-        if (taskDetailView) {
-            taskDetailView.classList.add('d-none');
-        }
+        window.viewManager.showView('jobs');
 
-        detailView.classList.remove('active');
-
-        if (reposContent) {
-            reposContent.style.display = 'none';
-        }
-        
         setTimeout(() => {
-            detailView.classList.add('d-none');
-            detailView.classList.remove('view-transition');
-            document.getElementById('jobs-view').classList.remove('d-none');
-            
-            const jobsContent = document.getElementById('jobs-content');
-            if (jobsContent) {
-                jobsContent.style.display = 'block';
-            }
-            
             // Reinitialize job dropdowns when view becomes visible
             this.initializeJobDropdowns();
         }, 300);
         
         // Update navigation active state
         this.updateNavigationState('jobs');
+    }    
+    showReposView() {
+        // Using ViewManager - much cleaner!
+        if (window.viewManager) {
+            window.viewManager.showView('repos');
+            this.updateURL('/repos');
+            this.updateNavigationState('repos');
+        } else {
+            // Fallback to old method if ViewManager not available
+            console.warn('ViewManager not available, using fallback method');
+            this.showReposViewFallback();
+        }
     }
 
-    showReposView() {
+    // Keep original method as fallback
+    showReposViewFallback() {
         console.log('Showing repos view');
         // Update URL to repos path
         this.updateURL('/repos');
         
-        // Hide all other views
-        const detailView = document.getElementById('job-detail-view');
-        const jobsView = document.getElementById('jobs-view');
-        const jobsContent = document.getElementById('jobs-content');
-        const reposContent = document.getElementById('repos-content');
-        const jobDetailContent = document.getElementById('job-detail-content');
-        const taskDetailView = document.getElementById('task-detail-view');
+        window.viewManager.showView('repos');
         
-        if (detailView) {
-            detailView.classList.add('d-none');
-            detailView.classList.remove('active');
-        }
-
-        if (jobDetailContent) {
-            jobDetailContent.style.display = 'none';
-        }
-
-        if (jobsView) {
-            jobsView.classList.add('d-none');
-        }
-
-        if (taskDetailView) {
-            taskDetailView.classList.add('d-none');
-        }
-
-        if (jobsContent) {
-            jobsContent.style.display = 'none';
-        }
-        
-        if (reposContent) {
-            reposContent.style.display = 'block';
-            
-            // Initialize repo view if not already done
-            if (!window.reposInitialized) {
-                window.reposInitialized = true;
-                setTimeout(() => {
-                    if (typeof initRepoView === 'function') {
-                        console.log('Initializing repo view');
-                        initRepoView();
-                    } else {
-                        console.error('initRepoView function not found');
-                    }
-                }, 100);
+        setTimeout(() => {
+            if (typeof initRepoView === 'function') {
+                console.log('Initializing repo view');
+                initRepoView();
+            } else {
+                console.error('initRepoView function not found');
             }
-        }
+        }, 100);
         
         // Update navigation active state
         this.updateNavigationState('repos');
-    }
-
+    }    
     updateNavigationState(activeView) {
         // Remove active class from all nav links
         document.querySelectorAll('.nav-link').forEach(link => {
@@ -1325,6 +1272,8 @@ class JobDashboard {
         // Add active class to current view
         if (activeView === 'repos') {
             document.getElementById('repo-view')?.classList.add('active');
+        } else if (activeView === 'error-center') {
+            document.getElementById('error-center-view-nav')?.classList.add('active');
         } else {
             document.getElementById('job-view')?.classList.add('active');
         }
@@ -1889,7 +1838,7 @@ class JobDashboard {
             const patternsHTML = patterns.map(pattern => `
                 <div class="error-pattern-item">
                     <div class="d-flex justify-content-between">
-                        <span>${pattern.pattern}</span>
+                                               <span>${pattern.pattern}</span>
                         <span class="text-muted">${pattern.count}x</span>
                     </div>
                 </div>
@@ -2027,7 +1976,7 @@ class JobDashboard {
         if (loadingEl) loadingEl.style.display = 'none';
         if (containerEl) containerEl.style.display = 'none';
         if (emptyEl) emptyEl.style.display = 'block';
-        if (legendEl) legendEl.style.display = 'none';
+        if ( legendEl) legendEl.style.display = 'none';
         if (summaryEl) summaryEl.style.display = 'none';
     }    async generateMatrix() {
         this.showMatrixLoadingState();
@@ -2512,8 +2461,7 @@ class JobDashboard {
         
         // Create CSV content with all metrics
         let csvContent = `${yDimension}\\${xDimension},${xValues.join(',')}\n`;
-        
-        yValues.forEach(yVal => {
+          yValues.forEach(yVal => {
             const row = [yVal];
             xValues.forEach(xVal => {
                 const cellInfo = cellData[yVal][xVal];
@@ -2729,6 +2677,31 @@ class JobDashboard {
             avgInteractions,
             avgFileEdits
         };
+    }
+    
+    showErrorCenterView() {
+        console.log('Showing Error Center view');
+        // Update URL to error center path
+        this.updateURL('/error-center');
+        const errorCenterContent = document.getElementById('error-center-content');
+        
+        window.viewManager.showView('error-center');
+          
+        if (errorCenterContent) {
+            setTimeout(() => {
+                if (typeof initErrorCenter === 'function') {
+                    console.log('Initializing Error Center');
+                    initErrorCenter();
+                } else {
+                    console.error('initErrorCenter function not found');
+                }
+            }, 100);
+        } else {
+            console.error('Error Center content element not found!');
+        }
+        
+        // Update navigation active state
+        this.updateNavigationState('error-center');
     }
 }
 

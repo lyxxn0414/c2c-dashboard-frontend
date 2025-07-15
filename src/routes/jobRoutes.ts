@@ -1,6 +1,6 @@
 import { Router, Request, Response } from 'express';
 import { asyncHandler } from '../middleware/errorHandler';
-import { Job, JobQueryParams, JobListResponse, CreateJobRequest, Task, TaskListResponse } from '../types/job.types';
+import { Job, JobQueryParams, JobListResponse, CreateJobRequest, Task, TaskListResponse, TaskError, TaskErrorsResponse } from '../types/job.types';
 import { externalJobService } from '../services/externalJobService';
 
 const router = Router();
@@ -404,6 +404,73 @@ router.get('/:jobId/tasks', asyncHandler(async (req: Request, res: Response) => 
       ]
     };
     
+    res.json(fallbackResponse);
+  }
+}));
+
+/**
+ * POST /api/jobs/errors/recent
+ * Get task errors for recent days
+ */
+router.post('/errors/recent', asyncHandler(async (req: Request, res: Response) => {
+  const { period = 3 } = req.body;
+  
+  try {
+    const periodNum = parseInt(period as string, 10);
+    if (isNaN(periodNum) || periodNum < 1 || periodNum > 30) {
+      return res.status(400).json({
+        error: 'Invalid period. Period must be a number between 1 and 30 days.'
+      });
+    }
+
+    console.log(`Fetching task errors for last ${periodNum} days`);
+    
+    // Call external service
+    const response = await externalJobService.getTaskErrorsLastPeriod(periodNum);
+    
+    res.json(response);
+  } catch (error) {
+    console.error('Error fetching task errors from external service:', error);
+    
+    // Fallback to mock data if external service fails
+    const mockErrors = [
+      {
+        TaskID: "mock-task-001",
+        TestJobID: "mock-job-001",
+        CreatedDate: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString(),
+        TaskType: "Agent Tool",
+        UseTerraform: false,
+        ErrorCategory: "Docker",
+        ErrorDescription: "Module not found in Dockerfile.",
+        ErrorDetail: "External service unavailable - showing mock error data for testing."
+      },
+      {
+        TaskID: "mock-task-002", 
+        TestJobID: "mock-job-002",
+        CreatedDate: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),
+        TaskType: "Agent Tool",
+        UseTerraform: true,
+        ErrorCategory: "Infrastructure",
+        ErrorDescription: "Terraform validation failed.",
+        ErrorDetail: "Mock data - External API connection failed. This is fallback data for development."
+      },
+      {
+        TaskID: "mock-task-003",
+        TestJobID: "mock-job-003", 
+        CreatedDate: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString(),
+        TaskType: "Agent Tool",
+        UseTerraform: false,
+        ErrorCategory: "Malformed bicep",
+        ErrorDescription: "Invalid configuration for container app.",
+        ErrorDetail: "Mock fallback data - Failed to provision revision for container app. This is test data when external service is unavailable."
+      }
+    ];
+
+    const fallbackResponse = {
+      name: "PrimaryResult",
+      data: mockErrors
+    };
+
     res.json(fallbackResponse);
   }
 }));

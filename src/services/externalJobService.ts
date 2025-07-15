@@ -505,6 +505,34 @@ export class ExternalJobService {
             throw new Error(`Failed to fetch task list from external service: ${error instanceof Error ? error.message : 'Unknown error'}`);
         }
     }
+
+    /**
+     * Get task errors for recent period
+     * @param period - Number of days to look back for errors
+     * @returns Promise<TaskErrorsResponse> - List of task errors in the specified period
+     */
+    async getTaskErrorsLastPeriod(period: number): Promise<any> {
+        try {
+            console.log(`[ExternalAPI] Fetching task errors for last ${period} days`);
+            
+            const requestBody = {
+                Period: period
+            };
+
+            const response = await this.requestWithRetry<any>({
+                method: 'GET',
+                url: '/kusto/getTaskFirstErrorLastPeriod',
+                data: requestBody
+            });
+
+            console.log(`[ExternalAPI] Successfully fetched ${response?.data?.length || 0} task errors for last ${period} days`);
+            return response;
+
+        } catch (error) {
+            console.error(`[ExternalAPI] Failed to fetch task errors for last ${period} days:`, error);
+            throw new Error(`Failed to fetch task errors from external service: ${error instanceof Error ? error.message : 'Unknown error'}`);
+        }
+    }
 }
 
 // Export singleton instance

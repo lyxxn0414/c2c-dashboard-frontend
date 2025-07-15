@@ -15,8 +15,7 @@
         <div class="row">
             <!-- Sidebar -->
             <nav class="col-md-2 d-none d-md-block bg-light sidebar">
-                <div class="sidebar-sticky">
-                    <ul class="nav flex-column">
+                <div class="sidebar-sticky">                    <ul class="nav flex-column">
                         <li class="nav-item">
                             <a class="nav-link active" href="#" id="job-view">
                                 <i class="bi bi-briefcase"></i>
@@ -35,6 +34,12 @@
                                 Repo View
                             </a>
                         </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="error-center" id="error-center-view-nav">
+                                <i class="bi bi-exclamation-triangle"></i>
+                                Error Center
+                            </a>
+                        </li>
                     </ul>
                 </div>
             </nav>            <!-- Main content -->
@@ -46,6 +51,9 @@
 
                 <!-- Repos View Content -->
                 <div id="repos-content" style="display: none">
+                    <!-- Content will be loaded dynamically -->
+                </div>                <!-- Error Center Content -->
+                <div id="error-center-content" class="error-center-view" style="display: none">
                     <!-- Content will be loaded dynamically -->
                 </div>
 
@@ -68,13 +76,20 @@
     <!-- Modals Content -->
     <div id="modals-content">
         <!-- Modals will be loaded dynamically -->
-    </div>
-
-    <!-- Scripts -->
+    </div>    <!-- Scripts -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="/js/html-loader.js"></script>    <script src="/js/utils.js"></script>    <script src="/js/repos.js"></script>
-    <script src="/js/repo-detail.js"></script>    <script src="/js/task-detail.js"></script>
-    <script src="/js/router.js"></script>    <script src="/js/dashboard.js"></script>
+    <!-- View Management System -->
+    <script src="/js/view-manager.js"></script>
+    <script src="/js/view-config.js"></script>
+    <!-- Application Scripts -->
+    <script src="/js/html-loader.js"></script>
+    <script src="/js/utils.js"></script>
+    <script src="/js/repos.js"></script>
+    <script src="/js/repo-detail.js"></script>
+    <script src="/js/task-detail.js"></script>
+    <script src="/js/error-center.js"></script>
+    <script src="/js/router.js"></script>
+    <script src="/js/dashboard.js"></script>
     <script src="/js/test-task-navigation.js"></script>
 </body>
 </html>

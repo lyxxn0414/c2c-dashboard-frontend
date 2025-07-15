@@ -1564,147 +1564,161 @@ main {
     height: 3rem;
 }
 
-/* Responsive Design */
+/* Error Center Styles */
+.error-center-view {
+    padding: 1rem 0;
+}
+
+.error-category-card {
+    transition: all 0.3s ease;
+}
+
+.error-category-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.error-category-card .card-header {
+    border-bottom: 2px solid rgba(255, 255, 255, 0.2);
+    font-weight: 600;
+}
+
+.error-category-card .card-header h5 {
+    margin: 0;
+}
+
+.error-item {
+    background: rgba(248, 249, 250, 0.8);
+    border: 1px solid #dee2e6 !important;
+    transition: all 0.2s ease;
+}
+
+.error-item:hover {
+    background: rgba(0, 123, 255, 0.05);
+    border-color: rgba(0, 123, 255, 0.3) !important;
+}
+
+.task-link, .job-link {
+    color: var(--primary-color);
+    text-decoration: none;
+    font-weight: 500;
+}
+
+.task-link:hover, .job-link:hover {
+    color: var(--primary-dark);
+    text-decoration: underline;
+}
+
+/* Error summary cards */
+.error-center-view .card {
+    transition: all 0.3s ease;
+    border: 2px solid transparent;
+}
+
+.error-center-view .card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.1);
+}
+
+.error-center-view .card.border-danger:hover {
+    border-color: #dc3545;
+    box-shadow: 0 6px 20px rgba(220, 53, 69, 0.2);
+}
+
+.error-center-view .card.border-warning:hover {
+    border-color: #ffc107;
+    box-shadow: 0 6px 20px rgba(255, 193, 7, 0.2);
+}
+
+.error-center-view .card.border-info:hover {
+    border-color: #0dcaf0;
+    box-shadow: 0 6px 20px rgba(13, 202, 240, 0.2);
+}
+
+.error-center-view .card.border-success:hover {
+    border-color: #198754;
+    box-shadow: 0 6px 20px rgba(25, 135, 84, 0.2);
+}
+
+/* Filter controls */
+.error-center-view .form-select,
+.error-center-view .form-control {
+    border: 2px solid #e9ecef;
+    transition: all 0.2s ease;
+}
+
+.error-center-view .form-select:focus,
+.error-center-view .form-control:focus {
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+}
+
+/* Loading and empty states */
+.error-center-view .spinner-border {
+    width: 3rem;
+    height: 3rem;
+}
+
+.error-center-view .fs-1 {
+    font-size: 4rem !important;
+}
+
+/* Modal styling */
+#errorDetailModal .modal-header {
+    background: linear-gradient(135deg, #dc3545, #c82333);
+    color: white;
+    border-bottom: none;
+}
+
+#errorDetailModal .modal-header .btn-close {
+    filter: invert(1);
+}
+
+#errorDetailModal .modal-body {
+    background: #f8f9fa;
+}
+
+#errorDetailModal pre {
+    background: white;
+    border: 1px solid #dee2e6;
+    border-radius: 0.375rem;
+    font-size: 0.875rem;
+    line-height: 1.4;
+    white-space: pre-wrap;
+    word-wrap: break-word;
+}
+
+/* Category badges */
+.badge.bg-light {
+    color: #495057 !important;
+}
+
+/* Responsive adjustments */
 @media (max-width: 768px) {
-    .dimension-controls .row {
-        gap: 1rem;
+    .error-center-view .row > .col-md-2,
+    .error-center-view .row > .col-md-3 {
+        margin-bottom: 1rem;
     }
     
-    .control-buttons {
-        margin-top: 1rem;
-    }
-    
-    .control-buttons .btn {
-        width: 100%;
+    .error-item .row > div {
         margin-bottom: 0.5rem;
     }
     
-    .control-buttons .btn:last-child {
+    .error-item .row > div:last-child {
         margin-bottom: 0;
     }
-    
-    .legend-items {
-        flex-direction: column;
-        gap: 0.75rem;
-    }
-    
-    .matrix-summary .row {
-        gap: 0.5rem;
-    }
-    
-    .summary-stat {
-        padding: 0.25rem;
-    }
-    
-    .stat-value {
-        font-size: 1.25rem;
-    }
-    
-    .matrix-table {
-        font-size: 0.75rem;
-    }
-    
-    .matrix-table thead th,
-    .matrix-table tbody td {
-        padding: 0.375rem 0.25rem;
-    }
-    
-    .matrix-cell {
-        min-height: 45px;
-    }
-    
-    .matrix-cell-value {
-        font-size: 0.9rem;
-    }
-    
-    .matrix-cell-count {
-        font-size: 0.625rem;
-    }
 }
 
-@media (max-width: 576px) {
-    .dimension-selection-card,
-    .matrix-results-card {
-        padding: 1rem;
-    }
-    
-    .matrix-summary {
-        padding: 0.75rem;
-    }
-    
-    .stat-value {
-        font-size: 1rem;
-    }
-    
-    .stat-label {
-        font-size: 0.625rem;
-    }
-    
-    .matrix-table {
-        font-size: 0.625rem;
-    }
-    
-    .matrix-cell {
-        min-height: 35px;
-    }
-    
-    .matrix-cell-value {
-        font-size: 0.75rem;
-    }
+/* Collapse animation */
+.error-category-card .collapse {
+    transition: height 0.3s ease;
 }
 
-/* Total row and column styling */
-.total-row {
-    background-color: rgba(0, 123, 255, 0.05);
-    border-top: 2px solid var(--primary-color);
+/* Button hover effects */
+.error-center-view .btn {
+    transition: all 0.2s ease;
 }
 
-.total-row th {
-    background-color: rgba(0, 123, 255, 0.1);
-    font-weight: 600;
-    color: var(--primary-color);
-}
-
-.total-column {
-    background-color: rgba(0, 123, 255, 0.1);
-    font-weight: 600;
-    color: var(--primary-color);
-}
-
-.matrix-cell.total-cell {
-    background: linear-gradient(135deg, rgba(0, 123, 255, 0.1), rgba(0, 123, 255, 0.05)) !important;
-    border: 2px solid rgba(0, 123, 255, 0.3) !important;
-    font-weight: 600;
-}
-
-.matrix-cell.grand-total-cell {
-    background: linear-gradient(135deg, rgba(0, 123, 255, 0.2), rgba(0, 123, 255, 0.1)) !important;
-    border: 3px solid var(--primary-color) !important;
-    font-weight: 700;
-    color: var(--primary-color);
-}
-
-.matrix-cell.total-cell .matrix-metric-line,
-.matrix-cell.grand-total-cell .matrix-metric-line {
-    font-weight: 600;
-}
-
-.matrix-cell.grand-total-cell .matrix-metric-line {
-    font-weight: 700;
-}
-
-/* Ensure total cells maintain proper styling */
-.matrix-cell.total-cell.high-performance {
-    background: linear-gradient(135deg, rgba(40, 167, 69, 0.2), rgba(40, 167, 69, 0.1)) !important;
-    border: 2px solid rgba(40, 167, 69, 0.5) !important;
-}
-
-.matrix-cell.total-cell.medium-performance {
-    background: linear-gradient(135deg, rgba(255, 193, 7, 0.2), rgba(255, 193, 7, 0.1)) !important;
-    border: 2px solid rgba(255, 193, 7, 0.5) !important;
-}
-
-.matrix-cell.total-cell.low-performance {
-    background: linear-gradient(135deg, rgba(220, 53, 69, 0.2), rgba(220, 53, 69, 0.1)) !important;
-    border: 2px solid rgba(220, 53, 69, 0.5) !important;
+.error-center-view .btn:hover {
+    transform: translateY(-1px);
 }

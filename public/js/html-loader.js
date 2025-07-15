@@ -28,23 +28,23 @@ async function loadTemplate(templateName, filePath) {
 document.addEventListener('DOMContentLoaded', async () => {
     console.log('🚀 Loading HTML templates from files...');
     
-    try {
-        // Load all templates
+    try {        // Load all templates
         await Promise.all([
             loadTemplate('jobsView', '/partials/jobs-view.html'),
             loadTemplate('jobDetail', '/partials/job-detail.html'),
             loadTemplate('modals', '/partials/modals.html'),
             loadTemplate('reposView', '/partials/repos-view.html'),
             loadTemplate('repoDetail', '/partials/repo-detail.html'),
-            loadTemplate('taskDetail', '/partials/task-detail.html')
+            loadTemplate('taskDetail', '/partials/task-detail.html'),
+            loadTemplate('errorCenter', '/partials/error-center.html')
         ]);
-        
-        // Load templates into the page
+          // Load templates into the page
         const jobsContent = document.getElementById('jobs-content');
         const jobDetailContent = document.getElementById('job-detail-content');
         const modalsContent = document.getElementById('modals-content');
         const reposContent = document.getElementById('repos-content');
         const repoDetailContent = document.getElementById('repo-detail-view');
+        const errorCenterContent = document.getElementById('error-center-content');
         
         if (jobsContent && HTMLTemplates.jobsView) {
             jobsContent.innerHTML = HTMLTemplates.jobsView;
@@ -92,6 +92,13 @@ document.addEventListener('DOMContentLoaded', async () => {
                 console.log('taskDetail template length:', HTMLTemplates.taskDetail.length);
             }
         }
+
+        if (errorCenterContent && HTMLTemplates.errorCenter) {
+            errorCenterContent.innerHTML = HTMLTemplates.errorCenter;
+            console.log('✅ Error Center template loaded');
+        } else {
+            console.error('❌ error-center-content element not found or template not loaded');
+        }
           // Initialize dashboard after templates are loaded
         setTimeout(() => {
             console.log('🔧 Initializing JobDashboard...');
@@ -131,13 +138,22 @@ window.addEventListener('load', () => {
                 } else {
                     console.error('JobDashboard not available');
                 }
-            }
-
+            }            
             if (e.target.closest('#repo-view')) {
                 e.preventDefault();
                 console.log('Repo view clicked');
                 if (window.jobDashboard) {
                     window.jobDashboard.showReposView();
+                } else {
+                    console.error('JobDashboard not available');
+                }
+            }
+
+            if (e.target.closest('#error-center-view-nav')) {
+                e.preventDefault();
+                console.log('Error Center view clicked');
+                if (window.jobDashboard) {
+                    window.jobDashboard.showErrorCenterView();
                 } else {
                     console.error('JobDashboard not available');
                 }

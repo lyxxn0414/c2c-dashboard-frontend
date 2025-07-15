@@ -652,20 +652,7 @@ function navigateBackToRepos() {
 function showRepoDetailLoadingState() {
     console.log('Showing repo detail loading state');
     
-    // Hide other views and show repo detail view
-    const jobsContent = document.getElementById('jobs-content');
-    const reposContent = document.getElementById('repos-content');
-    const jobDetailView = document.getElementById('job-detail-view');
-    const repoDetailView = document.getElementById('repo-detail-view');
-    
-    if (jobsContent) jobsContent.style.display = 'none';
-    if (reposContent) reposContent.style.display = 'none';
-    if (jobDetailView) jobDetailView.classList.add('d-none');
-    
-    if (repoDetailView) {
-        repoDetailView.classList.remove('d-none');
-        repoDetailView.classList.add('repo-detail-transition');
-    }
+    window.viewManager.showView('repo-detail');
     
     // Clear previous content and show loading state
     const repoDetailTitle = document.getElementById('repo-detail-title');
@@ -726,30 +713,8 @@ function showRepoDetailLoadingState() {
 
 function showRepoDetailPage(repoName) {
     console.log('Showing repo detail page for:', repoName);
-    
-    // Hide other views
-    const jobsContent = document.getElementById('jobs-content');
-    const reposContent = document.getElementById('repos-content');
-    const jobDetailView = document.getElementById('job-detail-view');
-    
-    if (jobsContent) jobsContent.style.display = 'none';
-    if (reposContent) reposContent.style.display = 'none';
-    if (jobDetailView) jobDetailView.classList.add('d-none');
-    
-    // Show repo detail view
-    const repoDetailView = document.getElementById('repo-detail-view');
-    if (repoDetailView) {
-        repoDetailView.classList.remove('d-none');
-        repoDetailView.classList.add('repo-detail-transition');
-        
-        // Initialize the view
-        initRepoDetailView(repoName);
-        
-        // Trigger animation
-        setTimeout(() => {
-            repoDetailView.classList.add('active');
-        }, 10);
-    }
+    initRepoDetailView(repoName);
+    window.viewManager.showView('repo-detail');
 }
 
 // Export functions for global access

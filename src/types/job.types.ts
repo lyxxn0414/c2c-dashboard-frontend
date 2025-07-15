@@ -136,3 +136,24 @@ export interface TaskListResponse {
   name: string;
   data: Task[];
 }
+
+// Task Error types for recent period errors
+export interface TaskError {
+  TaskID: string;
+  TestJobID: string;
+  CreatedDate: string;
+  TaskType: string;
+  UseTerraform: boolean;
+  ErrorCategory: string;
+  ErrorDescription: string;
+  ErrorDetail: string;
+}
+
+export interface TaskErrorsResponse {
+  name: string;
+  data: TaskError[];
+}
+
+export interface GetTaskErrorsRequest {
+  Period: number; // Number of days to look back
+}
