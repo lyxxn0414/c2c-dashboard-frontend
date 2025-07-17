@@ -21,9 +21,16 @@ window.navigateToJobs = function () {
   }
 };
 
+window.navigateToErrorCenter = function () {
+  console.log("Navigating to error center...");
+  if (window.router) {
+    window.router.navigate("/error-center");
+  }
+};
+
 window.navigateToJobDetail = function (jobId) {
   if (window.router) {
-    window.router.navigate(`/job-detail/${jobId}`);
+    window.router.navigate(`/job-detail/jobID=${jobId}`);
   }
 };
 
@@ -59,22 +66,6 @@ window.navigateToTaskDetail = function (taskId, jobId = null, repoName = null) {
   }
 };
 
-// Test navigation function
-window.testNavigation = function () {
-  console.log("Testing navigation...");
-  console.log("Current elements:");
-  console.log("- jobs-content:", document.getElementById("jobs-content"));
-  console.log("- repos-content:", document.getElementById("repos-content"));
-  console.log("- router:", window.router);
-
-  if (window.router) {
-    console.log("Attempting to navigate to repos...");
-    window.router.navigate("/repos");
-  } else {
-    console.error("Router not available");
-  }
-};
-
 // Router for handling page navigation
 class Router {
   constructor() {
@@ -85,6 +76,7 @@ class Router {
       "/job-detail": "job-detail",
       "/repo-detail": "repoName",
       "/task-detail": "task-detail",
+      "/error-center": "error-center",
     };
 
     this.currentRoute = "/";
@@ -137,55 +129,50 @@ class Router {
     }
     if (path.startsWith("/repos")) {
       this.currentRoute = "/repos";
-      initializeReposView();
+      this.showRepoPage();
       this.updateNavigation();
+      return;
     }
-
-    // Handle static routes
-    const route = this.routes[path] || this.routes["/"];
-    this.currentRoute = path;
-    this.showPage(route);
+    if (path.startsWith("/error-center")) {
+      this.currentRoute = "/error-center";
+      this.showErrorCenterPage();
+      this.updateNavigation();
+      return;
+    }
+    this.currentRoute = "/jobs";
+    this.showJobPage();
     this.updateNavigation();
   }
-  showPage(pageName) {
-    console.log("Showing page:", pageName);
-    // Hide all pages
-    const pages = [
-      "jobs-content",
-      "repos-content",
-      "job-detail-content",
-      "task-detail-content",
-    ];
-    pages.forEach((pageId) => {
-      const element = document.getElementById(pageId);
-      if (element) {
-        element.style.display = "none";
-        console.log("Hiding:", pageId);
-      }
-    });
 
-    // Hide all detail views
-    const detailViews = [
-      "job-detail-view",
-      "repo-detail-view",
-      "task-detail-view",
-    ];
-    detailViews.forEach((viewId) => {
-      const element = document.getElementById(viewId);
-      if (element) {
-        element.classList.add("d-none");
-      }
-    });
+  showJobPage() {
+    console.log("Router: Showing job page");
+    window.viewManager.showView("jobs");
 
-    // Show the requested page
-    const targetPage = document.getElementById(`${pageName}-content`);
-    console.log("Target page:", targetPage);
-    if (targetPage) {
-      targetPage.style.display = "block";
-      console.log("Showing:", `${pageName}-content`);
+    // Show jobs page if function exists
+    if (typeof initJobsView === "function") {
+      console.log("Calling initJobsView");
+      initJobsView();
     } else {
-      console.error("Target page not found:", `${pageName}-content`);
+      console.error("initializeJobsView function not found");
     }
+  }
+
+  showRepoPage() {
+    console.log("Router: Showing repo page");
+    window.viewManager.showView("repos");
+
+    // Show repos page if function exists
+    if (typeof initializeReposView === "function") {
+      console.log("Calling initializeReposView");
+      initializeReposView();
+    } else {
+      console.error("initializeReposView function not found");
+    }
+  }
+
+  showErrorCenterPage() {
+    window.viewManager.showView("error-center");
+    initErrorCenter();
   }
 
   showRepoDetailPage(repoName) {
@@ -203,28 +190,12 @@ class Router {
 
   showJobDetailPage(jobId) {
     console.log("Router: Showing job detail page for:", jobId);
-    // Hide all standard pages
-    const pages = ["jobs-content", "repos-content", "repo-detail-content"];
-    pages.forEach((pageId) => {
-      const element = document.getElementById(pageId);
-      if (element) {
-        element.style.display = "none";
-      }
-    });
-
-    // Hide all detail views
-    const detailViews = ["task-detail-view"];
-    detailViews.forEach((viewId) => {
-      const element = document.getElementById(viewId);
-      if (element) {
-        element.classList.add("d-none");
-      }
-    });
+    window.viewManager.showView("job-detail");
 
     // Show job detail page if function exists
-    if (typeof window.jobDashboard.viewJob === "function") {
-      console.log("Calling window.jobDashboard.viewJob with:", jobId);
-      window.jobDashboard.viewJob(jobId);
+    if (typeof showJobDetailPage === "function") {
+      console.log("Calling showJobDetailPage with:", jobId);
+      showJobDetailPage(jobId);
     } else {
       console.error("showJobDetail function not found");
     }

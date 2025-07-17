@@ -8,7 +8,6 @@ class JobDashboard {
     this.currentUserFilter = "all";
     this.currentMcpFilter = "all";
     this.currentTerraformFilter = "all";
-    this.externalServiceStatus = null;
     this.jobDropdownsInitialized = false;
 
     this.init();
@@ -20,45 +19,8 @@ class JobDashboard {
       this.initializeElements();
       this.bindEvents();
       this.initializeJobDropdowns();
-      //   this.setupRouting();
-      this.checkExternalServiceStatus();
       this.loadJobs();
-      this.loadConfig();
     }, 200);
-  }
-
-  //   setupRouting() {
-  //     // Listen for browser back/forward button
-  //     window.addEventListener("popstate", (event) => {
-  //       console.log("Popstate event:", event.state);
-  //       this.handleRoute(window.location.pathname + window.location.search);
-  //     });
-  //   }
-
-  async navigateToJobDetail(jobId) {
-    try {
-      console.log("Navigating to job detail:", jobId);
-
-      // Fetch job data
-      const response = await fetch(`/api/jobs/${jobId}`);
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-
-      const jobDetail = await response.json();
-      const job = jobDetail.job;
-      const taskErrors = jobDetail.taskErrors;
-      const classifiedResults = jobDetail.classifiedResults;
-      console.log("Fetched job for detail view:", job);
-
-      // Show job detail view with actual data
-      this.showJobDetailView(job, taskErrors, classifiedResults);
-    } catch (error) {
-      console.error("Error navigating to job detail:", error);
-      this.showError(`Failed to load job details for job ${jobId}.`);
-      // Fallback to jobs view on error
-      this.showJobsView();
-    }
   }
 
   updateURL(path, replaceState = false) {
@@ -116,239 +78,64 @@ class JobDashboard {
     this.toolRegion = document.getElementById("tool-region");
     this.toolQuota = document.getElementById("tool-quota");
 
-    // Button elements
-    this.backToJobsBtn = document.getElementById("back-to-jobs-btn");
-    this.testConnectionBtn = document.getElementById("test-connection-btn");
-    this.submitJobBtn = document.getElementById("submit-job-btn");
-    this.editJobBtn = document.getElementById("edit-job-btn");
-    this.createJobBtn = document.getElementById("create-job-btn");
-    this.configBtn = document.getElementById("config-btn");
-    this.saveConfigBtn = document.getElementById("save-config-btn");
-    this.deleteJobDetailBtn = document.getElementById("delete-job-detail-btn");
-
     // Filter elements
     this.createdByFilter = document.getElementById("created-by-filter");
     this.useMcpFilter = document.getElementById("use-mcp-filter");
     this.useTerraformFilter = document.getElementById("use-terraform-filter");
-
-    // Form elements
-    this.externalApiUrl = document.getElementById("external-api-url");
-    this.apiTimeout = document.getElementById("api-timeout");
-    this.retryAttempts = document.getElementById("retry-attempts");
-    this.connectionTestResult = document.getElementById(
-      "connection-test-result"
-    );
-    this.jobDescription = document.getElementById("job-description");
-    this.jobPoolId = document.getElementById("job-pool-id");
   }
-
   initializeJobDropdowns() {
     if (this.jobDropdownsInitialized) {
       console.log("Job dropdowns already initialized, skipping...");
       return;
     }
-
     console.log("Initializing job dropdowns...");
-
-    // Clean up any existing dropdown listeners first
-    this.cleanupJobDropdownListeners();
-
-    // Initialize Bootstrap dropdowns
-    this.initializeBootstrapJobDropdowns();
-
-    // Setup manual dropdown fallbacks
-    this.setupJobManualDropdowns();
+    this.setupJobDropdowns();
 
     this.jobDropdownsInitialized = true;
-    console.log("Job dropdowns initialization complete");
   }
 
-  cleanupJobDropdownListeners() {
-    console.log("Cleaning up existing job dropdown listeners...");
-
-    // Remove existing event listeners by cloning and replacing elements
-    const dropdownButtons = [
-      "created-by-filter",
-      "use-mcp-filter",
-      "use-terraform-filter",
-    ];
-
-    dropdownButtons.forEach((buttonId) => {
-      const button = document.getElementById(buttonId);
-      if (button && button._manualListenerAdded) {
-        const newButton = button.cloneNode(true);
-        button.parentNode.replaceChild(newButton, button);
-        console.log(`Cleaned up listeners for ${buttonId}`);
-      }
+  setupJobDropdowns() {
+    // Register created by filter dropdown
+    window.dropdownManager.register("created-by-filter", {
+      buttonId: "created-by-filter",
+      dropdownId: "created-by-filter-menu",
+      placeholder: "Created By",
+      filterType: "select",
+      onSelect: (value, label, id) => {
+        this.currentUserFilter = value;
+        this.loadJobs();
+        console.log(`Created by filter changed to: ${value}`);
+      },
+    }); // Register MCP filter dropdown
+    window.dropdownManager.register("use-mcp-filter", {
+      buttonId: "use-mcp-filter",
+      dropdownId: "use-mcp-filter-menu",
+      placeholder: "UseMCP",
+      filterType: "select",
+      onSelect: (value, label, id) => {
+        this.currentMcpFilter = value;
+        this.loadJobs();
+        console.log(`MCP filter changed to: ${value}`);
+      },
     });
 
-    // Remove global click handler if it exists
-    if (window.jobDropdownOutsideClickHandler) {
-      document.removeEventListener(
-        "click",
-        window.jobDropdownOutsideClickHandler
-      );
-      window.jobDropdownOutsideClickHandler = null;
-    }
-  }
-
-  initializeBootstrapJobDropdowns() {
-    console.log("Initializing Bootstrap job dropdowns...");
-
-    const dropdownButtons = [
-      "created-by-filter",
-      "use-mcp-filter",
-      "use-terraform-filter",
-    ];
-
-    dropdownButtons.forEach((buttonId) => {
-      const button = document.getElementById(buttonId);
-      if (!button) {
-        console.warn(`Job dropdown button ${buttonId} not found`);
-        return;
-      }
-
-      try {
-        // Dispose of existing Bootstrap dropdown instance
-        const existingDropdown = bootstrap.Dropdown.getInstance(button);
-        if (existingDropdown) {
-          existingDropdown.dispose();
-          console.log(`Disposed existing Bootstrap dropdown for ${buttonId}`);
-        }
-
-        // Create new Bootstrap dropdown
-        const dropdown = new bootstrap.Dropdown(button);
-        console.log(`Bootstrap dropdown initialized for ${buttonId}`);
-
-        // Add Bootstrap event listeners
-        button.addEventListener("shown.bs.dropdown", () => {
-          console.log(`Bootstrap dropdown ${buttonId} shown`);
-        });
-
-        button.addEventListener("hidden.bs.dropdown", () => {
-          console.log(`Bootstrap dropdown ${buttonId} hidden`);
-        });
-      } catch (error) {
-        console.warn(
-          `Failed to initialize Bootstrap dropdown for ${buttonId}:`,
-          error
-        );
-      }
-    });
-  }
-
-  setupJobManualDropdowns() {
-    console.log("Setting up manual job dropdown fallbacks...");
-
-    const dropdownConfigs = [
-      {
-        buttonId: "created-by-filter",
-        menuSelector: "#created-by-filter + .dropdown-menu",
+    // Register Terraform filter dropdown
+    window.dropdownManager.register("use-terraform-filter", {
+      buttonId: "use-terraform-filter",
+      dropdownId: "use-terraform-filter-menu",
+      placeholder: "UseTerraform",
+      filterType: "select",
+      onSelect: (value, label, id) => {
+        this.currentTerraformFilter = value;
+        this.loadJobs();
+        console.log(`Terraform filter changed to: ${value}`);
       },
-      {
-        buttonId: "use-mcp-filter",
-        menuSelector: "#use-mcp-filter + .dropdown-menu",
-      },
-      {
-        buttonId: "use-terraform-filter",
-        menuSelector: "#use-terraform-filter + .dropdown-menu",
-      },
-    ];
-
-    dropdownConfigs.forEach((config) => {
-      this.setupJobManualDropdown(config.buttonId, config.menuSelector);
     });
 
-    // Global click handler to close dropdowns when clicking outside
-    this.setupJobDropdownOutsideClickHandler();
-  }
-
-  setupJobManualDropdown(buttonId, menuSelector) {
-    const button = document.getElementById(buttonId);
-    const menu = document.querySelector(menuSelector);
-
-    if (!button || !menu) {
-      console.warn(
-        `Job dropdown elements not found: ${buttonId}, ${menuSelector}`
-      );
-      return;
-    }
-
-    // Prevent duplicate listeners
-    if (button._manualListenerAdded) {
-      console.log(`Manual listener already added for ${buttonId}, skipping...`);
-      return;
-    }
-
-    console.log(`Setting up manual dropdown for ${buttonId}`);
-
-    const toggleDropdown = (e) => {
-      e.preventDefault();
-      e.stopPropagation();
-
-      // Close other dropdowns first
-      document.querySelectorAll(".dropdown-menu.show").forEach((otherMenu) => {
-        if (otherMenu !== menu) {
-          otherMenu.classList.remove("show");
-          console.log("Closed other dropdown menu");
-        }
-      });
-
-      // Toggle current dropdown
-      const isCurrentlyOpen = menu.classList.contains("show");
-      menu.classList.toggle("show", !isCurrentlyOpen);
-
-      console.log(`Manual dropdown ${buttonId} toggled: ${!isCurrentlyOpen}`);
-    };
-
-    button.addEventListener("click", toggleDropdown);
-    button._manualListenerAdded = true;
-
-    console.log(`Manual dropdown setup complete for ${buttonId}`);
-  }
-
-  setupJobDropdownOutsideClickHandler() {
-    if (window.jobDropdownOutsideClickHandler) {
-      console.log(
-        "Job dropdown outside click handler already exists, skipping..."
-      );
-      return;
-    }
-
-    window.jobDropdownOutsideClickHandler = (e) => {
-      const jobDropdowns = document.querySelectorAll(
-        "#jobs-view .dropdown-menu.show"
-      );
-
-      jobDropdowns.forEach((menu) => {
-        const button = menu.previousElementSibling;
-        if (button && !button.contains(e.target) && !menu.contains(e.target)) {
-          menu.classList.remove("show");
-          console.log("Closed job dropdown via outside click");
-        }
-      });
-    };
-
-    document.addEventListener("click", window.jobDropdownOutsideClickHandler);
-    console.log("Job dropdown outside click handler setup complete");
-  }
-
-  resetJobDropdowns() {
-    console.log("Resetting job dropdowns...");
-    this.jobDropdownsInitialized = false;
-    this.cleanupJobDropdownListeners();
-
-    // Close all open dropdowns
-    document
-      .querySelectorAll("#jobs-view .dropdown-menu.show")
-      .forEach((menu) => {
-        menu.classList.remove("show");
-      });
-
-    // Reinitialize
-    setTimeout(() => {
-      this.initializeJobDropdowns();
-    }, 100);
+    // Initialize all job dropdowns
+    window.dropdownManager.init("created-by-filter");
+    window.dropdownManager.init("use-mcp-filter");
+    window.dropdownManager.init("use-terraform-filter");
   }
 
   bindEvents() {
@@ -358,185 +145,26 @@ class JobDashboard {
       return;
     }
 
-    // Create job button
-    this.createJobBtn?.addEventListener("click", () => {
-      this.showCreateJobModal();
-    });
+    // Text filter with debounce for better performance
+    this.filterInput?.addEventListener(
+      "input",
+      this.debounce((e) => {
+        this.currentFilter = e.target.value;
 
-    // Submit job form
-    this.submitJobBtn?.addEventListener("click", () => {
-      this.createJob();
-    });
-
-    // Filter input
-    this.filterInput?.addEventListener("input", (e) => {
-      this.currentFilter = e.target.value;
-
-      // Use client-side filtering instead of reloading from server
-      if (this.allJobs) {
-        this.renderJobs(this.allJobs);
-      }
-    });
-
-    // Back to jobs button
-    this.backToJobsBtn?.addEventListener("click", () => {
-      this.showJobsView();
-    });
-
-    // Configuration button
-    this.configBtn?.addEventListener("click", () => {
-      this.showConfigModal();
-    });
-
-    // Save configuration
-    this.saveConfigBtn?.addEventListener("click", () => {
-      this.saveConfig();
-    });
-
-    // See task details link (delegated event handling since the link is in dynamic content)
-    document.addEventListener("click", (e) => {
-      if (e.target && e.target.id === "see-task-details-link") {
-        e.preventDefault();
-        this.showSampleTaskDetail();
-      }
-    });
-
-    // Edit and delete job buttons
-    this.editJobBtn?.addEventListener("click", () => {
-      // TODO: Implement edit functionality
-      this.showToast("Edit functionality coming soon", "info");
-    });
-
-    this.deleteJobDetailBtn?.addEventListener("click", () => {
-      // TODO: Implement delete functionality
-      this.showToast("Delete functionality coming soon", "info");
-    });
-
-    // Dropdown filter event handlers using event delegation
-    this.setupJobDropdownItemHandlers();
-
-    // Table sorting
-    document.querySelectorAll(".sortable").forEach((header) => {
-      header.addEventListener("click", () => {
-        const field = header.dataset.sort;
-        if (this.currentSort.field === field) {
-          this.currentSort.order =
-            this.currentSort.order === "asc" ? "desc" : "asc";
-        } else {
-          this.currentSort.field = field;
-          this.currentSort.order = "asc";
+        // Use client-side filtering instead of reloading from server
+        if (this.allJobs) {
+          this.renderJobs(this.allJobs);
         }
-        this.updateSortDisplay();
-        this.loadJobs();
-      });
-    });
+      }, 300)
+    );
 
-    // Modal form validation
-    const jobDescInput = document.getElementById("job-description");
-    if (jobDescInput) {
-      jobDescInput.addEventListener("input", () => {
-        this.validateCreateJobForm();
-      });
-    }
-
-    // Test connection
-    const testConnBtn = document.getElementById("test-connection-btn");
-    if (testConnBtn) {
-      testConnBtn.addEventListener("click", () => {
-        this.testConnection();
-      });
-    }
-
-    // Back to jobs button
-    const backBtn = document.getElementById("back-to-jobs-btn");
-    if (backBtn) {
-      backBtn.addEventListener("click", () => {
-        this.showJobsView();
-      });
-    }
-
-    // Go to repos button
-    const gotoReposBtn = document.getElementById("goto-repos-btn");
-    if (gotoReposBtn) {
-      gotoReposBtn.addEventListener("click", () => {
-        this.navigateToRepos();
-      });
-    }
-
-    // Edit job button in detail view
-    const editJobBtn = document.getElementById("edit-job-btn");
-    if (editJobBtn) {
-      editJobBtn.addEventListener("click", () => {
-        this.editCurrentJob();
-      });
-    }
+    // Note: Dropdown filter event handlers are now managed by the DropdownManager
+    // through the onSelect callbacks in setupJobDropdowns()
   }
-
-  setupJobDropdownItemHandlers() {
-    // Use event delegation for dropdown items to handle dynamic content
-    document.addEventListener("click", (e) => {
-      // Handle created-by filter
-      if (
-        e.target.closest("#created-by-filter + .dropdown-menu .dropdown-item")
-      ) {
-        e.preventDefault();
-        const filter = e.target.dataset.filter;
-        this.currentUserFilter = filter;
-        this.updateFilterDisplay("created-by-filter", filter);
-
-        // Use client-side filtering instead of reloading from server
-        if (this.allJobs) {
-          this.renderJobs(this.allJobs);
-        }
-
-        // Close dropdown
-        const menu = e.target.closest(".dropdown-menu");
-        if (menu) menu.classList.remove("show");
-      }
-
-      // Handle use-mcp filter
-      if (e.target.closest("#use-mcp-filter + .dropdown-menu .dropdown-item")) {
-        e.preventDefault();
-        const filter = e.target.dataset.filter;
-        this.currentMcpFilter = filter;
-        this.updateFilterDisplay("use-mcp-filter", filter);
-
-        // Use client-side filtering instead of reloading from server
-        if (this.allJobs) {
-          this.renderJobs(this.allJobs);
-        }
-
-        // Close dropdown
-        const menu = e.target.closest(".dropdown-menu");
-        if (menu) menu.classList.remove("show");
-      }
-
-      // Handle use-terraform filter
-      if (
-        e.target.closest(
-          "#use-terraform-filter + .dropdown-menu .dropdown-item"
-        )
-      ) {
-        e.preventDefault();
-        const filter = e.target.dataset.filter;
-        this.currentTerraformFilter = filter;
-        this.updateFilterDisplay("use-terraform-filter", filter);
-
-        // Use client-side filtering instead of reloading from server
-        if (this.allJobs) {
-          this.renderJobs(this.allJobs);
-        }
-
-        // Close dropdown
-        const menu = e.target.closest(".dropdown-menu");
-        if (menu) menu.classList.remove("show");
-      }
-    });
-  }
-
   populateCreatedByFilter(jobs) {
-    // Extract unique CreatedBy values from the jobs data
+    // Extract unique 'InitiatedBy' values from jobs
     const uniqueCreatedBy = new Set();
+
     jobs.forEach((job) => {
       if (
         job.InitiatedBy &&
@@ -550,31 +178,17 @@ class JobDashboard {
     // Convert to sorted array
     const sortedCreatedBy = Array.from(uniqueCreatedBy).sort();
 
-    // Find the CreatedBy dropdown menu
-    const createdByDropdown =
-      document.querySelector("#created-by-filter").nextElementSibling;
-    if (!createdByDropdown) {
-      console.warn("CreatedBy dropdown menu not found");
-      return;
-    }
-
-    // Clear existing options (except "All")
-    createdByDropdown.innerHTML =
-      '<li><a class="dropdown-item" href="#" data-filter="all">All</a></li>';
-
-    // Add dynamic options
-    sortedCreatedBy.forEach((creator) => {
-      const listItem = document.createElement("li");
-      listItem.innerHTML = `<a class="dropdown-item" href="#" data-filter="${this.escapeHtml(creator)}">${this.escapeHtml(creator)}</a>`;
-      createdByDropdown.appendChild(listItem);
-    });
+    // Use dropdown manager to populate the created by filter
+    window.dropdownManager.populateDropdown(
+      "created-by-filter",
+      sortedCreatedBy
+    );
 
     console.log(
       `Populated CreatedBy filter with ${sortedCreatedBy.length} unique creators:`,
       sortedCreatedBy
     );
   }
-
   async loadJobs() {
     this.showLoading(true);
 
@@ -584,9 +198,6 @@ class JobDashboard {
         limit: this.pageSize.toString(),
         sortBy: this.currentSort.field,
         sortOrder: this.currentSort.order,
-        createdBy: this.currentUserFilter,
-        useMcp: this.currentMcpFilter,
-        useTerraform: this.currentTerraformFilter,
       });
 
       // Use our backend API endpoint (not direct kusto call)
@@ -608,8 +219,9 @@ class JobDashboard {
       this.renderPagination(data);
     } catch (error) {
       console.error("Error loading jobs:", error);
-      this.showError(
-        "Failed to load jobs. Please check your connection and try again."
+      showAlert(
+        "Failed to load jobs. Please check your connection and try again.",
+        "danger"
       );
       // Show empty state
       this.renderJobs([]);
@@ -617,9 +229,21 @@ class JobDashboard {
       this.showLoading(false);
     }
   }
-
   renderJobs(jobs) {
+    console.log(`renderJobs called with ${jobs.length} jobs`);
+    console.log("Current filters:", {
+      userFilter: this.currentUserFilter,
+      mcpFilter: this.currentMcpFilter,
+      terraformFilter: this.currentTerraformFilter,
+      textFilter: this.currentFilter,
+    });
+
     const tbody = document.getElementById("jobs-table-body");
+    if (!tbody) {
+      console.error("jobs-table-body element not found");
+      return;
+    }
+
     tbody.innerHTML = "";
 
     if (jobs.length === 0) {
@@ -639,12 +263,8 @@ class JobDashboard {
 
     // Apply user filter (check both fields for compatibility)
     if (this.currentUserFilter !== "all") {
-      console.log(`Applying CreatedBy filter: "${this.currentUserFilter}"`);
-
       filteredJobs = filteredJobs.filter((job) => {
-        const matches =
-          job.InitiatedBy === this.currentUserFilter ||
-          job.createdBy === this.currentUserFilter;
+        const matches = job.InitiatedBy === this.currentUserFilter;
 
         if (matches) {
           console.log(
@@ -654,10 +274,6 @@ class JobDashboard {
 
         return matches;
       });
-
-      console.log(
-        `CreatedBy filter results: ${filteredJobs.length} jobs match "${this.currentUserFilter}"`
-      );
     }
 
     // Apply MCP filter
@@ -694,7 +310,7 @@ class JobDashboard {
           job.TerraformRate?.toString() || "",
           job.TaskNum?.toString() || "",
           job.SuccessRate?.toString() || "",
-          this.formatDateTime(job.CreatedTime || job.creationTime) || "",
+          formatDateTime(job.CreatedTime || job.creationTime) || "",
         ];
 
         const matches = searchFields.some((field) =>
@@ -722,13 +338,13 @@ class JobDashboard {
                         ${job.TestJobID}
                     </a>
                 </td>
-                <td>${this.escapeHtml(job.InitiatedBy)}</td>
-                <td>${this.formatDateTime(job.CreatedTime)}</td>
-                <td>${this.escapeHtml(job.MCPRate)}</td>
-                <td>${this.escapeHtml(job.TerraformRate)}</td>
+                <td>${escapeHtml(job.InitiatedBy)}</td>
+                <td>${formatDateTime(job.CreatedTime)}</td>
+                <td>${escapeHtml(job.MCPRate)}</td>
+                <td>${escapeHtml(job.TerraformRate)}</td>
                 <td>${job.TaskNum}</td>
                 <td>
-                    <span class="success-rate ${this.getSuccessRateClass(job.SuccessRate)}">
+                    <span class="success-rate ${getSuccessRateClass(job.SuccessRate)}">
                         ${job.SuccessRate} (${job.SuccessTasks}/${job.TaskNum})
                     </span>
                 </td>
@@ -740,7 +356,7 @@ class JobDashboard {
     document.querySelectorAll(".job-id-link").forEach((link) => {
       link.addEventListener("click", (e) => {
         e.preventDefault();
-        this.viewJob(e.target.dataset.jobId);
+        window.navigateToJobDetail(e.target.dataset.jobId);
       });
     });
   }
@@ -805,84 +421,6 @@ class JobDashboard {
     });
   }
 
-  showCreateJobModal() {
-    const modal = new bootstrap.Modal(
-      document.getElementById("createJobModal")
-    );
-    document.getElementById("create-job-form").reset();
-    this.validateCreateJobForm();
-    modal.show();
-  }
-
-  validateCreateJobForm() {
-    const description = document.getElementById("job-description").value.trim();
-    const submitBtn = document.getElementById("submit-job-btn");
-    if (submitBtn) {
-      submitBtn.disabled = !description;
-    }
-  }
-
-  async createJob() {
-    const jobDescription = document.getElementById("job-description");
-    const jobPoolId = document.getElementById("job-pool-id");
-
-    if (!jobDescription || !jobDescription.value.trim()) {
-      this.showToast("Please enter a job description", "error");
-      return;
-    }
-
-    try {
-      const response = await fetch("/api/jobs", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          description: jobDescription.value.trim(),
-          poolId: jobPoolId?.value || "default",
-        }),
-      });
-
-      if (response.ok) {
-        this.showToast("Job created successfully!", "success");
-        const modal = bootstrap.Modal.getInstance(
-          document.getElementById("createJobModal")
-        );
-        if (modal) {
-          modal.hide();
-        }
-        // Refresh jobs list
-        this.loadJobs();
-      } else {
-        throw new Error("Failed to create job");
-      }
-    } catch (error) {
-      console.error("Error creating job:", error);
-      this.showToast("Failed to create job", "error");
-    }
-  }
-
-  updateFilterDisplay(filterId, value) {
-    const button = document.getElementById(filterId);
-    const badge = button.querySelector(".badge.bg-secondary");
-    badge.textContent = value;
-  }
-
-  updateSortDisplay() {
-    // Remove previous sort indicators
-    document.querySelectorAll(".sortable").forEach((header) => {
-      header.classList.remove("sorted-asc", "sorted-desc");
-    });
-
-    // Add current sort indicator
-    const currentHeader = document.querySelector(
-      `[data-sort="${this.currentSort.field}"]`
-    );
-    if (currentHeader) {
-      currentHeader.classList.add(`sorted-${this.currentSort.order}`);
-    }
-  }
-
   showLoading(show) {
     const loadingIndicator = document.getElementById("loading-indicator");
     const table = document.querySelector(".table-responsive");
@@ -894,297 +432,6 @@ class JobDashboard {
       loadingIndicator.classList.add("d-none");
       table.style.opacity = "1";
     }
-  }
-
-  showAlert(message, type) {
-    // Remove existing alerts
-    document.querySelectorAll(".alert").forEach((alert) => alert.remove());
-
-    const alertDiv = document.createElement("div");
-    alertDiv.className = `alert alert-${type} alert-dismissible fade show`;
-    alertDiv.innerHTML = `
-            ${message}
-            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-        `;
-
-    // Insert at the top of main content
-    const main = document.querySelector("main");
-    main.insertBefore(alertDiv, main.firstElementChild.nextElementSibling);
-
-    // Auto-dismiss after 5 seconds
-    setTimeout(() => {
-      if (alertDiv.parentNode) {
-        alertDiv.remove();
-      }
-    }, 5000);
-  }
-
-  showError(message) {
-    this.showAlert(message, "danger");
-  }
-
-  async checkExternalServiceStatus() {
-    try {
-      // Use our backend API endpoint for health check
-      const response = await fetch("/api/jobs/health/external");
-      const data = await response.json();
-      this.externalServiceStatus = data.external_service || {
-        available: data.status === "healthy",
-        error: null,
-      };
-      this.updateServiceStatusIndicator();
-    } catch (error) {
-      console.error("Failed to check external service status:", error);
-      this.externalServiceStatus = {
-        available: false,
-        error: "Connection failed",
-      };
-      this.updateServiceStatusIndicator();
-    }
-  }
-
-  updateServiceStatusIndicator() {
-    // Add a status indicator to the header
-    const headerContent = document.querySelector(
-      ".d-flex.justify-content-between"
-    );
-    if (!headerContent) return;
-
-    // Remove existing indicator
-    const existingIndicator = document.getElementById(
-      "service-status-indicator"
-    );
-    if (existingIndicator) {
-      existingIndicator.remove();
-    }
-
-    // Create new indicator
-    const indicator = document.createElement("div");
-    indicator.id = "service-status-indicator";
-    indicator.className = "service-status-indicator";
-
-    if (this.externalServiceStatus?.available) {
-      indicator.innerHTML = `
-                <div class="d-flex align-items-center text-success">
-                    <i class="bi bi-check-circle-fill me-1"></i>
-                    <small>External Service Online</small>
-                </div>
-            `;
-    } else {
-      indicator.innerHTML = `
-                <div class="d-flex align-items-center text-warning">
-                    <i class="bi bi-exclamation-triangle-fill me-1"></i>
-                    <small>Using Fallback Data</small>
-                </div>
-            `;
-    }
-
-    // Insert before the button toolbar
-    const btnToolbar = headerContent.querySelector(".btn-toolbar");
-    if (btnToolbar) {
-      headerContent.insertBefore(indicator, btnToolbar);
-    }
-  }
-
-  async showConfigModal() {
-    const modal = new bootstrap.Modal(document.getElementById("configModal"));
-    modal.show();
-  }
-
-  async loadConfig() {
-    try {
-      const response = await fetch("/api/config");
-      if (response.ok) {
-        const config = await response.json();
-        if (this.externalApiUrl) {
-          this.externalApiUrl.value = config.externalApiUrl || "";
-        }
-        if (this.apiTimeout) {
-          this.apiTimeout.value = config.timeout || 30;
-        }
-        if (this.retryAttempts) {
-          this.retryAttempts.value = config.retryAttempts || 3;
-        }
-      }
-    } catch (error) {
-      console.error("Failed to load configuration:", error);
-    }
-  }
-
-  async saveConfig() {
-    try {
-      const config = {
-        externalApiUrl: this.externalApiUrl?.value || "",
-        timeout: parseInt(this.apiTimeout?.value || "30"),
-        retryAttempts: parseInt(this.retryAttempts?.value || "3"),
-      };
-
-      const response = await fetch("/api/config", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(config),
-      });
-
-      if (response.ok) {
-        this.showToast("Configuration saved successfully!", "success");
-        const modal = bootstrap.Modal.getInstance(
-          document.getElementById("configModal")
-        );
-        modal.hide();
-
-        // Refresh external service status
-        await this.checkExternalServiceStatus();
-        this.loadJobs();
-      } else {
-        throw new Error("Failed to save configuration");
-      }
-    } catch (error) {
-      console.error("Error saving configuration:", error);
-      this.showToast("Failed to save configuration", "error");
-    }
-  }
-
-  async testConnection() {
-    if (!this.externalApiUrl?.value) {
-      this.showConnectionTestResult("Please enter an API URL first", "danger");
-      return;
-    }
-
-    this.testConnectionBtn.disabled = true;
-    this.testConnectionBtn.innerHTML =
-      '<i class="bi bi-arrow-clockwise spin"></i> Testing...';
-
-    try {
-      const response = await fetch("/api/config/test-connection", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          externalApiUrl: this.externalApiUrl.value,
-          timeout: parseInt(this.apiTimeout?.value || "30"),
-        }),
-      });
-
-      const result = await response.json();
-
-      if (result.success) {
-        this.showConnectionTestResult("✅ Connection successful!", "success");
-      } else {
-        this.showConnectionTestResult(
-          `❌ Connection failed: ${result.error}`,
-          "danger"
-        );
-      }
-    } catch (error) {
-      this.showConnectionTestResult(
-        `❌ Connection failed: ${error.message}`,
-        "danger"
-      );
-    } finally {
-      this.testConnectionBtn.disabled = false;
-      this.testConnectionBtn.innerHTML =
-        '<i class="bi bi-wifi"></i> Test Connection';
-    }
-  }
-
-  showConnectionTestResult(message, type) {
-    if (this.connectionTestResult) {
-      this.connectionTestResult.innerHTML = `<div class="alert alert-${type} py-2 mb-0">${message}</div>`;
-    }
-  }
-
-  showToast(message, type = "info") {
-    const toastContainer = document.getElementById("toast-container");
-    if (!toastContainer) return;
-
-    const toastId = "toast-" + Date.now();
-    const toastHtml = `
-            <div id="${toastId}" class="toast" role="alert" aria-live="assertive" aria-atomic="true">
-                <div class="toast-header">
-                    <strong class="me-auto text-${type}">
-                        ${type === "success" ? "✅" : type === "error" ? "❌" : "ℹ️"} 
-                        ${type === "success" ? "Success" : type === "error" ? "Error" : "Info"}
-                    </strong>
-                    <button type="button" class="btn-close" data-bs-dismiss="toast"></button>
-                </div>
-                <div class="toast-body">
-                    ${message}
-                </div>
-            </div>
-        `;
-
-    toastContainer.insertAdjacentHTML("beforeend", toastHtml);
-    const toastElement = document.getElementById(toastId);
-    const toast = new bootstrap.Toast(toastElement);
-    toast.show();
-
-    // Remove toast after it's hidden
-    toastElement.addEventListener("hidden.bs.toast", () => {
-      toastElement.remove();
-    });
-  } // Navigation methods
-  navigateToRepos() {
-    window.navigateToRepos();
-  }
-
-  navigateToJobs() {
-    window.navigateToJobs();
-  }
-
-  // Utility methods
-  escapeHtml(text) {
-    const div = document.createElement("div");
-    div.textContent = text;
-    return div.innerHTML;
-  }
-
-  formatDateTime(dateTime) {
-    // Handle the format from the API data
-    if (!dateTime) return "N/A";
-    console.log("Formatting date:", dateTime);
-
-    try {
-      const date = new Date(dateTime);
-
-      if (isNaN(date.getTime())) {
-        return dateTime; // Return original string if parsing fails
-      }
-
-      const options = {
-        timeZone: "Asia/Shanghai",
-        year: "numeric",
-        month: "2-digit",
-        day: "2-digit",
-        hour: "2-digit",
-        minute: "2-digit",
-        hour12: false,
-      };
-      console.log("Formatted date:", date.toLocaleString("sv-SE", options));
-
-      return date.toLocaleString("sv-SE", options).replace("T", " ");
-    } catch (error) {
-      console.warn("Error formatting date:", error, dateTime);
-      return dateTime; // Return original if formatting fails
-    }
-  }
-
-  getSuccessRateClass(successRate) {
-    const percentage = parseInt(successRate);
-    if (percentage >= 90) return "high";
-    if (percentage >= 70) return "medium";
-    return "low";
-  }
-
-  // Job action methods
-  async viewJob(jobId) {
-    // Use the routing system to navigate to job detail
-    console.log("Viewing job:", jobId);
-    this.updateURL(`/job-detail/jobID=${jobId}`);
-    this.showJobDetailLoadingState();
-    await this.navigateToJobDetail(jobId);
   }
 
   showJobDetailView(job, taskErrors, classifiedResults) {
@@ -1205,16 +452,14 @@ class JobDashboard {
     document.getElementById("job-detail-id").textContent = job.TestJobID;
     document.getElementById("job-detail-creator").textContent = job.InitiatedBy;
     document.getElementById("job-detail-creation-time").textContent =
-      this.formatDateTime(job.CreatedTime);
+      formatDateTime(job.CreatedTime);
     // document.getElementById('job-detail-description').textContent = job.JobDiscription;
 
     // Populate metrics - handle both new and old field names for compatibility
     document.getElementById("job-completed-tasks").textContent =
       job.TaskNum || 0;
-    document.getElementById("job-success-tasks").textContent =
-      job.SuccessTasks || this.calculateSuccessTasks(job);
-    document.getElementById("job-failed-tasks").textContent =
-      job.FailedTasks || this.calculateFailedTasks(job);
+    document.getElementById("job-success-tasks").textContent = job.SuccessTasks;
+    document.getElementById("job-failed-tasks").textContent = job.FailedTasks;
     document.getElementById("job-success-rate").textContent =
       job.SuccessRate || "0%";
 
@@ -1324,25 +569,7 @@ class JobDashboard {
     } else {
       // Fallback to old method if ViewManager not available
       console.warn("ViewManager not available, using fallback method");
-      this.showJobsViewFallback();
     }
-  }
-
-  // Keep original method as fallback
-  showJobsViewFallback() {
-    // Update URL to root path
-    this.updateURL("/");
-
-    // Hide detail view and show jobs view
-    window.viewManager.showView("jobs");
-
-    setTimeout(() => {
-      // Reinitialize job dropdowns when view becomes visible
-      this.initializeJobDropdowns();
-    }, 300);
-
-    // Update navigation active state
-    this.updateNavigationState("jobs");
   }
   showReposView() {
     // Using ViewManager - much cleaner!
@@ -1489,147 +716,6 @@ class JobDashboard {
         `;
   }
 
-  // Mock data methods for fallback when real data is not available
-  getMockModelStats() {
-    return [
-      {
-        name: "Claude-3.5",
-        taskNum: 25,
-        successRate: "85%",
-        avgSuccessIterations: 8.5,
-      },
-      {
-        name: "Claude-3.7",
-        taskNum: 18,
-        successRate: "92%",
-        avgSuccessIterations: 7.2,
-      },
-      {
-        name: "Claude-4.0",
-        taskNum: 20,
-        successRate: "88%",
-        avgSuccessIterations: 6.8,
-      },
-      {
-        name: "GPT-4.1",
-        taskNum: 15,
-        successRate: "90%",
-        avgSuccessIterations: 7.5,
-      },
-    ];
-  }
-
-  getMockLanguageStats() {
-    return [
-      {
-        name: "Java",
-        taskNum: 22,
-        successRate: "88%",
-        avgSuccessIterations: 9.2,
-      },
-      {
-        name: "Dotnet",
-        taskNum: 18,
-        successRate: "85%",
-        avgSuccessIterations: 8.7,
-      },
-      {
-        name: "JavaScript/TypeScript",
-        taskNum: 16,
-        successRate: "90%",
-        avgSuccessIterations: 7.8,
-      },
-      {
-        name: "Python",
-        taskNum: 12,
-        successRate: "92%",
-        avgSuccessIterations: 7.3,
-      },
-    ];
-  }
-
-  getMockResourceStats() {
-    return [
-      {
-        name: "1 + 0",
-        taskNum: 15,
-        successRate: "95%",
-        avgSuccessIterations: 6.5,
-      },
-      {
-        name: "1 + 1",
-        taskNum: 20,
-        successRate: "88%",
-        avgSuccessIterations: 8.2,
-      },
-      {
-        name: "1 + N",
-        taskNum: 12,
-        successRate: "82%",
-        avgSuccessIterations: 9.8,
-      },
-      {
-        name: "N + 0",
-        taskNum: 8,
-        successRate: "75%",
-        avgSuccessIterations: 11.2,
-      },
-      {
-        name: "N + 1",
-        taskNum: 6,
-        successRate: "70%",
-        avgSuccessIterations: 12.5,
-      },
-      {
-        name: "N + N",
-        taskNum: 4,
-        successRate: "65%",
-        avgSuccessIterations: 14.3,
-      },
-    ];
-  }
-
-  getMockRepoStats() {
-    return [
-      {
-        name: "airSonic",
-        taskNum: 12,
-        successRate: "92%",
-        avgSuccessIterations: 7.8,
-      },
-      {
-        name: "assessmentManager",
-        taskNum: 10,
-        successRate: "85%",
-        avgSuccessIterations: 9.1,
-      },
-      {
-        name: "before-container",
-        taskNum: 8,
-        successRate: "78%",
-        avgSuccessIterations: 10.5,
-      },
-      {
-        name: "tasktracker",
-        taskNum: 14,
-        successRate: "89%",
-        avgSuccessIterations: 8.3,
-      },
-      {
-        name: "task-2",
-        taskNum: 9,
-        successRate: "83%",
-        avgSuccessIterations: 9.7,
-      },
-      {
-        name: "task-3",
-        taskNum: 11,
-        successRate: "87%",
-        avgSuccessIterations: 8.9,
-      },
-    ];
-  }
-
   populateTopErrorCategory(errorsByCategory) {
     const entries = Object.entries(errorsByCategory);
     if (entries.length === 0) {
@@ -1764,7 +850,7 @@ class JobDashboard {
       failedTasksCountBadge.textContent = `${failedTasksArr.length} Failed Task${failedTasksArr.length !== 1 ? "s" : ""}`;
     }
 
-    // Populate category filter dropdown
+    // Populate category filter dropdown    // Populate category filter dropdown
     this.populateCategoryFilter(errorsByCategory);
 
     // Render failed tasks
@@ -1773,6 +859,7 @@ class JobDashboard {
     // Setup filter event listeners
     this.setupFilterEventListeners();
   }
+
   populateCategoryFilter(errorsByCategory) {
     console.log("populateCategoryFilter called with:", errorsByCategory);
 
@@ -1836,7 +923,7 @@ class JobDashboard {
                             <a href="/task-detail/${task.TaskID}" class="task-name-link" data-task-id="${task.TaskID}">${taskName}</a>
                         </div>
                         <div class="col-md-1">
-                            <span class="error-category">${this.formatDateTime(task.CreatedDate)}</span>
+                            <span class="error-category">${formatDateTime(task.CreatedDate)}</span>
                         </div>
                         <div class="col-md-1">
                             <span class="error-category badge bg-danger-subtle text-danger">${errorCategory}</span>
@@ -2009,57 +1096,6 @@ class JobDashboard {
     this.applyFilters();
   }
 
-  calculateSuccessTasks(job) {
-    // Use backend field if available, otherwise calculate
-    if (job.SuccessTasks !== undefined) {
-      return job.SuccessTasks;
-    }
-
-    if (!job.successRate || !job.finishedTaskNum) return 0;
-    const rate = parseFloat(job.successRate.replace("%", "")) / 100;
-    return Math.round(job.finishedTaskNum * rate);
-  }
-
-  calculateFailedTasks(job) {
-    // Use backend field if available, otherwise calculate
-    if (job.FailedTasks !== undefined) {
-      return job.FailedTasks;
-    }
-
-    if (!job.finishedTaskNum) return 0;
-    const successTasks = this.calculateSuccessTasks(job);
-    return job.finishedTaskNum - successTasks;
-  }
-
-  formatSuccessRate(rate) {
-    if (!rate) return "0%";
-    if (typeof rate === "string" && rate.includes("%")) return rate;
-    if (typeof rate === "number") return `${rate}%`;
-    return "0%";
-  }
-
-  editCurrentJob() {
-    if (this.currentJob) {
-      // Use the mapped ID field
-      const jobId = this.currentJob.TestJobID || this.currentJob.id;
-      this.editJob(jobId);
-    }
-  }
-
-  deleteCurrentJob() {
-    if (this.currentJob) {
-      // Use the mapped ID field
-      const jobId = this.currentJob.TestJobID || this.currentJob.id;
-      this.deleteJob(jobId);
-    }
-  }
-
-  editJob(jobId) {
-    // Placeholder for edit functionality
-    this.showAlert("Edit functionality coming soon!", "info");
-  }
-
-  async deleteJob(jobId) {}
   groupErrorsByCategory(failedTasks) {
     const categories = {};
     failedTasks.forEach((task) => {
@@ -2272,43 +1308,7 @@ class JobDashboard {
     this.showMatrixLoadingState();
 
     try {
-      // Get current job ID - look for it in various ways
-      let jobId = null;
-
-      // Try to get from URL hash first
-      const urlHash = window.location.hash;
-      if (urlHash.includes("job/")) {
-        jobId = urlHash.split("job/")[1].split("/")[0];
-      }
-
-      // Try to get from the current job detail view
-      if (!jobId) {
-        const jobDetailElement = document.querySelector(
-          "#job-detail-view [data-job-id]"
-        );
-        if (jobDetailElement) {
-          jobId = jobDetailElement.dataset.jobId;
-        }
-      }
-
-      // Try to get from the detail view title or other elements
-      if (!jobId) {
-        const jobLinkElement = document.querySelector("#job-detail-job-link");
-        if (jobLinkElement && jobLinkElement.dataset.jobId) {
-          jobId = jobLinkElement.dataset.jobId;
-        }
-      }
-
-      // If we still don't have a jobId, try to get it from this.currentJobId or fallback
-      if (!jobId && this.currentJobId) {
-        jobId = this.currentJobId;
-      }
-
-      if (!jobId) {
-        console.warn("No job ID found for generating matrix");
-        this.showMatrixErrorState();
-        return;
-      }
+      const jobId = this.currentJobId;
 
       console.log("Fetching fresh task data for job:", jobId);
 
@@ -2843,27 +1843,6 @@ class JobDashboard {
     document.body.removeChild(link);
   }
 
-  // Helper method for task success determination (used by matrix analysis)
-  isTaskSuccessful(task) {
-    // Prioritize new IsSuccessful field if available
-    if (task.IsSuccessful !== undefined && task.IsSuccessful !== null) {
-      return task.IsSuccessful === true || task.IsSuccessful === "true";
-    }
-
-    // Fallback to legacy success determination logic
-    if (task.success !== undefined && task.success !== null) {
-      return task.success === true || task.success === "true";
-    }
-
-    // Fallback to iteration-based logic
-    if (task.iterations !== undefined && task.iterations !== null) {
-      return task.iterations > 0;
-    }
-
-    // Default to false if no success indicators found
-    return false;
-  }
-
   // Helper method for calculating total tool calls (used by matrix analysis)
   calculateTotalCalls(task) {
     // Sum up all tool calls for this task
@@ -2880,7 +1859,9 @@ class JobDashboard {
     if (tasks.length === 0) return null;
 
     // Separate successful and all tasks
-    const successfulTasks = tasks.filter((task) => this.isTaskSuccessful(task));
+    const successfulTasks = tasks.filter(
+      (task) => task.IsSuccessful === true || task.IsSuccessful === "true"
+    );
     const totalTasks = tasks.length;
     const successfulCount = successfulTasks.length;
 

@@ -122,12 +122,6 @@ document.addEventListener("DOMContentLoaded", async () => {
     // Initialize dashboard after templates are loaded
     setTimeout(() => {
       console.log("🔧 Initializing JobDashboard...");
-      if (window.JobDashboard) {
-        window.jobDashboard = new JobDashboard();
-        console.log("✅ JobDashboard initialized");
-      } else {
-        console.error("❌ JobDashboard class not found");
-      }
 
       // Initialize TaskDetail
       console.log("🔧 Initializing TaskDetail...");
@@ -152,30 +146,18 @@ window.addEventListener("load", () => {
       if (e.target.closest("#job-view")) {
         e.preventDefault();
         console.log("Job view clicked");
-        if (window.jobDashboard) {
-          window.jobDashboard.showJobsView();
-        } else {
-          console.error("JobDashboard not available");
-        }
+        window.navigateToJobs();
       }
       if (e.target.closest("#repo-view")) {
         e.preventDefault();
         console.log("Repo view clicked");
-        if (window.jobDashboard) {
-          window.jobDashboard.showReposView();
-        } else {
-          console.error("JobDashboard not available");
-        }
+        window.navigateToRepos();
       }
 
       if (e.target.closest("#error-center-view-nav")) {
         e.preventDefault();
         console.log("Error Center view clicked");
-        if (window.jobDashboard) {
-          window.jobDashboard.showErrorCenterView();
-        } else {
-          console.error("JobDashboard not available");
-        }
+        window.navigateToErrorCenter();
       }
     });
     console.log("✅ Navigation handlers set up");

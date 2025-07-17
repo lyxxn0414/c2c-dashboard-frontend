@@ -11,7 +11,6 @@ dotenv.config();
 
 // Import routes
 import jobRoutes from "./routes/jobRoutes";
-import configRoutes from "./routes/configRoutes";
 import repoRoutes from "./routes/repoRoutes";
 import { errorHandler } from "./middleware/errorHandler";
 
@@ -90,7 +89,6 @@ class App {
 
     // API routes, 内部的api路由交给对应的路由文件处理
     this.app.use("/api/jobs", jobRoutes);
-    this.app.use("/api/config", configRoutes);
     this.app.use("/api/repos", repoRoutes); // Specific route for job details
 
     // 到来的get请求全部重定向到index.html

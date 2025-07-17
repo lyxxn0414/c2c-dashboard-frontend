@@ -36,10 +36,6 @@ function setupViewConfiguration() {
       },
       onShow: async () => {
         console.log("Jobs view shown");
-        // Reinitialize job dropdowns when view becomes visible
-        if (window.jobDashboard && window.jobDashboard.initializeJobDropdowns) {
-          window.jobDashboard.initializeJobDropdowns();
-        }
       },
       onHide: async () => {
         console.log("Jobs view hidden");

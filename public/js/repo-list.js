@@ -24,38 +24,14 @@ class ReposView {
       this.filterRepos();
     });
 
-    // Wait for DOM to be ready and ensure Bootstrap is available
+    // Wait for DOM to be ready and setup dropdowns
     setTimeout(() => {
-      // Only initialize dropdowns once
       if (!this.dropdownsInitialized) {
-        // Repo type filter dropdown
-        document.addEventListener("click", (e) => {
-          // filter for repo type
-          if (e.target.closest("#repo-type-dropdown .dropdown-item")) {
-            e.preventDefault();
-            const filter = e.target.getAttribute("data-filter");
-            this.currentFilters.repoType = filter;
-            updateDropdownButton("repo-type-filter", "RepoType", filter);
-            this.filterRepos();
-            closeDropdown("repo-type-filter", "repo-type-dropdown");
-          }
-          // filter for language
-          if (e.target.closest("#language-dropdown .dropdown-item")) {
-            e.preventDefault();
-            const filter = e.target.getAttribute("data-filter");
-            this.currentFilters.language = filter;
-            updateDropdownButton("language-filter", "Language", filter);
-            this.filterRepos();
-            closeDropdown("language-filter", "language-dropdown");
-          }
-        });
-
-        // Initialize Bootstrap dropdowns explicitly
-        this.initializeBootstrapDropdowns();
+        this.initializeRepoDropdowns();
         this.dropdownsInitialized = true;
-        console.log("Dropdown event listeners and initialization completed");
+        console.log("Repo dropdown initialization completed");
       } else {
-        console.log("Dropdowns already initialized, skipping...");
+        console.log("Repo dropdowns already initialized, skipping...");
       }
     }, 100);
   }
@@ -149,33 +125,17 @@ class ReposView {
   loadRepoFilters() {
     // Load repo types
     const repoTypes = [...new Set(this.reposData.map((repo) => repo.repoType))];
-    const repoTypeDropdown = document.getElementById("repo-type-dropdown");
 
-    // Clear existing options except "All"
-    repoTypeDropdown.innerHTML =
-      '<li><a class="dropdown-item" href="#" data-filter="all">All</a></li>';
-
-    repoTypes.forEach((type) => {
-      const li = document.createElement("li");
-      li.innerHTML = `<a class="dropdown-item" href="#" data-filter="${type}">${type}</a>`;
-      repoTypeDropdown.appendChild(li);
-    });
+    // Populate repo type dropdown
+    window.dropdownManager.populateDropdown("repo-type-filter", repoTypes);
 
     // Load languages
     const languages = [
       ...new Set(this.reposData.flatMap((repo) => repo.languages)),
     ];
-    const languageDropdown = document.getElementById("language-dropdown");
 
-    // Clear existing options except "All"
-    languageDropdown.innerHTML =
-      '<li><a class="dropdown-item" href="#" data-filter="all">All</a></li>';
-
-    languages.forEach((lang) => {
-      const li = document.createElement("li");
-      li.innerHTML = `<a class="dropdown-item" href="#" data-filter="${lang}">${lang}</a>`;
-      languageDropdown.appendChild(li);
-    });
+    // Populate language dropdown
+    window.dropdownManager.populateDropdown("language-filter", languages);
 
     console.log(
       "Repo filters loaded - RepoTypes:",
@@ -202,26 +162,81 @@ class ReposView {
     this.displayRepos(filteredRepos);
   }
 
-  initializeBootstrapDropdowns() {
-    const dropdownConfigs = [
-      { buttonId: "repo-type-filter", dropdownId: "repo-type-dropdown" },
-      { buttonId: "language-filter", dropdownId: "language-dropdown" },
-    ];
+  initializeRepoDropdowns() {
+    console.log("=== STARTING REPO DROPDOWN INITIALIZATION ===");
+    console.log("DropdownManager available:", !!window.dropdownManager);
 
-    initializeDropdowns(
-      dropdownConfigs,
-      this.setupManualDropdown.bind(this),
-      this.cleanupDropdownListeners.bind(this)
-    );
+    // Check if dropdownManager is available
+    if (!window.dropdownManager) {
+      console.error(
+        "DropdownManager not available! Make sure utils.js is loaded first."
+      );
+      return;
+    }
+
+    // Check if DOM elements exist
+    const repoTypeButton = document.getElementById("repo-type-filter");
+    const repoTypeDropdown = document.getElementById("repo-type-dropdown");
+    const languageButton = document.getElementById("language-filter");
+    const languageDropdown = document.getElementById("language-dropdown");
+
+    console.log("DOM Elements Check:");
+    console.log("- repo-type-filter button:", !!repoTypeButton);
+    console.log("- repo-type-dropdown menu:", !!repoTypeDropdown);
+    console.log("- language-filter button:", !!languageButton);
+    console.log("- language-dropdown menu:", !!languageDropdown);
+
+    if (!repoTypeButton || !repoTypeDropdown) {
+      console.error("Required DOM elements for repo-type-filter not found!");
+      return;
+    }
+
+    // Register repo type dropdown
+    console.log("Registering repo-type-filter...");
+    window.dropdownManager.register("repo-type-filter", {
+      buttonId: "repo-type-filter",
+      dropdownId: "repo-type-dropdown",
+      placeholder: "RepoType",
+      filterType: "select",
+      onSelect: (value, label, id) => {
+        console.log(`Repo type filter selected: ${value} (${label})`);
+        this.currentFilters.repoType = value;
+        this.filterRepos();
+      },
+    });
+
+    // Register language dropdown
+    if (languageButton && languageDropdown) {
+      console.log("Registering language-filter...");
+      window.dropdownManager.register("language-filter", {
+        buttonId: "language-filter",
+        dropdownId: "language-dropdown",
+        placeholder: "Language",
+        filterType: "select",
+        onSelect: (value, label, id) => {
+          console.log(`Language filter selected: ${value} (${label})`);
+          this.currentFilters.language = value;
+          this.filterRepos();
+        },
+      });
+    }
+
+    // Initialize both dropdowns
+    console.log("Initializing repo-type-filter dropdown...");
+    window.dropdownManager.init("repo-type-filter");
+
+    if (languageButton && languageDropdown) {
+      console.log("Initializing language-filter dropdown...");
+      window.dropdownManager.init("language-filter");
+    }
+
+    console.log("=== REPO DROPDOWN INITIALIZATION COMPLETE ===");
   }
 
   cleanupDropdownListeners() {
-    const buttonIds = ["repo-type-filter", "language-filter"];
-    cleanupDropdownListeners(buttonIds);
-  }
-
-  setupManualDropdown(button, dropdownId) {
-    setupGenericManualDropdown(button, dropdownId);
+    // Use the dropdown manager's cleanup
+    window.dropdownManager.cleanup("repo-type-filter");
+    window.dropdownManager.cleanup("language-filter");
   }
 }
 

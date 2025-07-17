@@ -76,7 +76,7 @@ class TaskDetail {
     this.setElementText("task-detail-id", taskData.taskId || "123456");
     this.setElementText(
       "task-detail-creation-time",
-      this.formatDateTime(taskData.creationTime) || "2025-06-23 14:57"
+      formatDateTime(taskData.creationTime) || "2025-06-23 14:57"
     );
     this.setElementText(
       "task-detail-repo-name",
@@ -154,7 +154,7 @@ class TaskDetail {
     failureDetails.forEach((failure) => {
       const row = tableBody.insertRow();
       row.insertCell().textContent = failure.iterationNum || "-";
-      row.insertCell().textContent = this.formatDateTime(failure.time) || "-";
+      row.insertCell().textContent = formatDateTime(failure.time) || "-";
       row.insertCell().textContent = failure.errorCategory || "-";
       row.insertCell().textContent = failure.errorDescription || "-";
       row.insertCell().textContent = failure.errorDetail || "-";
@@ -179,7 +179,7 @@ class TaskDetail {
 
     copilotResponses.forEach((response, index) => {
       const row = tableBody.insertRow();
-      row.insertCell().textContent = this.formatDateTime(response.time) || "-";
+      row.insertCell().textContent = formatDateTime(response.time) || "-";
 
       // Input command cell with truncation
       const inputCell = row.insertCell();
@@ -421,27 +421,6 @@ class TaskDetail {
     const element = document.getElementById(elementId);
     if (element) {
       element.textContent = text;
-    }
-  }
-
-  formatDateTime(dateString) {
-    if (!dateString) return "";
-
-    try {
-      const date = new Date(dateString);
-      return date
-        .toLocaleString("en-US", {
-          year: "numeric",
-          month: "2-digit",
-          day: "2-digit",
-          hour: "2-digit",
-          minute: "2-digit",
-          hour12: false,
-        })
-        .replace(",", "");
-    } catch (error) {
-      console.error("Error formatting date:", error);
-      return dateString;
     }
   }
 
