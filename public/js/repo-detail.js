@@ -84,22 +84,38 @@ class RepoDetail {
 
     this.displayRelatedTasks(filteredTasks);
   }
-
   async loadRepoDetails(repoName = this.currentRepoName) {
     try {
       console.log("Loading repo details for:", repoName);
 
-      // Try to get detailed repo information from API
-      const response = await fetch(
-        `/api/repos/${encodeURIComponent(repoName)}`
+      // Use base64 encoding for repo names with special characters to avoid URL issues
+      const encodedRepoName = btoa(repoName).replace(
+        /[+/=]/g,
+        function (match) {
+          return { "+": "-", "/": "_", "=": "" }[match];
+        }
       );
 
+      // Try to get detailed repo information from API
+      const response = await fetch(
+        `/api/repos/by-encoded-name/${encodedRepoName}`
+      );
       let repoDetails;
       if (response.ok) {
         repoDetails = await response.json();
         console.log("Repo details loaded from API:", repoDetails);
       } else {
-        console.log("API failed, trying cache...");
+        console.log("API failed, trying fallback with URI encoding...");
+        // Fallback to the original method
+        const fallbackResponse = await fetch(
+          `/api/repos/${encodeURIComponent(repoName)}`
+        );
+        if (fallbackResponse.ok) {
+          repoDetails = await fallbackResponse.json();
+          console.log("Repo details loaded from fallback API:", repoDetails);
+        } else {
+          console.log("Both API methods failed, trying cache...");
+        }
       }
 
       // If still no details found, always create placeholder data
