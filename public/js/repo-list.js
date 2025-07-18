@@ -14,6 +14,7 @@ class ReposView {
     // Reset initialization flag in case of re-initialization
     this.dropdownsInitialized = false;
     this.setupRepoEventListeners();
+    this.setupAddRepoModal();
     this.loadRepos();
   }
 
@@ -231,6 +232,230 @@ class ReposView {
     }
 
     console.log("=== REPO DROPDOWN INITIALIZATION COMPLETE ===");
+  }
+
+  setupAddRepoModal() {
+    // Set up add repo form submission
+    const submitBtn = document.getElementById('submit-repo-btn');
+    const form = document.getElementById('add-repo-form');
+    
+    if (submitBtn) {
+      submitBtn.addEventListener('click', (e) => {
+        e.preventDefault();
+        this.handleAddRepo();
+      });
+    }
+
+    // Set up form validation
+    if (form) {
+      form.addEventListener('submit', (e) => {
+        e.preventDefault();
+        this.handleAddRepo();
+      });
+    }
+
+    // Auto-generate repo name from uploaded file
+    const fileInput = document.getElementById('repo-upload');
+    const nameInput = document.getElementById('repo-name');
+    
+    if (fileInput && nameInput) {
+      fileInput.addEventListener('change', (e) => {
+        if (e.target.files && e.target.files[0]) {
+          const fileName = e.target.files[0].name;
+          // Remove file extension and clean up the name
+          const cleanName = fileName.replace(/\.(zip|tar\.gz|tar|rar)$/i, '').replace(/[^a-zA-Z0-9-_]/g, '-');
+          if (!nameInput.value) {
+            nameInput.value = cleanName;
+          }
+        }
+      });
+    }
+  }
+
+  async handleAddRepo() {
+    try {
+      const form = document.getElementById('add-repo-form');
+      const submitBtn = document.getElementById('submit-repo-btn');
+      const progressContainer = document.getElementById('upload-progress');
+      const progressBar = progressContainer.querySelector('.progress-bar');
+
+      // Validate form
+      if (!this.validateAddRepoForm()) {
+        return;
+      }
+
+      // Disable submit button and show progress
+      submitBtn.disabled = true;
+      submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Uploading...';
+      progressContainer.classList.remove('d-none');
+
+      // Collect form data
+      const formData = new FormData();
+      
+      // File upload
+      const fileInput = document.getElementById('repo-upload');
+      if (fileInput.files[0]) {
+        formData.append('repoFile', fileInput.files[0]);
+      }
+
+      // Repository details
+      formData.append('repoName', document.getElementById('repo-name').value);
+      formData.append('repoType', document.getElementById('repo-type').value);
+      formData.append('description', document.getElementById('repo-description').value || '');
+      formData.append('grouping', document.querySelector('input[name="grouping"]:checked').value);
+
+      // Languages (multiple selection)
+      const selectedLanguages = Array.from(document.querySelectorAll('.repo-language:checked'))
+        .map(checkbox => checkbox.value);
+      formData.append('languages', JSON.stringify(selectedLanguages));
+
+      // Simulate upload progress
+      this.simulateUploadProgress(progressBar);
+
+      // Submit to API
+      const response = await fetch('/api/repos', {
+        method: 'POST',
+        body: formData
+      });
+
+      if (response.ok) {
+        const result = await response.json();
+        
+        // Show success message
+        this.showToast('Repository added successfully!', 'success');
+        
+        // Close modal and reset form
+        const modal = bootstrap.Modal.getInstance(document.getElementById('addRepoModal'));
+        modal.hide();
+        form.reset();
+        
+        // Reload repos list
+        await this.loadRepos();
+      } else {
+        const error = await response.json();
+        throw new Error(error.message || 'Failed to add repository');
+      }
+
+    } catch (error) {
+      console.error('Error adding repository:', error);
+      this.showToast(error.message || 'Failed to add repository', 'error');
+    } finally {
+      // Reset button and hide progress
+      const submitBtn = document.getElementById('submit-repo-btn');
+      const progressContainer = document.getElementById('upload-progress');
+      
+      submitBtn.disabled = false;
+      submitBtn.innerHTML = '<i class="bi bi-plus-circle me-2"></i>Add Repository';
+      progressContainer.classList.add('d-none');
+    }
+  }
+
+  validateAddRepoForm() {
+    const repoFile = document.getElementById('repo-upload').files[0];
+    const repoName = document.getElementById('repo-name').value.trim();
+    const repoType = document.getElementById('repo-type').value;
+    const selectedLanguages = document.querySelectorAll('.repo-language:checked');
+    const selectedGrouping = document.querySelector('input[name="grouping"]:checked');
+
+    // Validate file upload
+    if (!repoFile) {
+      this.showToast('Please select a repository file to upload', 'error');
+      return false;
+    }
+
+    // Validate file type
+    const allowedTypes = ['.zip', '.tar.gz', '.tar', '.rar'];
+    const fileName = repoFile.name.toLowerCase();
+    const isValidType = allowedTypes.some(type => fileName.endsWith(type));
+    
+    if (!isValidType) {
+      this.showToast('Please upload a valid file format (.zip, .tar.gz, .tar, .rar)', 'error');
+      return false;
+    }
+
+    // Validate file size (e.g., max 100MB)
+    const maxSize = 100 * 1024 * 1024; // 100MB
+    if (repoFile.size > maxSize) {
+      this.showToast('File size must be less than 100MB', 'error');
+      return false;
+    }
+
+    // Validate repository name
+    if (!repoName) {
+      this.showToast('Please enter a repository name', 'error');
+      return false;
+    }
+
+    // Validate repository type
+    if (!repoType) {
+      this.showToast('Please select a repository type', 'error');
+      return false;
+    }
+
+    // Validate languages
+    if (selectedLanguages.length === 0) {
+      this.showToast('Please select at least one language', 'error');
+      return false;
+    }
+
+    // Validate grouping
+    if (!selectedGrouping) {
+      this.showToast('Please select a grouping option', 'error');
+      return false;
+    }
+
+    return true;
+  }
+
+  simulateUploadProgress(progressBar) {
+    let progress = 0;
+    const interval = setInterval(() => {
+      progress += Math.random() * 15;
+      if (progress >= 90) {
+        progress = 90;
+        clearInterval(interval);
+      }
+      progressBar.style.width = `${progress}%`;
+    }, 200);
+
+    // Complete progress when upload finishes
+    setTimeout(() => {
+      clearInterval(interval);
+      progressBar.style.width = '100%';
+    }, 3000);
+  }
+
+  showToast(message, type = 'info') {
+    // Create toast element
+    const toastContainer = document.getElementById('toast-container');
+    const toastId = 'toast-' + Date.now();
+    
+    const toastHTML = `
+      <div class="toast" id="${toastId}" role="alert" aria-live="assertive" aria-atomic="true">
+        <div class="toast-header">
+          <i class="bi ${type === 'success' ? 'bi-check-circle text-success' : 
+                        type === 'error' ? 'bi-exclamation-triangle text-danger' : 
+                        'bi-info-circle text-primary'} me-2"></i>
+          <strong class="me-auto">Repository</strong>
+          <button type="button" class="btn-close" data-bs-dismiss="toast"></button>
+        </div>
+        <div class="toast-body">
+          ${message}
+        </div>
+      </div>
+    `;
+    
+    toastContainer.insertAdjacentHTML('beforeend', toastHTML);
+    
+    // Show toast
+    const toastElement = document.getElementById(toastId);
+    const toast = new bootstrap.Toast(toastElement);
+    toast.show();
+    
+    // Remove toast element after it's hidden
+    toastElement.addEventListener('hidden.bs.toast', () => {
+      toastElement.remove();
+    });
   }
 
   cleanupDropdownListeners() {

@@ -1,150 +1,257 @@
 /* Repository specific styles - minimal custom styling to match job view */
 .sortable {
-    cursor: pointer;
-    user-select: none;
+  cursor: pointer;
+  user-select: none;
 }
 
 .sortable:hover {
-    background-color: rgba(0, 0, 0, 0.05);
+  background-color: rgba(0, 0, 0, 0.05);
 }
 
 .sortable i {
-    opacity: 0.5;
-    transition: opacity 0.2s ease;
+  opacity: 0.5;
+  transition: opacity 0.2s ease;
 }
 
 .sortable:hover i {
-    opacity: 1;
+  opacity: 1;
 }
 
 /* Repo name links styling */
 .repo-name-link {
-    color: #007bff;
-    text-decoration: none;
-    font-weight: 500;
-    transition: all 0.2s ease;
-    position: relative;
+  color: #007bff;
+  text-decoration: none;
+  font-weight: 500;
+  transition: all 0.2s ease;
+  position: relative;
 }
 
 .repo-name-link:hover {
-    color: #0056b3;
-    text-decoration: underline;
+  color: #0056b3;
+  text-decoration: underline;
 }
 
 .repo-name-link:focus {
-    outline: 2px solid #007bff;
-    outline-offset: 2px;
-    border-radius: 2px;
+  outline: 2px solid #007bff;
+  outline-offset: 2px;
+  border-radius: 2px;
 }
 
 /* Language tags styling */
 .language-tag {
-    display: inline-block;
-    background-color: #007bff;
-    color: white;
-    padding: 2px 8px;
-    border-radius: 12px;
-    font-size: 0.75rem;
-    font-weight: 500;
-    margin-right: 4px;
-    margin-bottom: 2px;
+  display: inline-block;
+  background-color: #007bff;
+  color: white;
+  padding: 2px 8px;
+  border-radius: 12px;
+  font-size: 0.75rem;
+  font-weight: 500;
+  margin-right: 4px;
+  margin-bottom: 2px;
 }
 
-/* Success rate badges */
-.success-rate-badge {
-    font-size: 0.875rem;
-    padding: 4px 8px;
-    border-radius: 12px;
-    font-weight: 500;
+/* Add Repository Modal Styling */
+#addRepoModal .modal-dialog {
+  max-width: 600px;
 }
 
-/* App pattern styling */
-.app-pattern {
-    font-family: 'Courier New', monospace;
-    background-color: #f8f9fa;
-    padding: 2px 6px;
-    border-radius: 4px;
-    font-size: 0.875rem;
-    color: #495057;
+#addRepoModal .form-check-label {
+  font-weight: 500;
+  cursor: pointer;
+}
+
+#addRepoModal .form-check-input:checked + .form-check-label {
+  color: #007bff;
+}
+
+#addRepoModal .language-selection {
+  max-height: 200px;
+  overflow-y: auto;
+  border: 1px solid #dee2e6;
+  border-radius: 0.375rem;
+  padding: 1rem;
+}
+
+#addRepoModal .grouping-option {
+  border: 1px solid #dee2e6;
+  border-radius: 0.375rem;
+  padding: 1rem;
+  margin-bottom: 0.5rem;
+  transition: all 0.2s ease;
+}
+
+#addRepoModal .grouping-option:hover {
+  border-color: #007bff;
+  background-color: #f8f9fa;
+}
+
+#addRepoModal .form-check-input:checked + .form-check-label .grouping-option {
+  border-color: #007bff;
+  background-color: #e7f3ff;
+}
+
+#addRepoModal .progress {
+  height: 8px;
+  margin-top: 1rem;
+}
+
+#addRepoModal .file-info {
+  font-size: 0.875rem;
+  color: #6c757d;
+  margin-top: 0.5rem;
+}
+
+#addRepoModal .btn-primary:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
 }
 
 /* Animation for row transitions */
 .repo-row {
-    transition: all 0.3s ease;
+  transition: all 0.3s ease;
 }
 
 .repo-row:hover {
-    transform: translateX(2px);
+  transform: translateX(2px);
 }
 
 /* Accessibility improvements */
 .repo-name-link:focus-visible {
-    outline: 2px solid #007bff;
-    outline-offset: 2px;
-    border-radius: 2px;
+  outline: 2px solid #007bff;
+  outline-offset: 2px;
+  border-radius: 2px;
 }
 
 /* Responsive design */
 @media (max-width: 768px) {
-    .language-tag {
-        font-size: 0.7rem;
-        padding: 1px 6px;
-    }
-    
-    .app-pattern {
-        font-size: 0.8rem;
-    }
+  .language-tag {
+    font-size: 0.7rem;
+    padding: 1px 6px;
+  }
+
+  .app-pattern {
+    font-size: 0.8rem;
+  }
 }
 
 /* Dropdown functionality improvements */
 .dropdown-menu {
-    z-index: 1050;
-    min-width: 200px;
+  z-index: 1050;
+  min-width: 200px;
 }
 
 .dropdown-menu.show {
-    display: block !important;
+  display: block !important;
 }
 
 /* Fix dropdown positioning if needed */
 .dropdown {
-    position: relative;
+  position: relative;
 }
 
 /* Style dropdown items */
 .dropdown-item {
-    cursor: pointer;
-    transition: background-color 0.15s ease-in-out;
+  cursor: pointer;
+  transition: background-color 0.15s ease-in-out;
 }
 
 .dropdown-item:hover {
-    background-color: #f8f9fa;
-    color: #212529;
+  background-color: #f8f9fa;
+  color: #212529;
 }
 
 .dropdown-item:active {
-    background-color: #007bff;
-    color: white;
+  background-color: #007bff;
+  color: white;
 }
 
 /* Filter button styling */
 .btn-outline-secondary.dropdown-toggle {
-    border-color: #6c757d;
-    color: #6c757d;
+  border-color: #6c757d;
+  color: #6c757d;
 }
 
 .btn-outline-secondary.dropdown-toggle:hover,
 .btn-outline-secondary.dropdown-toggle:focus {
-    background-color: #6c757d;
-    border-color: #6c757d;
-    color: white;
+  background-color: #6c757d;
+  border-color: #6c757d;
+  color: white;
 }
 
 /* Filter badges styling */
 .badge.bg-primary {
-    background-color: #007bff !important;
+  background-color: #007bff !important;
 }
 
 .badge.bg-secondary {
-    background-color: #6c757d !important;
+  background-color: #6c757d !important;
+}
+
+/* Upload progress animation */
+@keyframes pulse {
+  0% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+  100% {
+    opacity: 1;
+  }
+}
+
+#addRepoModal .uploading .progress-bar {
+  animation: pulse 1.5s ease-in-out infinite;
+}
+
+/* Language selection checkbox styling */
+.repo-language + .form-check-label {
+  padding-left: 0.5rem;
+  margin-bottom: 0.75rem;
+  transition: color 0.2s ease;
+}
+
+.repo-language:checked + .form-check-label {
+  color: #007bff;
+  font-weight: 600;
+}
+
+/* Grouping radio button styling */
+input[name="grouping"] + .form-check-label {
+  width: 100%;
+  padding: 0.75rem;
+  border: 1px solid #dee2e6;
+  border-radius: 0.375rem;
+  margin-bottom: 0.5rem;
+  transition: all 0.2s ease;
+  cursor: pointer;
+}
+
+input[name="grouping"] + .form-check-label:hover {
+  border-color: #007bff;
+  background-color: #f8f9fa;
+}
+
+input[name="grouping"]:checked + .form-check-label {
+  border-color: #007bff;
+  background-color: #e7f3ff;
+  color: #007bff;
+}
+
+/* Success rate badge styling - reuse from other components */
+.success-rate-badge {
+  font-size: 0.875rem;
+  padding: 4px 8px;
+  border-radius: 12px;
+  font-weight: 500;
+}
+
+/* App pattern styling */
+.app-pattern {
+  font-family: "Courier New", monospace;
+  background-color: #f8f9fa;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 0.875rem;
+  color: #495057;
 }
