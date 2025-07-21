@@ -235,49 +235,48 @@ class ReposView {
   }
 
   setupAddRepoModal() {
-    // Set up add repo form submission
+    // Only set up the button click handler - no form submit handler
     const submitBtn = document.getElementById('submit-repo-btn');
-    const form = document.getElementById('add-repo-form');
     
     if (submitBtn) {
-      submitBtn.addEventListener('click', (e) => {
+      // Store reference to this for proper context in event handler
+      const self = this;
+      
+      // Remove existing handlers (if any) by replacing with a new one
+      submitBtn.onclick = function(e) {
         e.preventDefault();
-        this.handleAddRepo();
-      });
-    }
-
-    // Set up form validation
-    if (form) {
-      form.addEventListener('submit', (e) => {
-        e.preventDefault();
-        this.handleAddRepo();
-      });
-    }
-
-    // Auto-generate repo name from uploaded file
-    const fileInput = document.getElementById('repo-upload');
-    const nameInput = document.getElementById('repo-name');
-    
-    if (fileInput && nameInput) {
-      fileInput.addEventListener('change', (e) => {
-        if (e.target.files && e.target.files[0]) {
-          const fileName = e.target.files[0].name;
-          // Remove file extension and clean up the name
-          const cleanName = fileName.replace(/\.(zip|tar\.gz|tar|rar)$/i, '').replace(/[^a-zA-Z0-9-_]/g, '-');
-          if (!nameInput.value) {
-            nameInput.value = cleanName;
-          }
+        // Only proceed if button isn't disabled
+        if (!this.disabled) {
+          self.handleAddRepo();
         }
-      });
+      };
     }
   }
 
+  // Track whether a submission is in progress
+  isSubmitting = false;
+
   async handleAddRepo() {
+    // Prevent duplicate submissions
+    if (this.isSubmitting) {
+      console.log('Submission already in progress, ignoring duplicate call');
+      return;
+    }
+    
+    this.isSubmitting = true;
+    
     try {
       const form = document.getElementById('add-repo-form');
       const submitBtn = document.getElementById('submit-repo-btn');
       const progressContainer = document.getElementById('upload-progress');
       const progressBar = progressContainer.querySelector('.progress-bar');
+      
+      // Check HTML5 form validation before proceeding
+      if (form && !form.checkValidity()) {
+        form.reportValidity();
+        this.isSubmitting = false;
+        return;
+      }
 
       // Validate form
       if (!this.validateAddRepoForm()) {
@@ -298,10 +297,15 @@ class ReposView {
         formData.append('repoFile', fileInput.files[0]);
       }
 
+      // Generate repository name from uploaded file
+      const fileName = fileInput.files[0].name;
+      const repoName = fileName.replace(/\.(zip|tar\.gz|tar|rar)$/i, '').replace(/[^a-zA-Z0-9-_]/g, '-');
+
       // Repository details
-      formData.append('repoName', document.getElementById('repo-name').value);
+      formData.append('repoName', repoName);
       formData.append('repoType', document.getElementById('repo-type').value);
-      formData.append('description', document.getElementById('repo-description').value || '');
+      formData.append('appPattern', document.getElementById('app-pattern').value);
+      formData.append('repoUrl', document.getElementById('repo-url').value);
       formData.append('grouping', document.querySelector('input[name="grouping"]:checked').value);
 
       // Languages (multiple selection)
@@ -320,20 +324,32 @@ class ReposView {
 
       if (response.ok) {
         const result = await response.json();
+        console.log('Upload result:', result);
         
-        // Show success message
-        this.showToast('Repository added successfully!', 'success');
-        
-        // Close modal and reset form
-        const modal = bootstrap.Modal.getInstance(document.getElementById('addRepoModal'));
-        modal.hide();
-        form.reset();
-        
-        // Reload repos list
-        await this.loadRepos();
+        // Check if the result indicates actual success
+        if (result.message && result.message.includes('successfully') && 
+            (!result.repository || result.repository.success !== false)) {
+          // Show success message
+          this.showToast('Repository added successfully!', 'success');
+          
+          // Close modal and reset form
+          const modal = bootstrap.Modal.getInstance(document.getElementById('addRepoModal'));
+          modal.hide();
+          form.reset();
+          
+          // Reload repos list
+          await this.loadRepos();
+        } else {
+          // Even with 200 status, the operation might have failed
+          const errorMessage = result.error || 
+                              result.message || 
+                              (result.repository && result.repository.message) ||
+                              'Repository upload failed - please check the file and try again';
+          throw new Error(errorMessage);
+        }
       } else {
         const error = await response.json();
-        throw new Error(error.message || 'Failed to add repository');
+        throw new Error(error.error || error.message || 'Failed to add repository');
       }
 
     } catch (error) {
@@ -347,13 +363,19 @@ class ReposView {
       submitBtn.disabled = false;
       submitBtn.innerHTML = '<i class="bi bi-plus-circle me-2"></i>Add Repository';
       progressContainer.classList.add('d-none');
+      
+      // Reset submission tracking flag after a short delay
+      setTimeout(() => {
+        this.isSubmitting = false;
+      }, 500);
     }
   }
 
   validateAddRepoForm() {
     const repoFile = document.getElementById('repo-upload').files[0];
-    const repoName = document.getElementById('repo-name').value.trim();
     const repoType = document.getElementById('repo-type').value;
+    const appPattern = document.getElementById('app-pattern').value;
+    const repoUrl = document.getElementById('repo-url').value.trim();
     const selectedLanguages = document.querySelectorAll('.repo-language:checked');
     const selectedGrouping = document.querySelector('input[name="grouping"]:checked');
 
@@ -380,15 +402,29 @@ class ReposView {
       return false;
     }
 
-    // Validate repository name
-    if (!repoName) {
-      this.showToast('Please enter a repository name', 'error');
-      return false;
-    }
-
     // Validate repository type
     if (!repoType) {
       this.showToast('Please select a repository type', 'error');
+      return false;
+    }
+
+    // Validate app pattern
+    if (!appPattern) {
+      this.showToast('Please select an app pattern', 'error');
+      return false;
+    }
+
+    // Validate repository URL
+    if (!repoUrl) {
+      this.showToast('Please enter a repository URL', 'error');
+      return false;
+    }
+
+    // Validate URL format
+    try {
+      new URL(repoUrl);
+    } catch (error) {
+      this.showToast('Please enter a valid URL', 'error');
       return false;
     }
 

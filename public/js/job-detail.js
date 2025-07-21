@@ -1,17 +1,39 @@
 class JobDetail {
   constructor() {
+    this.elementsInitialized = false;
     this.initializeElements();
     this.twoDimensionalAnalysis = new TwoDimensionalAnalysis();
     this.currentJob = null; // Store current job for detail view
-  }
-  initializeElements() {
+  }initializeElements() {
     this.jobDetailView = document.getElementById("job-detail-view");
 
     // Check if elements exist
     if (!this.jobDetailView) {
       console.warn("Views not found, waiting for HTML to load...");
+      // Wait for templates to load and retry
+      const retryInitialization = () => {
+        setTimeout(() => {
+          console.log("⏰ Retrying element initialization...");
+          this.initializeElements();
+        }, 500);
+      };
+      
+      // Listen for templates loaded event
+      if (!window.templateRetryListenerAdded) {
+        window.addEventListener("templatesLoaded", () => {
+          console.log("📡 Templates loaded event received, retrying initialization...");
+          setTimeout(() => this.initializeElements(), 100);
+        });
+        window.templateRetryListenerAdded = true;
+      }
+        // Fallback retry
+      retryInitialization();
       return;
     }
+
+    // Mark elements as initialized
+    this.elementsInitialized = true;
+    console.log("✅ Job detail elements initialized successfully");
     // Job detail elements
     this.jobDetailTitle = document.getElementById("job-detail-title");
     this.jobDetailId = document.getElementById("job-detail-id");
@@ -1390,6 +1412,17 @@ function showJobDetailPage(jobId) {
   if (!jobDetail) {
     jobDetail = new JobDetail();
   }
+  
+  // Check if elements are initialized before proceeding
+  if (!jobDetail.elementsInitialized) {
+    console.warn("⚠️ Elements not initialized yet, waiting...");
+    // Retry after a short delay
+    setTimeout(() => {
+      showJobDetailPage(jobId);
+    }, 200);
+    return;
+  }
+  
   jobDetail.showJobDetailLoadingState();
   jobDetail.initJobDetailView(jobId);
   window.viewManager.showView("job-detail");

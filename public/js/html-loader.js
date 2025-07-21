@@ -117,9 +117,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     } else {
       console.error(
         "❌ error-center-content element not found or template not loaded"
-      );
-    }
-    // Initialize dashboard after templates are loaded
+      );    }    // Initialize dashboard after templates are loaded
     setTimeout(() => {
       console.log("🔧 Initializing JobDashboard...");
 
@@ -131,6 +129,10 @@ document.addEventListener("DOMContentLoaded", async () => {
       } else {
         console.error("❌ TaskDetail class not found");
       }
+
+      // Notify that templates are loaded and ready
+      console.log("📡 Dispatching templatesLoaded event");
+      window.dispatchEvent(new CustomEvent("templatesLoaded"));
     }, 100);
   } catch (error) {
     console.error("❌ Error loading templates:", error);
@@ -166,3 +168,23 @@ window.addEventListener("load", () => {
 
 // Export for use in other scripts
 window.HTMLTemplates = HTMLTemplates;
+
+// Global function to check if templates are loaded
+window.areTemplatesLoaded = function() {
+  const requiredTemplates = ['jobDetail', 'repoDetail', 'taskDetail'];
+  const loadedCount = requiredTemplates.filter(template => 
+    HTMLTemplates[template] && HTMLTemplates[template].length > 0
+  ).length;
+  
+  console.log(`📊 Templates loaded: ${loadedCount}/${requiredTemplates.length}`);
+  return loadedCount === requiredTemplates.length;
+};
+
+// Debug function to show template status
+window.debugTemplateStatus = function() {
+  console.log('🔍 Template Status:');
+  Object.keys(HTMLTemplates).forEach(key => {
+    const template = HTMLTemplates[key];
+    console.log(`  ${key}: ${template ? `${template.length} chars` : 'not loaded'}`);
+  });
+};

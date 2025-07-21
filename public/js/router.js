@@ -67,8 +67,7 @@ window.navigateToTaskDetail = function (taskId, jobId = null, repoName = null) {
 };
 
 // Router for handling page navigation
-class Router {
-  constructor() {
+class Router {  constructor() {
     this.routes = {
       "/": "jobs",
       "/jobs": "jobs",
@@ -80,10 +79,37 @@ class Router {
     };
 
     this.currentRoute = "/";
-    this.init();
+    this.templatesReady = false; // Add a flag to track template readiness
+    this.pendingRoute = null; // Store pending route if templates aren't ready
+    
+    // Check if templates are already loaded
+    if (window.areTemplatesLoaded && window.areTemplatesLoaded()) {
+      console.log("🎯 Templates already loaded, initializing router immediately");
+      this.templatesReady = true;
+      this.init();
+    } else {
+      console.log("⏳ Router constructor: waiting for templates to be ready...");
+      
+      // Listen for templates loaded event
+      window.addEventListener("templatesLoaded", () => {
+        console.log("🎉 Router received templatesLoaded event in constructor");
+        this.templatesReady = true;
+        this.init();
+      });
+      
+      // Fallback: try to init after a delay
+      setTimeout(() => {
+        if (!this.templatesReady) {
+          console.log("⚠️ Router constructor fallback: initializing after delay");
+          this.templatesReady = true;
+          this.init();
+        }
+      }, 1000);
+    }
   }
-
   init() {
+    console.log("🚀 Router init() called, templatesReady:", this.templatesReady);
+    
     // Handle initial page load
     this.handleRoute();
 
@@ -91,12 +117,24 @@ class Router {
     window.addEventListener("popstate", () => {
       this.handleRoute();
     });
+    
+    // If there was a pending route, process it now
+    if (this.pendingRoute) {
+      console.log("🔄 Processing pending route from init:", this.pendingRoute);
+      this.handleRoute();
+    }
   }
-
   handleRoute() {
     const path = window.location.pathname;
     const searchParams = new URLSearchParams(window.location.search);
-    console.log("Handling route:", path); // Handle dynamic routes
+    console.log("Handling route:", path);
+    
+    // Check if templates are ready before processing routes
+    if (!this.templatesReady) {
+      console.log("⏳ Templates not ready, storing pending route:", path);
+      this.pendingRoute = path;
+      return;
+    }// Handle dynamic routes
     if (path.startsWith("/repoName/")) {
       const repoName = path.split("/repoName/")[1];
       if (repoName) {
@@ -291,11 +329,34 @@ class Router {
 // Initialize router when DOM is loaded
 document.addEventListener("DOMContentLoaded", () => {
   // Wait for templates to be loaded before initializing router
+  console.log("🔄 Waiting for templates to load...");
+  
+  let templatesLoaded = false;
+  let routerInitialized = false;
+
+  // Listen for templates loaded event
+  window.addEventListener("templatesLoaded", () => {
+    console.log("✅ Templates loaded, initializing router...");
+    templatesLoaded = true;
+    initializeRouter();
+  });
+
+  // Fallback timeout to ensure router initializes even if event is missed
   setTimeout(() => {
+    if (!routerInitialized) {
+      console.log("⚠️ Fallback: Initializing router after timeout...");
+      initializeRouter();
+    }
+  }, 2000);
+
+  function initializeRouter() {
+    if (routerInitialized) return;
+    
+    routerInitialized = true;
     window.router = new Router();
     console.log("✅ Router initialized");
 
     // Notify that router is ready
     window.dispatchEvent(new CustomEvent("routerReady"));
-  }, 500);
+  }
 });

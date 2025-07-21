@@ -50,14 +50,12 @@ router.get("/", async (req, res) => {
 // POST /api/repos - Add new repository
 router.post("/", upload.single('repoFile'), async (req: Request, res: Response) => {
   try {
-    console.log("Creating new repository...");
+    console.log("Creating new repository...");    // Validate required fields
+    const { repoType, appPattern, repoUrl, languages, grouping} = req.body;
     
-    // Validate required fields
-    const { repoName, repoType, languages, grouping, description = '' } = req.body;
-    
-    if (!repoName || !repoType || !languages || !grouping) {
+    if (!repoType || !appPattern || !repoUrl || !languages || !grouping) {
       return res.status(400).json({ 
-        error: "Missing required fields: repoName, repoType, languages, grouping" 
+        error: "Missing required fields: repoType, appPattern, repoUrl, languages, grouping" 
       });
     }
 
@@ -78,6 +76,17 @@ router.post("/", upload.single('repoFile'), async (req: Request, res: Response) 
     const validRepoTypes = ['Defang', 'Hero', 'JavaMigration', 'DotnetMigration', 'RecommendProject'];
     if (!validRepoTypes.includes(repoType)) {
       return res.status(400).json({ error: "Invalid repository type" });
+    }    // Validate app pattern
+    const validAppPatterns = ['1+0', '1+1', '1+N', 'N+0', 'N+1', 'N+N', 'unknown'];
+    if (!validAppPatterns.includes(appPattern)) {
+      return res.status(400).json({ error: "Invalid app pattern" });
+    }
+
+    // Validate repository URL
+    try {
+      new URL(repoUrl);
+    } catch (error) {
+      return res.status(400).json({ error: "Invalid repository URL format" });
     }
 
     // Validate grouping
@@ -91,25 +100,31 @@ router.post("/", upload.single('repoFile'), async (req: Request, res: Response) 
     const invalidLanguages = parsedLanguages.filter(lang => !validLanguages.includes(lang));
     if (invalidLanguages.length > 0) {
       return res.status(400).json({ error: `Invalid languages: ${invalidLanguages.join(', ')}` });
-    }
-
-    // Create repository data
+    }    // Create repository data
     const newRepoData = {
-      repoName,
       repoType,
+      appPattern,
+      repoUrl,
       languages: parsedLanguages,
       grouping,
-      description,
       filePath: req.file.path,
       fileName: req.file.originalname,
       fileSize: req.file.size,
       uploadDate: new Date().toISOString()
-    };
+    };    console.log("Repository data:", newRepoData);
 
-    console.log("Repository data:", newRepoData);
-
-    // Add repository using service
-    const result = await repoService.createRepository(newRepoData);
+    // Upload repository to external API instead of just creating locally
+    const result = await repoService.uploadRepository({
+      repoURL: repoUrl,
+      languages: parsedLanguages,
+      repoType,
+      appPattern,
+      grouping,
+      filePath: req.file.path,
+      fileName: req.file.originalname,
+      fileSize: req.file.size,
+      uploadDate: new Date().toISOString()
+    }, req.file);
     
     res.status(201).json({
       message: "Repository created successfully",
@@ -130,6 +145,70 @@ router.post("/", upload.single('repoFile'), async (req: Request, res: Response) 
     }
     
     res.status(500).json({ error: "Failed to create repository" });
+  }
+});
+
+// POST /api/repos/upload - Upload repository (matching PowerShell script format)
+router.post("/upload", upload.single('files'), async (req: Request, res: Response) => {
+  try {
+    console.log("Uploading repository...");
+    console.log("Request body:", req.body);
+    console.log("Request file:", req.file);
+
+    // Extract fields that match PowerShell script
+    const { repoURL, languages, repoType, appPattern, grouping } = req.body;
+    
+    if (!repoURL || !languages || !repoType || !appPattern || !grouping) {
+      return res.status(400).json({ 
+        error: "Missing required fields: repoURL, languages, repoType, appPattern, grouping" 
+      });
+    }
+
+    // Validate file upload
+    if (!req.file) {
+      return res.status(400).json({ error: "Repository file is required" });
+    }
+
+    // Parse languages - expecting comma-separated string like "C#,.NET"
+    const parsedLanguages = languages.split(',').map((lang: string) => lang.trim());
+
+    // Create repository data matching the expected backend format
+    const uploadData = {
+      repoURL,
+      languages: parsedLanguages,
+      repoType,
+      appPattern,
+      grouping,
+      filePath: req.file.path,
+      fileName: req.file.originalname,
+      fileSize: req.file.size,
+      uploadDate: new Date().toISOString()
+    };
+
+    console.log("Upload data:", uploadData);
+
+    // Forward the request to the external API using the service
+    const result = await repoService.uploadRepository(uploadData, req.file);
+    
+    res.status(201).json({
+      message: "Repository uploaded successfully",
+      result: result
+    });
+
+  } catch (error) {
+    console.error("Error uploading repository:", error);
+    
+    // Clean up uploaded file if there was an error
+    if (req.file) {
+      const fs = require('fs');
+      try {
+        fs.unlinkSync(req.file.path);
+      } catch (unlinkError) {
+        console.error("Error cleaning up uploaded file:", unlinkError);
+      }
+    }
+    
+    res.status(500).json({ error: "Failed to upload repository" });
   }
 });
 

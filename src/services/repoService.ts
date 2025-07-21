@@ -1,6 +1,5 @@
 import axios, { AxiosInstance, AxiosRequestConfig } from "axios";
 import {
-  Repository,
   RepoType,
   ApiRepoResponse,
   ApiRepoData,
@@ -113,7 +112,7 @@ export class RepoService {
     return RepoService.instance;
   }
 
-  async getRepositories(): Promise<Repository[]> {
+  async getRepositories(): Promise<any[]> {
     try {
       console.log("Fetching repositories from API...");
       const response = await fetch(`${this.apiBaseUrl}/kusto/getRepoList`);
@@ -137,11 +136,11 @@ export class RepoService {
 
       // Fallback to mock data if API fails
       console.log("Falling back to mock data");
-      return this.getMockRepositories();
+      return [];
     }
   }
 
-  private transformApiRepoToRepository(apiRepo: ApiRepoData): Repository {
+  private transformApiRepoToRepository(apiRepo: ApiRepoData): any {
     return {
       repoName: apiRepo.RepoName,
       languages: this.parseLanguages(apiRepo.Language),
@@ -159,37 +158,11 @@ export class RepoService {
 
     // Handle various language string formats
     return languageString
-      .split(/[,;\/]/) // Split by comma, semicolon, or slash
+      .split(/[,]/) // Split by comma, semicolon, or slash
       .map((lang) => lang.trim())
       .filter((lang) => lang.length > 0)
       .map((lang) => {
-        // Normalize common language names
-        const normalized = lang.toLowerCase();
-        if (normalized.includes("ts") || normalized.includes("typescript"))
-          return "TypeScript";
-        if (normalized.includes("js") || normalized.includes("javascript"))
-          return "JavaScript";
-        if (normalized.includes("java") && !normalized.includes("script"))
-          return "Java";
-        if (normalized.includes("python") || normalized.includes("py"))
-          return "Python";
-        if (normalized.includes("c#") || normalized.includes("csharp"))
-          return "C#";
-        if (normalized.includes("dotnet") || normalized.includes(".net"))
-          return ".NET";
-        if (normalized.includes("go")) return "Go";
-        if (normalized.includes("rust")) return "Rust";
-        if (normalized.includes("php")) return "PHP";
-        if (normalized.includes("ruby")) return "Ruby";
-        if (normalized.includes("shell") || normalized.includes("bash"))
-          return "Shell";
-        if (normalized.includes("docker")) return "Docker";
-        if (normalized.includes("yaml") || normalized.includes("yml"))
-          return "YAML";
-        if (normalized.includes("json")) return "JSON";
-
-        // Return original if no match found
-        return lang.charAt(0).toUpperCase() + lang.slice(1).toLowerCase();
+        return lang;
       });
   }
 
@@ -236,44 +209,6 @@ export class RepoService {
     return isNaN(numericValue) ? 0 : numericValue / 100; // Convert to decimal (0-1)
   }
 
-  private getMockRepositories(): Repository[] {
-    // Fallback mock data
-    return [
-      {
-        repoName: "frontend-app",
-        languages: ["TypeScript", "JavaScript", "CSS"],
-        repoType: RepoType.Application,
-        appPattern: "React SPA",
-        successRate: 0.95,
-        repoURL: "https://github.com/example/frontend-app",
-      },
-      {
-        repoName: "api-service",
-        languages: ["C#", "SQL"],
-        repoType: RepoType.Service,
-        appPattern: "REST API",
-        successRate: 0.88,
-        repoURL: "https://github.com/example/api-service",
-      },
-      {
-        repoName: "shared-utils",
-        languages: ["TypeScript"],
-        repoType: RepoType.Library,
-        appPattern: "NPM Package",
-        successRate: 0.92,
-        repoURL: "https://github.com/example/shared-utils",
-      },
-      {
-        repoName: "build-tools",
-        languages: ["Python", "Shell"],
-        repoType: RepoType.Tool,
-        appPattern: "CLI",
-        successRate: 0.85,
-        repoURL: "https://github.com/example/build-tools",
-      },
-    ];
-  }
-
   private generateRepoId(repoName: string): string {
     // Generate a consistent ID based on repo name
     let hash = 0;
@@ -285,7 +220,7 @@ export class RepoService {
     return Math.abs(hash).toString().substring(0, 6);
   }
 
-  async getRepositoryDetails(repoName: string): Promise<Repository | null> {
+  async getRepositoryDetails(repoName: string): Promise<any | null> {
     try {
       console.log("Fetching repository details for:", repoName);
 
@@ -375,57 +310,32 @@ export class RepoService {
       throw error; // Re-throw to see the actual error
     }
   }
-
   /**
    * Create a new repository
    * @param repoData - Repository data including file information
    * @returns Promise<Repository> - Created repository object
-   */
-  async createRepository(repoData: {
-    repoName: string;
+   */ async createRepository(repoData: {
     repoType: string;
+    appPattern: string;
+    repoUrl: string;
     languages: string[];
     grouping: string;
-    description: string;
     filePath: string;
     fileName: string;
     fileSize: number;
     uploadDate: string;
-  }): Promise<Repository> {
+  }): Promise<any> {
     try {
       console.log("Creating new repository:", repoData);
 
-      // For now, we'll create a repository object that matches our frontend interface
-      // In a real implementation, you would:
-      // 1. Upload the file to a cloud storage service (Azure Blob Storage, etc.)
-      // 2. Process the repository contents
-      // 3. Store repository metadata in a database
-      // 4. Trigger any analysis or processing workflows
-
       // Create a repository object that matches our Repository interface
-      const newRepository: Repository = {
-        repoName: repoData.repoName,
+      const newRepository = {
         languages: repoData.languages,
         repoType: repoData.repoType,
-        appPattern: this.inferAppPattern(repoData.languages, repoData.grouping),
-        successRate: 0, // New repositories start with 0% success rate
-        repoURL: `https://github.com/uploads/${repoData.repoName}`, // Placeholder URL
-        repoId: this.generateRepoId(repoData.repoName),
-        totalTasks: 0,
-        successfulTasks: 0,
+        appPattern: repoData.appPattern,
+        repoURL: repoData.repoUrl,
+        grouping: repoData.grouping,
       };
-
-      // TODO: In a real implementation, you would make an API call to store this data
-      // For example:
-      // const response = await this.client.post('/api/repositories', {
-      //     ...newRepository,
-      //     filePath: repoData.filePath,
-      //     fileName: repoData.fileName,
-      //     fileSize: repoData.fileSize,
-      //     grouping: repoData.grouping,
-      //     description: repoData.description,
-      //     uploadDate: repoData.uploadDate
-      // });
 
       console.log("Repository created successfully:", newRepository);
       return newRepository;
@@ -439,57 +349,86 @@ export class RepoService {
   }
 
   /**
-   * Infer application pattern based on languages and grouping
+   * Upload repository to external API
    */
-  private inferAppPattern(languages: string[], grouping: string): string {
-    // Simple pattern inference logic
-    const hasJavaScript = languages.some(
-      (lang) => lang.includes("JS") || lang.includes("JavaScript")
-    );
-    const hasTypeScript = languages.some(
-      (lang) => lang.includes("TS") || lang.includes("TypeScript")
-    );
-    const hasPython = languages.includes("Python");
-    const hasJava = languages.includes("Java");
-    const hasCSharp = languages.includes("C#");
-    const hasGo = languages.includes("Go");
+  async uploadRepository(
+    uploadData: any,
+    file: Express.Multer.File
+  ): Promise<any> {
+    try {
+      console.log("Uploading repository to external API...");
 
-    if (hasTypeScript || hasJavaScript) {
-      if (grouping === "Full") return "Full-Stack Web App";
-      if (grouping === "Medium") return "Web Application";
-      return "Simple Web App";
+      // Create FormData for multipart request
+      const FormData = require("form-data");
+      const fs = require("fs");
+
+      const formData = new FormData();
+
+      // Add form fields
+      formData.append("repoURL", uploadData.repoURL);
+      formData.append("languages", uploadData.languages.join(","));
+      formData.append("repoType", uploadData.repoType);
+      formData.append("appPattern", uploadData.appPattern);
+      formData.append("grouping", uploadData.grouping);
+
+      // Add file
+      formData.append("files", fs.createReadStream(file.path), {
+        filename: file.originalname,
+        contentType: "application/zip",
+      }); // Make request to external API
+      const response = await this.client.post(
+        "/storage-blob/upload-repo",
+        formData,
+        {
+          headers: {
+            ...formData.getHeaders(),
+            "Content-Type": "multipart/form-data",
+          },
+          maxContentLength: Infinity,
+          maxBodyLength: Infinity,
+        }
+      );
+
+      console.log("Upload response:", response.data);
+
+      // Validate the response from external API
+      if (response.status >= 200 && response.status < 300) {
+        // Check if the response indicates success
+        const responseData = response.data;
+        if (
+          typeof responseData === "string" &&
+          responseData.toLowerCase().includes("success")
+        ) {
+          return { success: true, message: responseData, data: responseData };
+        } else if (responseData && responseData.success !== false) {
+          // If no explicit failure indication, assume success for 2xx responses
+          return {
+            success: true,
+            message: "Repository uploaded successfully",
+            data: responseData,
+          };
+        } else {
+          throw new Error(
+            `Upload failed: ${
+              responseData?.message || "Unknown error from external API"
+            }`
+          );
+        }
+      } else {
+        throw new Error(`Upload failed with status: ${response.status}`);
+      }
+    } catch (error: any) {
+      console.error("Error uploading repository:", error);
+      if (error.response) {
+        console.error("Error response data:", error.response.data);
+        throw new Error(
+          `Upload failed: ${
+            error.response.data?.message || error.response.status
+          }`
+        );
+      }
+      throw error;
     }
-
-    if (hasPython) {
-      if (grouping === "Full") return "ML/Data Pipeline";
-      if (grouping === "Medium") return "API Service";
-      return "Script/Tool";
-    }
-
-    if (hasJava) {
-      if (grouping === "Full") return "Enterprise Application";
-      if (grouping === "Medium") return "Spring Boot API";
-      return "Simple Java App";
-    }
-
-    if (hasCSharp) {
-      if (grouping === "Full") return ".NET Enterprise App";
-      if (grouping === "Medium") return "ASP.NET API";
-      return "Console Application";
-    }
-
-    if (hasGo) {
-      if (grouping === "Full") return "Microservices Platform";
-      if (grouping === "Medium") return "Go API Service";
-      return "CLI Tool";
-    }
-
-    // Default pattern
-    return grouping === "Full"
-      ? "Complex Application"
-      : grouping === "Medium"
-      ? "Standard Application"
-      : "Simple Application";
   }
 
   /**

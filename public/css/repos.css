@@ -255,3 +255,27 @@ input[name="grouping"]:checked + .form-check-label {
   font-size: 0.875rem;
   color: #495057;
 }
+
+/* Repository URL field styling */
+#repo-url {
+  transition: border-color 0.2s ease;
+}
+
+#repo-url:focus {
+  border-color: #007bff;
+  box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+}
+
+#repo-url:valid {
+  border-color: #28a745;
+}
+
+#repo-url:invalid:not(:focus) {
+  border-color: #dc3545;
+}
+
+/* URL input icon styling */
+.url-input-group .input-group-text {
+  background-color: #f8f9fa;
+  border-color: #dee2e6;
+}

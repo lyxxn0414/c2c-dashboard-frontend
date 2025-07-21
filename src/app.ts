@@ -30,8 +30,7 @@ class App {
   private initializeMiddlewares(): void {
     // Security middleware
     if (process.env.HELMET_ENABLED === "true") {
-      this.app.use(
-        helmet({
+      this.app.use(        helmet({
           contentSecurityPolicy: {
             directives: {
               defaultSrc: ["'self'"],
