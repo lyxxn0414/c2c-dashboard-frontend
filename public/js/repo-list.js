@@ -250,6 +250,28 @@ class ReposView {
           self.handleAddRepo();
         }
       };
+      
+      // 添加文件大小显示功能
+      const fileInput = document.getElementById('repo-upload');
+      const fileSizeInfo = document.getElementById('file-size-info');
+      
+      if (fileInput && fileSizeInfo) {
+        fileInput.addEventListener('change', function() {
+          if (this.files && this.files[0]) {
+            const file = this.files[0];
+            const fileSizeMB = (file.size / (1024 * 1024)).toFixed(2);
+            
+            // 根据文件大小显示不同颜色
+            let sizeClass = 'text-success';
+            if (fileSizeMB > 100) sizeClass = 'text-warning';
+            if (fileSizeMB > 500) sizeClass = 'text-danger';
+            
+            fileSizeInfo.innerHTML = `<span class="${sizeClass}">已选择文件大小: ${fileSizeMB} MB</span>`;
+          } else {
+            fileSizeInfo.innerHTML = '';
+          }
+        });
+      }
     }
   }
 
@@ -294,7 +316,12 @@ class ReposView {
       // File upload
       const fileInput = document.getElementById('repo-upload');
       if (fileInput.files[0]) {
-        formData.append('repoFile', fileInput.files[0]);
+        const file = fileInput.files[0];
+        formData.append('repoFile', file);
+        
+        // 显示文件大小信息在按钮上
+        const fileSizeMB = (file.size / (1024 * 1024)).toFixed(1);
+        submitBtn.innerHTML = `<span class="spinner-border spinner-border-sm me-2"></span>上传中 (${fileSizeMB}MB)...`;
       }
 
       // Generate repository name from uploaded file
@@ -313,8 +340,11 @@ class ReposView {
         .map(checkbox => checkbox.value);
       formData.append('languages', JSON.stringify(selectedLanguages));
 
-      // Simulate upload progress
-      this.simulateUploadProgress(progressBar);
+      // 获取文件大小
+      const fileSize = fileInput.files[0].size;
+      
+      // Simulate upload progress based on file size
+      const progressInterval = this.simulateUploadProgress(progressBar, fileSize);
 
       // Submit to API
       const response = await fetch('/api/repos', {
@@ -323,6 +353,22 @@ class ReposView {
       });
 
       if (response.ok) {
+        // 清除进度条模拟定时器
+        if (progressInterval) {
+          clearInterval(progressInterval);
+        }
+        
+        // 完成进度条并显示成功信息
+        progressBar.style.width = '100%';
+        progressBar.classList.add('bg-success');
+        progressBar.innerHTML = '上传完成!';
+        
+        // 更新状态信息
+        const statusElement = document.getElementById('upload-status');
+        if (statusElement) {
+          statusElement.textContent = '文件已成功上传，正在处理...';
+        }
+        
         const result = await response.json();
         console.log('Upload result:', result);
         
@@ -330,7 +376,7 @@ class ReposView {
         if (result.message && result.message.includes('successfully') && 
             (!result.repository || result.repository.success !== false)) {
           // Show success message
-          this.showToast('Repository added successfully!', 'success');
+          this.showToast('文件上传成功！', 'success');
           
           // Close modal and reset form
           const modal = bootstrap.Modal.getInstance(document.getElementById('addRepoModal'));
@@ -395,11 +441,12 @@ class ReposView {
       return false;
     }
 
-    // Validate file size (e.g., max 100MB)
-    const maxSize = 100 * 1024 * 1024; // 100MB
-    if (repoFile.size > maxSize) {
-      this.showToast('File size must be less than 100MB', 'error');
-      return false;
+    // 不再限制文件大小
+    // 但如果文件超过100MB，显示警告信息提示用户上传可能需要较长时间
+    const warningSize = 100 * 1024 * 1024; // 100MB
+    if (repoFile.size > warningSize) {
+      this.showToast(`大文件上传可能需要较长时间，请耐心等待 (${Math.round(repoFile.size / 1024 / 1024)}MB)`, 'info');
+      // 不返回false，允许上传继续
     }
 
     // Validate repository type
@@ -443,22 +490,101 @@ class ReposView {
     return true;
   }
 
-  simulateUploadProgress(progressBar) {
+  simulateUploadProgress(progressBar, fileSize) {
+    // 针对大文件上传，使用更合适的进度显示
+    const isLargeFile = fileSize > 100 * 1024 * 1024; // 大于100MB
+    const uploadStartTime = Date.now();
+    const statusElement = document.getElementById('upload-status');
+    
+    // 格式化文件大小为人类可读格式
+    const formatFileSize = (bytes) => {
+      if (bytes < 1024 * 1024) {
+        return (bytes / 1024).toFixed(2) + ' KB';
+      } else if (bytes < 1024 * 1024 * 1024) {
+        return (bytes / (1024 * 1024)).toFixed(2) + ' MB';
+      } else {
+        return (bytes / (1024 * 1024 * 1024)).toFixed(2) + ' GB';
+      }
+    };
+    
+    // 显示总大小
+    const formattedSize = formatFileSize(fileSize);
+    progressBar.innerHTML = `0%`;
+    if (statusElement) {
+      statusElement.textContent = `准备上传: ${formattedSize}`;
+    }
+    
     let progress = 0;
+    let lastUpdate = Date.now();
+    let bytesUploaded = 0;
+    
     const interval = setInterval(() => {
-      progress += Math.random() * 15;
+      // 对大文件，进度增长更慢
+      const increment = isLargeFile ? 
+        Math.random() * 2 : // 大文件每次增长小一些
+        Math.random() * 10;  // 普通文件增长更快
+      
+      const now = Date.now();
+      const elapsed = now - lastUpdate;
+      lastUpdate = now;
+      
+      progress += increment;
       if (progress >= 90) {
         progress = 90;
-        clearInterval(interval);
       }
+      
+      // 计算模拟已上传大小和速度
+      const newBytesUploaded = Math.floor(fileSize * (progress / 100));
+      const bytesDelta = newBytesUploaded - bytesUploaded;
+      bytesUploaded = newBytesUploaded;
+      
+      // 计算上传速度 (bytes/second)
+      const uploadSpeed = bytesDelta / (elapsed / 1000);
+      const uploadSpeedFormatted = formatFileSize(uploadSpeed) + '/s';
+      
+      // 计算估计剩余时间
+      const bytesRemaining = fileSize - bytesUploaded;
+      let remainingTimeSeconds = bytesRemaining / uploadSpeed;
+      let remainingTimeText = '';
+      
+      if (remainingTimeSeconds > 60) {
+        const mins = Math.floor(remainingTimeSeconds / 60);
+        const secs = Math.floor(remainingTimeSeconds % 60);
+        remainingTimeText = `${mins}分${secs}秒`;
+      } else {
+        remainingTimeText = Math.ceil(remainingTimeSeconds) + '秒';
+      }
+      
+      // 更新UI
       progressBar.style.width = `${progress}%`;
-    }, 200);
+      progressBar.innerHTML = `${Math.round(progress)}%`;
+      
+      if (statusElement && !isNaN(uploadSpeed) && isFinite(uploadSpeed) && uploadSpeed > 0) {
+        statusElement.textContent = `速度: ${uploadSpeedFormatted} · 已上传: ${formatFileSize(bytesUploaded)}/${formattedSize} · 剩余时间: ${remainingTimeText}`;
+      }
+      
+      if (progress >= 90) {
+        clearInterval(interval);
+        if (statusElement) {
+          statusElement.textContent = `正在处理文件，请稍等...`;
+        }
+      }
+    }, isLargeFile ? 500 : 200); // 大文件更新间隔更长
 
-    // Complete progress when upload finishes
-    setTimeout(() => {
-      clearInterval(interval);
-      progressBar.style.width = '100%';
-    }, 3000);
+    // 大文件不设置自动完成时间，依赖实际上传完成来更新进度
+    if (!isLargeFile) {
+      // 只为小文件设置自动完成
+      setTimeout(() => {
+        clearInterval(interval);
+        progressBar.style.width = '100%';
+        progressBar.innerHTML = '100%';
+        if (statusElement) {
+          statusElement.textContent = '上传完成，处理中...';
+        }
+      }, 3000);
+    }
+    
+    return interval; // 返回interval ID以便后续清除
   }
 
   showToast(message, type = 'info') {

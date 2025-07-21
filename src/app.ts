@@ -65,11 +65,9 @@ class App {
       this.app.use(
         morgan(process.env.NODE_ENV === "production" ? "combined" : "dev")
       );
-    }
-
-    // Body parsing middleware
-    this.app.use(express.json({ limit: "10mb" }));
-    this.app.use(express.urlencoded({ extended: true, limit: "10mb" }));
+    }    // Body parsing middleware - 增加大文件上传支持
+    this.app.use(express.json({ limit: "5000mb" })); // 允许高达5GB的JSON请求体
+    this.app.use(express.urlencoded({ extended: true, limit: "5000mb" })); // 允许高达5GB的表单数据
 
     // Static files
     this.app.use(express.static(path.join(__dirname, "../public")));
