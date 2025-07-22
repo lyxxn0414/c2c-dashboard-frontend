@@ -17,14 +17,11 @@ const storage = multer.diskStorage({
 
 const upload = multer({ 
   storage: storage,
-  // 移除文件大小限制，允许任意大小文件上传
   limits: {
-    // 注意：移除大小限制可能导致服务器内存问题，建议配置Node.js内存限制或使用流式处理
-    // fieldSize: 无限制
   },
   fileFilter: (req: Request, file: Express.Multer.File, cb: multer.FileFilterCallback) => {
     // Check file type
-    const allowedTypes = ['.zip', '.tar', '.gz', '.rar'];
+    const allowedTypes = ['.zip'];
     const fileExt = path.extname(file.originalname).toLowerCase();
     
     if (allowedTypes.includes(fileExt) || file.originalname.toLowerCase().endsWith('.tar.gz')) {

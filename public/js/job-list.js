@@ -274,17 +274,19 @@ class JobsView {
     filteredJobs.forEach((job) => {
       const row = document.createElement("tr");
       row.className = "fade-in";
+      const jobType = job.TestJobID.startsWith("xiaofan")? "MCP" : job.Tool;
       row.innerHTML = `
                 <td>
                     <a href="#" class="job-id-link" data-job-id="${job.TestJobID}">
                         ${job.TestJobID}
                     </a>
                 </td>
-                <td>${escapeHtml(job.InitiatedBy)}</td>
                 <td>${formatDateTime(job.CreatedTime)}</td>
-                <td>${escapeHtml(job.MCPRate)}</td>
-                <td>${escapeHtml(job.TerraformRate)}</td>
-                <td>${job.TaskNum}</td>
+                <td>${jobType}</td>
+                <td>${escapeHtml(job.IacType)}</td>
+                <td>${job.CopilotModel}</td>
+                <td>${job.DeployType}</td>
+                <td>${job.ComputingType}</td>
                 <td>
                     <span class="success-rate ${getSuccessRateClass(job.SuccessRate)}">
                         ${job.SuccessRate} (${job.SuccessTasks}/${job.TaskNum})

@@ -65,9 +65,9 @@ class App {
       this.app.use(
         morgan(process.env.NODE_ENV === "production" ? "combined" : "dev")
       );
-    }    // Body parsing middleware - 增加大文件上传支持
-    this.app.use(express.json({ limit: "5000mb" })); // 允许高达5GB的JSON请求体
-    this.app.use(express.urlencoded({ extended: true, limit: "5000mb" })); // 允许高达5GB的表单数据
+    }    // Body parsing middleware 
+    this.app.use(express.json({ limit: "5000mb" }));
+    this.app.use(express.urlencoded({ extended: true, limit: "5000mb" }));
 
     // Static files
     this.app.use(express.static(path.join(__dirname, "../public")));
@@ -84,11 +84,9 @@ class App {
       });
     });
 
-    // API routes, 内部的api路由交给对应的路由文件处理
     this.app.use("/api/jobs", jobRoutes);
     this.app.use("/api/repos", repoRoutes); // Specific route for job details
 
-    // 到来的get请求全部重定向到index.html
     this.app.get("/job-detail/*", (req: Request, res: Response) => {
       console.log(`Serving index.html for job detail route: ${req.path}`);
       res.sendFile(path.join(__dirname, "../public/index.html"));
@@ -132,7 +130,6 @@ class App {
       res.sendFile(path.join(__dirname, "../public/index.html"));
     });
 
-    // 除了以上的get路由，其余全部是404错误
     this.app.use("*", (req: Request, res: Response) => {
       res.status(404).json({
         error: "Not Found",

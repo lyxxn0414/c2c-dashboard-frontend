@@ -139,7 +139,8 @@
           class="btn-close"
           data-bs-dismiss="modal"
         ></button>
-      </div>      <div class="modal-body">
+      </div>
+      <div class="modal-body">
         <form id="add-repo-form">
           <!-- Repository Upload Section -->
           <div class="mb-4">
@@ -159,7 +160,8 @@
               </span>
             </div>
             <div class="form-text">
-              Accepted formats: .zip (文件大小不限，大文件上传可能需要较长时间)
+              Accepted formats: .zip (There is no size limit, but larger files
+              may take longer to process)
               <span id="file-size-info" class="text-info"></span>
             </div>
           </div>
@@ -326,9 +328,14 @@
               </div>
             </div>
           </div>
-        </form>        <!-- Upload Progress -->
-        <div class="progress d-none" id="upload-progress" style="height: 25px;">
-          <div class="progress-bar" role="progressbar" style="width: 0%; font-weight: bold;"></div>
+        </form>
+        <!-- Upload Progress -->
+        <div class="progress d-none" id="upload-progress" style="height: 25px">
+          <div
+            class="progress-bar"
+            role="progressbar"
+            style="width: 0%; font-weight: bold"
+          ></div>
         </div>
         <div id="upload-status" class="text-center mt-1 small text-muted"></div>
       </div>
