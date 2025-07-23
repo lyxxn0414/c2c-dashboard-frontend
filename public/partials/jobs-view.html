@@ -11,7 +11,6 @@
             </button>
         </div> -->
   </div>
-
   <!-- Filters -->
   <div class="row mb-4">
     <div class="col-md-12">
@@ -27,19 +26,19 @@
             placeholder="Filter by ID, Creator, Date, Rate, etc..."
           />
         </div>
+        
         <div class="dropdown">
           <button
             class="btn btn-outline-secondary dropdown-toggle"
             type="button"
-            id="created-by-filter"
+            id="tool-type-filter"
             aria-expanded="false"
           >
-            Created By <span class="badge bg-primary">equals</span>
+            ToolType <span class="badge bg-primary">equals</span>
             <span class="badge bg-secondary">all</span>
           </button>
-          <ul class="dropdown-menu" id="created-by-filter-menu">
+          <ul class="dropdown-menu" id="tool-type-filter-menu">
             <li><a class="dropdown-item" href="#" data-filter="all">All</a></li>
-            <!-- Dynamic options will be populated by JavaScript -->
           </ul>
         </div>
 
@@ -47,20 +46,14 @@
           <button
             class="btn btn-outline-secondary dropdown-toggle"
             type="button"
-            id="use-mcp-filter"
+            id="iac-type-filter"
             aria-expanded="false"
           >
-            UseMCP <span class="badge bg-primary">equals</span>
+            Iac Type <span class="badge bg-primary">equals</span>
             <span class="badge bg-secondary">all</span>
           </button>
-          <ul class="dropdown-menu" id="use-mcp-filter-menu">
+          <ul class="dropdown-menu" id="iac-type-filter-menu">
             <li><a class="dropdown-item" href="#" data-filter="all">All</a></li>
-            <li>
-              <a class="dropdown-item" href="#" data-filter="true">true</a>
-            </li>
-            <li>
-              <a class="dropdown-item" href="#" data-filter="false">false</a>
-            </li>
           </ul>
         </div>
 
@@ -68,20 +61,44 @@
           <button
             class="btn btn-outline-secondary dropdown-toggle"
             type="button"
-            id="use-terraform-filter"
+            id="copilot-model-filter"
             aria-expanded="false"
           >
-            UseTerraform <span class="badge bg-primary">equals</span>
+            Copilot Model <span class="badge bg-primary">equals</span>
             <span class="badge bg-secondary">all</span>
           </button>
-          <ul class="dropdown-menu" id="use-terraform-filter-menu">
+          <ul class="dropdown-menu" id="copilot-model-filter-menu">
             <li><a class="dropdown-item" href="#" data-filter="all">All</a></li>
-            <li>
-              <a class="dropdown-item" href="#" data-filter="true">true</a>
-            </li>
-            <li>
-              <a class="dropdown-item" href="#" data-filter="false">false</a>
-            </li>
+          </ul>
+        </div>
+
+        <div class="dropdown">
+          <button
+            class="btn btn-outline-secondary dropdown-toggle"
+            type="button"
+            id="deploy-type-filter"
+            aria-expanded="false"
+          >
+            Deploy Type <span class="badge bg-primary">equals</span>
+            <span class="badge bg-secondary">all</span>
+          </button>
+          <ul class="dropdown-menu" id="deploy-type-filter-menu">
+            <li><a class="dropdown-item" href="#" data-filter="all">All</a></li>
+          </ul>
+        </div>
+
+        <div class="dropdown">
+          <button
+            class="btn btn-outline-secondary dropdown-toggle"
+            type="button"
+            id="computing-resource-filter"
+            aria-expanded="false"
+          >
+            Computing Resource <span class="badge bg-primary">equals</span>
+            <span class="badge bg-secondary">all</span>
+          </button>
+          <ul class="dropdown-menu" id="computing-resource-filter-menu">
+            <li><a class="dropdown-item" href="#" data-filter="all">All</a></li>
           </ul>
         </div>
       </div>
@@ -131,8 +148,7 @@
       <tbody id="jobs-table-body">
         <!-- Jobs will be loaded here -->
       </tbody>
-    </table>
-  </div>
+    </table>  </div>
 
   <!-- Pagination -->
   <nav aria-label="Job pagination">

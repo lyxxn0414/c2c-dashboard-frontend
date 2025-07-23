@@ -41,7 +41,7 @@ class JobDetail {
     this.jobDetailCreationTime = document.getElementById(
       "job-detail-creation-time"
     );
-    // this.jobDetailDescription = document.getElementById('job-detail-description');
+    this.jobDetailPoolID = document.getElementById("job-detail-pool-id");
 
     // Metric elements
     this.jobCompletedTasks = document.getElementById("job-completed-tasks");
@@ -49,7 +49,6 @@ class JobDetail {
     this.jobFailedTasks = document.getElementById("job-failed-tasks");
     this.jobSuccessRate = document.getElementById("job-success-rate");
     this.jobAvgIterations = document.getElementById("job-avg-iterations");
-    // this.jobAvgAiIntegration = document.getElementById('job-avg-ai-integration');
     this.jobIterationsChanges = document.getElementById(
       "job-iterations-changes"
     );
@@ -98,6 +97,7 @@ class JobDetail {
     document.getElementById("job-detail-creator").textContent = job.InitiatedBy;
     document.getElementById("job-detail-creation-time").textContent =
       formatDateTime(job.CreatedTime);
+    document.getElementById("job-detail-pool-id").textContent = job.PoolName;
 
     // Populate metrics - handle both new and old field names for compatibility
     document.getElementById("job-completed-tasks").textContent =
@@ -157,6 +157,8 @@ class JobDetail {
     if (jobDetailId) jobDetailId.textContent = "...";
     if (jobDetailCreator) jobDetailCreator.textContent = "...";
     if (jobDetailCreationTime) jobDetailCreationTime.textContent = "...";
+    if (this.jobDetailPoolID)
+      this.jobDetailPoolID.textContent = "...";
     // if (jobDetailDescription) jobDetailDescription.textContent = 'Loading job details...';
 
     // Show loading spinner for metrics
@@ -651,6 +653,97 @@ class JobDetail {
       .map(([pattern, count]) => ({ pattern, count }))
       .sort((a, b) => b.count - a.count)
       .slice(0, 3); // Show top 3 patterns
+  }
+
+  /**
+   * Apply filters to the failed tasks list based on category and search text
+   */
+  applyFilters() {
+    // Get filter values
+    const categoryFilter = document.getElementById("category-filter");
+    const taskSearch = document.getElementById("task-search");
+    const clearFilterBtn = document.getElementById("clear-filter-btn");
+    
+    if (!this.originalFailedTasks) {
+      console.warn("No original task data available for filtering");
+      return;
+    }
+
+    const selectedCategory = categoryFilter ? categoryFilter.value : "all";
+    const searchText = taskSearch ? taskSearch.value.toLowerCase() : "";
+
+    // Show or hide clear filter button based on if filters are active
+    if (clearFilterBtn) {
+      if (selectedCategory !== "all" || searchText) {
+        clearFilterBtn.style.display = "inline-block";
+      } else {
+        clearFilterBtn.style.display = "none";
+      }
+    }
+
+    // Apply filters
+    let filteredTasks = [...this.originalFailedTasks];
+
+    // Apply category filter
+    if (selectedCategory !== "all") {
+      filteredTasks = filteredTasks.filter(task => {
+        const taskCategory = task.ErrorCategory || "General Error";
+        return taskCategory === selectedCategory;
+      });
+    }
+
+    // Apply search filter
+    if (searchText) {
+      filteredTasks = filteredTasks.filter(task => {
+        const taskName = task.TaskID || "Unknown Task";
+        const errorDesc = task.ErrorDescription || "";
+        const errorDetail = task.ErrorDetail || "";
+        
+        // Search in task name, error description and detail
+        return taskName.toLowerCase().includes(searchText) || 
+               errorDesc.toLowerCase().includes(searchText) ||
+               errorDetail.toLowerCase().includes(searchText);
+      });
+    }
+
+    // Update the filtered task count
+    const failedTasksCountBadge = document.getElementById("failed-tasks-count");
+    if (failedTasksCountBadge) {
+      failedTasksCountBadge.textContent = `${filteredTasks.length} Failed Task${filteredTasks.length !== 1 ? "s" : ""}`;
+      // Add a filtered indicator if filters are active
+      if (selectedCategory !== "all" || searchText) {
+        failedTasksCountBadge.textContent += " (filtered)";
+      }
+    }
+
+    // Render the filtered tasks
+    this.renderFailedTasks(filteredTasks);
+  }
+
+  /**
+   * Clear all applied filters and reset to original state
+   */
+  clearFilters() {
+    const categoryFilter = document.getElementById("category-filter");
+    const taskSearch = document.getElementById("task-search");
+    const clearFilterBtn = document.getElementById("clear-filter-btn");
+    
+    // Reset filter elements
+    if (categoryFilter) categoryFilter.value = "all";
+    if (taskSearch) taskSearch.value = "";
+    if (clearFilterBtn) clearFilterBtn.style.display = "none";
+    
+    // Restore original task list
+    if (this.originalFailedTasks) {
+      // Update the task count badge
+      const failedTasksCountBadge = document.getElementById("failed-tasks-count");
+      if (failedTasksCountBadge) {
+        failedTasksCountBadge.textContent = `${this.originalFailedTasks.length} Failed Task${this.originalFailedTasks.length !== 1 ? "s" : ""}`;
+      }
+      
+      // Render the original tasks
+      this.renderFailedTasks(this.originalFailedTasks);
+    }
   }
 }
 

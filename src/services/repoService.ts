@@ -150,6 +150,7 @@ export class RepoService {
       repoURL: apiRepo.RepoURL,
       totalTasks: apiRepo.TotalTasks || 0,
       successfulTasks: apiRepo.SuccessTasks || 0,
+      repoGroup: apiRepo.RepoGroup || "default",
     };
   }
 

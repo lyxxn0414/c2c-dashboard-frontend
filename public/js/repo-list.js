@@ -6,7 +6,16 @@ class ReposView {
       repoName: "",
       repoType: "all",
       language: "all",
+      appPattern: "all",
+      repoGroup: "all",
     };
+    // Add sort state to track current sorting
+    this.currentSort = {
+      column: null,
+      direction: "asc"
+    };
+    // Initialize the click processing flag
+    this.isProcessingClick = false;
   }
 
   initRepoView() {
@@ -25,6 +34,9 @@ class ReposView {
       this.filterRepos();
     });
 
+    // Setup sort functionality for sortable columns
+    this.setupSortableColumns();
+
     // Wait for DOM to be ready and setup dropdowns
     setTimeout(() => {
       if (!this.dropdownsInitialized) {
@@ -35,6 +47,240 @@ class ReposView {
         console.log("Repo dropdowns already initialized, skipping...");
       }
     }, 100);
+  }
+  
+  // Add a new method to set up the sortable columns
+  setupSortableColumns() {
+    console.log("Setting up sortable columns...");
+    const headers = document.querySelectorAll("th.sortable");
+    
+    headers.forEach(header => {
+      // Get the icon element within this header
+      const icon = header.querySelector("i.bi");
+      
+      // Only add one event listener to the icon (not both header and icon)
+      if (icon) {
+        // Click handler for the icon only
+        icon.addEventListener("click", (e) => {
+          e.stopPropagation(); // Prevent event bubbling
+          e.preventDefault(); // Prevent default behavior
+          
+          // Prevent rapid successive clicks
+          if (this.isProcessingClick) {
+            return;
+          }
+          this.isProcessingClick = true;
+          
+          const column = header.getAttribute("data-sort");
+          
+          // Set the column if it's different, or toggle direction if it's the same
+          if (this.currentSort.column !== column) {
+            this.currentSort.column = column;
+            this.currentSort.direction = "desc"; // Start with desc when clicking icon on new column
+          } else {
+            // Toggle direction when clicking the same column's icon
+            this.currentSort.direction = this.currentSort.direction === "asc" ? "desc" : "asc";
+          }
+          
+          console.log(`Icon click to toggle sort for ${column} to ${this.currentSort.direction}`);
+          
+          // Update sort indicators and display
+          this.updateSortIndicators();
+          this.sortAndDisplayRepos();
+          
+          // Reset flag after a delay
+          setTimeout(() => {
+            this.isProcessingClick = false;
+          }, 300);
+        });
+      }
+      
+      // Regular click handler for the header (only for non-icon clicks)
+      header.addEventListener("click", (e) => {
+        // Only handle clicks that are NOT on the icon
+        if (e.target === icon || e.target.closest('i.bi')) {
+          return; // Let the icon handler take care of it
+        }
+        
+        // Prevent rapid successive clicks
+        if (this.isProcessingClick) {
+          return;
+        }
+        this.isProcessingClick = true;
+        
+        const column = header.getAttribute("data-sort");
+        
+        // Toggle direction if clicking the same column, or default to ascending for a new column
+        if (this.currentSort.column === column) {
+          this.currentSort.direction = this.currentSort.direction === "asc" ? "desc" : "asc";
+        } else {
+          this.currentSort.column = column;
+          this.currentSort.direction = "asc";
+        }
+        
+        console.log(`Header click to sort by ${column} in ${this.currentSort.direction} order`);
+        
+        // Update sort icons and tooltips in headers
+        this.updateSortIndicators();
+        
+        // Sort and display the data
+        this.sortAndDisplayRepos();
+        
+        // Reset flag after a delay
+        setTimeout(() => {
+          this.isProcessingClick = false;
+        }, 300);
+      });
+    });
+  }
+  
+  // Add a new method to update the sort indicators in the table headers
+  updateSortIndicators() {
+    // Remove any existing sort indicators and active-sort classes
+    document.querySelectorAll("th.sortable").forEach(header => {
+      header.classList.remove("active-sort");
+      const icon = header.querySelector("i.bi");
+      if (icon) {
+        icon.className = "bi bi-arrow-down-up ms-1";
+        icon.title = `Click to sort ascending, double-click to sort descending`;
+      }
+      // Reset header tooltip
+      const columnName = header.textContent.trim();
+      header.title = `Click to sort by ${columnName.toLowerCase()}`;
+    });
+    
+    // If we have an active sort, update the relevant icon, class and tooltips
+    if (this.currentSort.column) {
+      const activeHeader = document.querySelector(`th[data-sort="${this.currentSort.column}"]`);
+      if (activeHeader) {
+        // Add active-sort class to the header
+        activeHeader.classList.add("active-sort");
+        
+        const icon = activeHeader.querySelector("i.bi");
+        if (icon) {
+          const columnName = activeHeader.textContent.trim();
+          const isAscending = this.currentSort.direction === "asc";
+          
+          // Up arrow for ascending (A→Z), down arrow for descending (Z→A)
+          icon.className = `bi bi-arrow-${isAscending ? "up" : "down"} ms-1`;
+          
+          // Add a brief animation effect to indicate the sort has changed
+          // First remove any existing animation
+          icon.style.animation = 'none';
+          
+          // Force a reflow to ensure the animation will play even if the class was just removed
+          void icon.offsetWidth;
+          
+          // Apply the animation
+          icon.style.animation = 'sortAnimation 0.3s ease';
+          
+          // Update tooltips to reflect current sort state
+          icon.title = `Click to toggle sort direction (currently ${isAscending ? 'ascending' : 'descending'})`;
+          
+          activeHeader.title = isAscending ? 
+            `Click to sort ${columnName.toLowerCase()} in descending order` : 
+            `Click to sort ${columnName.toLowerCase()} in ascending order`;
+        }
+      }
+    }
+  }
+  
+  // Add a new method to sort and display the repos
+  sortAndDisplayRepos() {
+    if (!this.currentSort.column) {
+      return;
+    }
+    
+    const startTime = performance.now();
+    
+    // First filter the repos based on the current filters
+    const filteredRepos = this.getFilteredRepos();
+    
+    // Then sort the filtered repos
+    const sortedRepos = this.sortRepos(filteredRepos);
+    
+    // Display the sorted repos
+    this.displayRepos(sortedRepos);
+    
+    const endTime = performance.now();
+    console.log(`Sorted ${sortedRepos.length} repos by ${this.currentSort.column} (${this.currentSort.direction}) in ${(endTime - startTime).toFixed(2)}ms`);
+  }
+  
+  // Add a helper method to get filtered repos
+  getFilteredRepos() {
+    return this.reposData.filter((repo) => {
+      const matchName = repo.repoName
+        .toLowerCase()
+        .includes(this.currentFilters.repoName);
+      const matchType =
+        this.currentFilters.repoType === "all" ||
+        repo.repoType === this.currentFilters.repoType;
+      const matchLanguage =
+        this.currentFilters.language === "all" ||
+        repo.languages.includes(this.currentFilters.language);
+      const matchAppPattern = 
+        this.currentFilters.appPattern === "all" || 
+        repo.appPattern === this.currentFilters.appPattern;
+      
+      // Hierarchical RepoGroup filtering logic
+      let matchRepoGroup = true;
+      if (this.currentFilters.repoGroup !== "all") {
+        if (this.currentFilters.repoGroup === "Minimal") {
+          // Only show Minimal repos
+          matchRepoGroup = repo.repoGroup === "Minimal";
+        } else if (this.currentFilters.repoGroup === "Medium") {
+          // Show Minimal + Medium repos
+          matchRepoGroup = repo.repoGroup === "Minimal" || repo.repoGroup === "Medium";
+        } else if (this.currentFilters.repoGroup === "Full") {
+          // Show all repos (Minimal + Medium + Full)
+          matchRepoGroup = true;
+        } else {
+          // For any other specific group, show exact match
+          matchRepoGroup = repo.repoGroup === this.currentFilters.repoGroup;
+        }
+      }
+      
+      return matchName && matchType && matchLanguage && matchAppPattern && matchRepoGroup;
+    });
+  }
+  
+  // Add a method to sort repos based on the current sort state
+  sortRepos(repos) {
+    if (!this.currentSort.column || !repos.length) {
+      return repos;
+    }
+    
+    const column = this.currentSort.column;
+    const direction = this.currentSort.direction;
+    
+    return [...repos].sort((a, b) => {
+      let valueA, valueB;
+      
+      // Special handling for different column types
+      if (column === "languages") {
+        // For languages, sort by the first language in the array or empty string
+        valueA = a.languages && a.languages.length ? a.languages[0] : "";
+        valueB = b.languages && b.languages.length ? b.languages[0] : "";
+      } else if (column === "successRate") {
+        // For success rate, convert to numbers
+        valueA = parseFloat(a.successRate || 0);
+        valueB = parseFloat(b.successRate || 0);
+      } else {
+        // For all other columns, use the column value directly
+        valueA = a[column] || "";
+        valueB = b[column] || "";
+      }
+      
+      // For string comparisons
+      if (typeof valueA === "string" && typeof valueB === "string") {
+        return direction === "asc" 
+          ? valueA.localeCompare(valueB) 
+          : valueB.localeCompare(valueA);
+      }
+      
+      // For numeric comparisons
+      return direction === "asc" ? valueA - valueB : valueB - valueA;
+    });
   }
 
   async loadRepos() {
@@ -54,7 +300,15 @@ class ReposView {
       }
       this.reposData = await response.json();
       console.log("Repos data loaded:", this.reposData.length, "repos");
-      this.displayRepos();
+      
+      // Apply default sorting by repoName ascending
+      this.currentSort = {
+        column: "repoName",
+        direction: "asc"
+      };
+      this.updateSortIndicators();
+      this.sortAndDisplayRepos();
+      console.log("Applied default sorting: repoName ascending");
       this.loadRepoFilters();
 
       document
@@ -137,30 +391,41 @@ class ReposView {
 
     // Populate language dropdown
     window.dropdownManager.populateDropdown("language-filter", languages);
+    
+    // Load app patterns
+    const appPatterns = [...new Set(this.reposData.map((repo) => repo.appPattern))].filter(pattern => pattern);
+
+    // Populate app pattern dropdown
+    window.dropdownManager.populateDropdown("app-pattern-filter", appPatterns);
+
+    // Load repo groups
+    const repoGroups = [...new Set(this.reposData.map((repo) => repo.repoGroup))].filter(group => group);
+
+    // Populate repo group dropdown
+    window.dropdownManager.populateDropdown("repo-group-filter", repoGroups);
 
     console.log(
       "Repo filters loaded - RepoTypes:",
       repoTypes.length,
       "Languages:",
-      languages.length
+      languages.length,
+      "AppPatterns:",
+      appPatterns.length,
+      "RepoGroups:",
+      repoGroups.length
     );
   }
 
   filterRepos() {
-    const filteredRepos = this.reposData.filter((repo) => {
-      const matchName = repo.repoName
-        .toLowerCase()
-        .includes(this.currentFilters.repoName);
-      const matchType =
-        this.currentFilters.repoType === "all" ||
-        repo.repoType === this.currentFilters.repoType;
-      const matchLanguage =
-        this.currentFilters.language === "all" ||
-        repo.languages.includes(this.currentFilters.language);
-      return matchName && matchType && matchLanguage;
-    });
-
-    this.displayRepos(filteredRepos);
+    const filteredRepos = this.getFilteredRepos();
+    
+    // If we have a sorting applied, sort the filtered repos
+    if (this.currentSort.column) {
+      const sortedRepos = this.sortRepos(filteredRepos);
+      this.displayRepos(sortedRepos);
+    } else {
+      this.displayRepos(filteredRepos);
+    }
   }
 
   initializeRepoDropdowns() {
@@ -180,12 +445,20 @@ class ReposView {
     const repoTypeDropdown = document.getElementById("repo-type-dropdown");
     const languageButton = document.getElementById("language-filter");
     const languageDropdown = document.getElementById("language-dropdown");
+    const appPatternButton = document.getElementById("app-pattern-filter");
+    const appPatternDropdown = document.getElementById("app-pattern-dropdown");
+    const repoGroupButton = document.getElementById("repo-group-filter");
+    const repoGroupDropdown = document.getElementById("repo-group-dropdown");
 
     console.log("DOM Elements Check:");
     console.log("- repo-type-filter button:", !!repoTypeButton);
     console.log("- repo-type-dropdown menu:", !!repoTypeDropdown);
     console.log("- language-filter button:", !!languageButton);
     console.log("- language-dropdown menu:", !!languageDropdown);
+    console.log("- app-pattern-filter button:", !!appPatternButton);
+    console.log("- app-pattern-dropdown menu:", !!appPatternDropdown);
+    console.log("- repo-group-filter button:", !!repoGroupButton);
+    console.log("- repo-group-dropdown menu:", !!repoGroupDropdown);
 
     if (!repoTypeButton || !repoTypeDropdown) {
       console.error("Required DOM elements for repo-type-filter not found!");
@@ -221,6 +494,38 @@ class ReposView {
         },
       });
     }
+    
+    // Register app pattern dropdown
+    if (appPatternButton && appPatternDropdown) {
+      console.log("Registering app-pattern-filter...");
+      window.dropdownManager.register("app-pattern-filter", {
+        buttonId: "app-pattern-filter",
+        dropdownId: "app-pattern-dropdown",
+        placeholder: "AppPattern",
+        filterType: "select",
+        onSelect: (value, label, id) => {
+          console.log(`AppPattern filter selected: ${value} (${label})`);
+          this.currentFilters.appPattern = value;
+          this.filterRepos();
+        },
+      });
+    }
+
+    // Register repo group dropdown
+    if (repoGroupButton && repoGroupDropdown) {
+      console.log("Registering repo-group-filter...");
+      window.dropdownManager.register("repo-group-filter", {
+        buttonId: "repo-group-filter",
+        dropdownId: "repo-group-dropdown",
+        placeholder: "RepoGroup",
+        filterType: "select",
+        onSelect: (value, label, id) => {
+          console.log(`RepoGroup filter selected: ${value} (${label})`);
+          this.currentFilters.repoGroup = value;
+          this.filterRepos();
+        },
+      });
+    }
 
     // Initialize both dropdowns
     console.log("Initializing repo-type-filter dropdown...");
@@ -229,6 +534,16 @@ class ReposView {
     if (languageButton && languageDropdown) {
       console.log("Initializing language-filter dropdown...");
       window.dropdownManager.init("language-filter");
+    }
+    
+    if (appPatternButton && appPatternDropdown) {
+      console.log("Initializing app-pattern-filter dropdown...");
+      window.dropdownManager.init("app-pattern-filter");
+    }
+
+    if (repoGroupButton && repoGroupDropdown) {
+      console.log("Initializing repo-group-filter dropdown...");
+      window.dropdownManager.init("repo-group-filter");
     }
 
     console.log("=== REPO DROPDOWN INITIALIZATION COMPLETE ===");
@@ -608,6 +923,8 @@ class ReposView {
     // Use the dropdown manager's cleanup
     window.dropdownManager.cleanup("repo-type-filter");
     window.dropdownManager.cleanup("language-filter");
+    window.dropdownManager.cleanup("app-pattern-filter");
+    window.dropdownManager.cleanup("repo-group-filter");
   }
 }
 

@@ -439,7 +439,6 @@ class DropdownManager {
       this.cleanup(id);
     });
   }
-
   /**
    * Setup global click handler
    */
@@ -447,6 +446,15 @@ class DropdownManager {
     document.addEventListener("click", (e) => {
       // Check if click is outside any dropdown
       let clickedInsideDropdown = false;
+      
+      // Also check if click is on a sortable column or sort icon
+      const isSortableClick = e.target.closest('.sortable') || 
+                             e.target.closest('th.sortable i.bi');
+      
+      // Don't close dropdowns when interacting with the sorting functionality
+      if (isSortableClick) {
+        return;
+      }
 
       this.dropdowns.forEach((config) => {
         const button = document.getElementById(config.buttonId);

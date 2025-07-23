@@ -1,12 +1,13 @@
-class JobsView {
-  constructor() {
+class JobsView {  constructor() {
     this.currentPage = 1;
-    this.pageSize = 10;
+    this.pageSize = 10; // Changed back to 10 jobs per page
     this.currentSort = { field: "creationTime", order: "desc" };
     this.currentFilter = "";
-    this.currentUserFilter = "all";
-    this.currentMcpFilter = "all";
-    this.currentTerraformFilter = "all";
+    this.currentToolTypeFilter = "all";
+    this.currentIacTypeFilter = "all";
+    this.currentCopilotModelFilter = "all";
+    this.currentDeployTypeFilter = "all";
+    this.currentComputingResourceFilter = "all";
     this.externalServiceStatus = null;
     this.jobDropdownsInitialized = false;
 
@@ -21,7 +22,6 @@ class JobsView {
   initJobsView() {
     this.loadJobs();
   }
-
   initializeElements() {
     // Core view element
     this.jobsView = document.getElementById("jobs-view");
@@ -30,18 +30,18 @@ class JobsView {
     if (!this.jobsView) {
       console.warn("Views not found, waiting for HTML to load...");
       return;
-    }
-
-    // Jobs view elements
+    }    // Jobs view elements
     this.jobsTableBody = document.getElementById("jobs-table-body");
     this.filterInput = document.getElementById("filter-input");
     this.loadingIndicator = document.getElementById("loading-indicator");
     this.pagination = document.getElementById("pagination");
 
     // Filter elements
-    this.createdByFilter = document.getElementById("created-by-filter");
-    this.useMcpFilter = document.getElementById("use-mcp-filter");
-    this.useTerraformFilter = document.getElementById("use-terraform-filter");
+    this.toolTypeFilter = document.getElementById("tool-type-filter");
+    this.iacTypeFilter = document.getElementById("iac-type-filter");
+    this.copilotModelFilter = document.getElementById("copilot-model-filter");
+    this.deployTypeFilter = document.getElementById("deploy-type-filter");
+    this.computingResourceFilter = document.getElementById("computing-resource-filter");
   }
 
   bindEvents() {
@@ -49,46 +49,64 @@ class JobsView {
     if (!this.filterInput) {
       console.warn("Essential elements not ready for event binding");
       return;
-    }
-    this.filterInput?.addEventListener(
+    }    this.filterInput?.addEventListener(
       "input",
       debounce((e) => {
         this.currentFilter = e.target.value;
-
-        // Use client-side filtering instead of reloading from server
-        if (this.allJobs) {
-          this.renderJobs(this.allJobs);
-        }
+        this.currentPage = 1; // Reset to first page when search changes
+        this.loadJobs(); // Reload data from server with search filter
       }, 300)
     );
 
     this.setupJobDropdownItemHandlers();
-  }
-
-  async loadJobs() {
-    this.showLoading(true);
-
-    try {
+  }  async loadJobs() {
+    this.showLoading(true);    try {
       const params = new URLSearchParams({
-        page: this.currentPage.toString(),
-        limit: this.pageSize.toString(),
         sortBy: this.currentSort.field,
         sortOrder: this.currentSort.order,
+        // Request all jobs for client-side pagination
+        limit: "1000", // Large number to get all jobs
+        page: "1"
       });
+
+      // Add filter parameters (for when backend implements server-side filtering)
+      if (this.currentToolTypeFilter !== "all") {
+        params.append("toolType", this.currentToolTypeFilter);
+      }
+      if (this.currentIacTypeFilter !== "all") {
+        params.append("iacType", this.currentIacTypeFilter);
+      }
+      if (this.currentCopilotModelFilter !== "all") {
+        params.append("copilotModel", this.currentCopilotModelFilter);
+      }
+      if (this.currentDeployTypeFilter !== "all") {
+        params.append("deployType", this.currentDeployTypeFilter);
+      }
+      if (this.currentComputingResourceFilter !== "all") {
+        params.append("computingResource", this.currentComputingResourceFilter);
+      }
+      if (this.currentFilter && this.currentFilter.trim() !== "") {
+        params.append("search", this.currentFilter.trim());
+      }
 
       // Use our backend API endpoint (not direct kusto call)
       const response = await fetch(`/api/jobs?${params}`);
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
-      }
-
-      const data = await response.json();
+      }      const data = await response.json();
       this.allJobs = data.jobs || [];
-      this.populateCreatedByFilter(this.allJobs);
+      console.log(`Loaded ${this.allJobs.length} total jobs from server`);
+      this.populateJobFilters(this.allJobs);
 
+      // Apply client-side filtering (fallback until backend implements server-side filtering)
+      const filteredJobs = this.applyClientSideFilters(this.allJobs);
+      
+      // Create paginated results from filtered data
+      const paginatedData = this.paginateFilteredResults(filteredJobs);
+      
       // Backend already returns mapped data, so we can use it directly
-      this.renderJobs(data.jobs);
-      this.renderPagination(data);
+      this.renderJobs(paginatedData.jobs);
+      this.renderPagination(paginatedData);
     } catch (error) {
       console.error("Error loading jobs:", error);
       this.showError(
@@ -100,41 +118,159 @@ class JobsView {
       this.showLoading(false);
     }
   }
+  populateJobFilters(jobs) {
+    // Extract unique values for each filter
+    const toolTypes = [...new Set(jobs.map(job => {
+      const jobType = job.TestJobID.startsWith("xiaofan") ? "MCP" : job.Tool;
+      return jobType;
+    }).filter(Boolean))].sort();
 
-  populateCreatedByFilter(jobs) {
-    // Extract unique 'InitiatedBy' values from jobs
-    const uniqueCreatedBy = new Set();
+    const iacTypes = [...new Set(jobs.map(job => job.IacType).filter(Boolean))].sort();
+    
+    const copilotModels = [...new Set(jobs.map(job => job.CopilotModel).filter(Boolean))].sort();
+    
+    const deployTypes = [...new Set(jobs.map(job => job.DeployType).filter(Boolean))].sort();
+    
+    const computingResources = [...new Set(jobs.map(job => job.ComputingType).filter(Boolean))].sort();
 
-    jobs.forEach((job) => {
-      if (
-        job.InitiatedBy &&
-        job.InitiatedBy.trim() !== "" &&
-        job.InitiatedBy !== "Unknown"
-      ) {
-        uniqueCreatedBy.add(job.InitiatedBy);
-      }
+    // Populate all filter dropdowns
+    window.dropdownManager.populateDropdown("tool-type-filter", toolTypes);
+    window.dropdownManager.populateDropdown("iac-type-filter", iacTypes);
+    window.dropdownManager.populateDropdown("copilot-model-filter", copilotModels);
+    window.dropdownManager.populateDropdown("deploy-type-filter", deployTypes);
+    window.dropdownManager.populateDropdown("computing-resource-filter", computingResources);
+
+    console.log("Populated job filters:", {
+      toolTypes: toolTypes.length,
+      iacTypes: iacTypes.length,
+      copilotModels: copilotModels.length,
+      deployTypes: deployTypes.length,
+      computingResources: computingResources.length
+    });  }
+
+  applyClientSideFilters(jobs) {
+    let filteredJobs = jobs;
+
+    // Apply ToolType filter
+    if (this.currentToolTypeFilter !== "all") {
+      filteredJobs = filteredJobs.filter((job) => {
+        const jobType = job.TestJobID.startsWith("xiaofan") ? "MCP" : job.Tool;
+        return jobType === this.currentToolTypeFilter;
+      });
+    }
+
+    // Apply IacType filter
+    if (this.currentIacTypeFilter !== "all") {
+      filteredJobs = filteredJobs.filter((job) => {
+        return job.IacType === this.currentIacTypeFilter;
+      });
+    }
+
+    // Apply CopilotModel filter
+    if (this.currentCopilotModelFilter !== "all") {
+      filteredJobs = filteredJobs.filter((job) => {
+        return job.CopilotModel === this.currentCopilotModelFilter;
+      });
+    }
+
+    // Apply DeployType filter
+    if (this.currentDeployTypeFilter !== "all") {
+      filteredJobs = filteredJobs.filter((job) => {
+        return job.DeployType === this.currentDeployTypeFilter;
+      });
+    }
+
+    // Apply ComputingResource filter
+    if (this.currentComputingResourceFilter !== "all") {
+      filteredJobs = filteredJobs.filter((job) => {
+        return job.ComputingType === this.currentComputingResourceFilter;
+      });
+    }
+
+    // Apply text filter for any field (including ID)
+    if (this.currentFilter && this.currentFilter.trim() !== "") {
+      const filterText = this.currentFilter.toLowerCase().trim();
+      console.log(`Applying text filter: "${filterText}"`);
+      
+      filteredJobs = filteredJobs.filter((job) => {
+        // Search in multiple fields including ID and new columns
+        const jobType = job.TestJobID.startsWith("xiaofan") ? "MCP" : job.Tool;
+        const searchFields = [
+          job.TestJobID?.toString() || "",
+          formatDateTime(job.CreatedTime || job.creationTime) || "",
+          jobType || "",
+          job.IacType || "",
+          job.CopilotModel || "",
+          job.DeployType || "",
+          job.ComputingType || "",
+          job.SuccessRate?.toString() || "",
+          job.SuccessTasks?.toString() || "",
+          job.TaskNum?.toString() || "",
+        ];
+
+        const matches = searchFields.some((field) =>
+          field.toLowerCase().includes(filterText)
+        );
+
+        if (matches) {
+          console.log(`Job ${job.TestJobID} matches filter`);
+        }
+
+        return matches;
+      });
+    }    console.log(`Filtered ${filteredJobs.length} jobs from ${jobs.length} total jobs`);
+    console.log('Active filters:', {
+      toolType: this.currentToolTypeFilter,
+      iacType: this.currentIacTypeFilter,
+      copilotModel: this.currentCopilotModelFilter,
+      deployType: this.currentDeployTypeFilter,
+      computingResource: this.currentComputingResourceFilter,
+      search: this.currentFilter
+    });
+    return filteredJobs;
+  }
+  paginateFilteredResults(filteredJobs) {
+    const totalJobs = filteredJobs.length;
+    const totalPages = Math.ceil(totalJobs / this.pageSize);
+    const startIndex = (this.currentPage - 1) * this.pageSize;
+    const endIndex = startIndex + this.pageSize;
+    const pageJobs = filteredJobs.slice(startIndex, endIndex);
+
+    const paginationData = {
+      jobs: pageJobs,
+      page: this.currentPage,
+      totalPages: totalPages,
+      totalJobs: totalJobs,
+      pageSize: this.pageSize
+    };
+
+    console.log('Pagination calculation:', {
+      totalJobs,
+      pageSize: this.pageSize,
+      totalPages,
+      currentPage: this.currentPage,
+      startIndex,
+      endIndex,
+      pageJobsCount: pageJobs.length
     });
 
-    // Convert to sorted array
-    const sortedCreatedBy = Array.from(uniqueCreatedBy).sort();
-
-    // Use dropdown manager to populate the created by filter
-    window.dropdownManager.populateDropdown(
-      "created-by-filter",
-      sortedCreatedBy
-    );
-
-    console.log(
-      `Populated CreatedBy filter with ${sortedCreatedBy.length} unique creators:`,
-      sortedCreatedBy
-    );
+    return paginationData;
   }
-
   renderPagination(data) {
     const pagination = document.getElementById("pagination");
+    if (!pagination) return;
+      console.log('Pagination data:', data);
     pagination.innerHTML = "";
 
-    if (data.totalPages <= 1) return;
+    // Temporarily show pagination even with 1 page for testing
+    if (data.totalPages <= 1) {
+      console.log('Not showing pagination: totalPages =', data.totalPages);
+      // For testing - let's show a simple pagination even with 1 page
+      pagination.innerHTML = `<li class="page-item active"><a class="page-link" href="#">1</a></li>`;
+      return;
+    }
+
+    console.log('Showing pagination with', data.totalPages, 'pages, current page:', data.page);
 
     // Previous button
     const prevItem = document.createElement("li");
@@ -208,70 +344,10 @@ class JobsView {
                     </td>
                 </tr>
             `;
-      return;
-    }
+      return;    }
 
-    // Apply all filters
-    let filteredJobs = jobs;
-
-    // Apply user filter (check both fields for compatibility)
-    if (this.currentUserFilter !== "all") {
-      filteredJobs = filteredJobs.filter((job) => {
-        const matches = job.InitiatedBy === this.currentUserFilter;
-        return matches;
-      });
-    }
-
-    // Apply MCP filter
-    if (this.currentMcpFilter !== "all") {
-      const useMcp = this.currentMcpFilter === "true";
-      filteredJobs = filteredJobs.filter((job) => {
-        // Check if job has MCP usage (you might need to adjust this based on your data structure)
-        const mcpRate = parseFloat(job.MCPRate) || 0;
-        return useMcp ? mcpRate > 0 : mcpRate === 0;
-      });
-    }
-
-    // Apply Terraform filter
-    if (this.currentTerraformFilter !== "all") {
-      const useTerraform = this.currentTerraformFilter === "true";
-      filteredJobs = filteredJobs.filter((job) => {
-        // Check if job has Terraform usage (you might need to adjust this based on your data structure)
-        const terraformRate = parseFloat(job.TerraformRate) || 0;
-        return useTerraform ? terraformRate > 0 : terraformRate === 0;
-      });
-    }
-
-    // Apply text filter for any field (including ID)
-    if (this.currentFilter && this.currentFilter.trim() !== "") {
-      const filterText = this.currentFilter.toLowerCase().trim();
-      console.log(`Applying text filter: "${filterText}"`);
-
-      filteredJobs = filteredJobs.filter((job) => {
-        // Search in multiple fields including ID
-        const searchFields = [
-          job.TestJobID?.toString() || "",
-          job.InitiatedBy || job.createdBy || "",
-          job.MCPRate?.toString() || "",
-          job.TerraformRate?.toString() || "",
-          job.TaskNum?.toString() || "",
-          job.SuccessRate?.toString() || "",
-          formatDateTime(job.CreatedTime || job.creationTime) || "",
-        ];
-
-        const matches = searchFields.some((field) =>
-          field.toLowerCase().includes(filterText)
-        );
-
-        if (matches) {
-          console.log(`Job ${job.TestJobID} matches filter`);
-        }
-
-        return matches;
-      });
-    }
-
-    filteredJobs.forEach((job) => {
+    // Since filtering is now done server-side, we can directly render all jobs
+    jobs.forEach((job) => {
       const row = document.createElement("tr");
       row.className = "fade-in";
       const jobType = job.TestJobID.startsWith("xiaofan")? "MCP" : job.Tool;
@@ -304,26 +380,35 @@ class JobsView {
       });
     });
   }
-
   setupJobDropdownItemHandlers() {
     // Use event delegation for dropdown items to handle dynamic content
     document.addEventListener("click", (e) => {
       // Generic handler for all filter dropdowns
       this.handleDropdownItemClick(e, [
         {
-          selector: "#created-by-filter + .dropdown-menu .dropdown-item",
-          property: "currentUserFilter",
-          buttonId: "created-by-filter",
+          selector: "#tool-type-filter + .dropdown-menu .dropdown-item",
+          property: "currentToolTypeFilter",
+          buttonId: "tool-type-filter",
         },
         {
-          selector: "#use-mcp-filter + .dropdown-menu .dropdown-item",
-          property: "currentMcpFilter",
-          buttonId: "use-mcp-filter",
+          selector: "#iac-type-filter + .dropdown-menu .dropdown-item",
+          property: "currentIacTypeFilter",
+          buttonId: "iac-type-filter",
         },
         {
-          selector: "#use-terraform-filter + .dropdown-menu .dropdown-item",
-          property: "currentTerraformFilter",
-          buttonId: "use-terraform-filter",
+          selector: "#copilot-model-filter + .dropdown-menu .dropdown-item",
+          property: "currentCopilotModelFilter",
+          buttonId: "copilot-model-filter",
+        },
+        {
+          selector: "#deploy-type-filter + .dropdown-menu .dropdown-item",
+          property: "currentDeployTypeFilter",
+          buttonId: "deploy-type-filter",
+        },
+        {
+          selector: "#computing-resource-filter + .dropdown-menu .dropdown-item",
+          property: "currentComputingResourceFilter",
+          buttonId: "computing-resource-filter",
         },
       ]);
     });
@@ -368,50 +453,83 @@ class JobsView {
     this.setupJobDropdowns();
 
     this.jobDropdownsInitialized = true;
-  }
-
-  setupJobDropdowns() {
-    // Register created by filter dropdown
-    window.dropdownManager.register("created-by-filter", {
-      buttonId: "created-by-filter",
-      dropdownId: "created-by-filter-menu",
-      placeholder: "Created By",
+  }  setupJobDropdowns() {
+    // Register ToolType filter dropdown
+    window.dropdownManager.register("tool-type-filter", {
+      buttonId: "tool-type-filter",
+      dropdownId: "tool-type-filter-menu",
+      placeholder: "ToolType",
       filterType: "select",
       onSelect: (value, label, id) => {
-        this.currentUserFilter = value;
-        this.loadJobs();
-        console.log(`Created by filter changed to: ${value}`);
-      },
-    }); // Register MCP filter dropdown
-    window.dropdownManager.register("use-mcp-filter", {
-      buttonId: "use-mcp-filter",
-      dropdownId: "use-mcp-filter-menu",
-      placeholder: "UseMCP",
-      filterType: "select",
-      onSelect: (value, label, id) => {
-        this.currentMcpFilter = value;
-        this.loadJobs();
-        console.log(`MCP filter changed to: ${value}`);
+        this.currentToolTypeFilter = value;
+        this.currentPage = 1; // Reset to first page when filter changes
+        this.loadJobs(); // Reload data from server
+        console.log(`ToolType filter changed to: ${value}`);
       },
     });
 
-    // Register Terraform filter dropdown
-    window.dropdownManager.register("use-terraform-filter", {
-      buttonId: "use-terraform-filter",
-      dropdownId: "use-terraform-filter-menu",
-      placeholder: "UseTerraform",
+    // Register IacType filter dropdown
+    window.dropdownManager.register("iac-type-filter", {
+      buttonId: "iac-type-filter",
+      dropdownId: "iac-type-filter-menu",
+      placeholder: "Iac Type",
       filterType: "select",
       onSelect: (value, label, id) => {
-        this.currentTerraformFilter = value;
-        this.loadJobs();
-        console.log(`Terraform filter changed to: ${value}`);
+        this.currentIacTypeFilter = value;
+        this.currentPage = 1; // Reset to first page when filter changes
+        this.loadJobs(); // Reload data from server
+        console.log(`IacType filter changed to: ${value}`);
+      },
+    });
+
+    // Register CopilotModel filter dropdown
+    window.dropdownManager.register("copilot-model-filter", {
+      buttonId: "copilot-model-filter",
+      dropdownId: "copilot-model-filter-menu",
+      placeholder: "Copilot Model",
+      filterType: "select",
+      onSelect: (value, label, id) => {
+        this.currentCopilotModelFilter = value;
+        this.currentPage = 1; // Reset to first page when filter changes
+        this.loadJobs(); // Reload data from server
+        console.log(`CopilotModel filter changed to: ${value}`);
+      },
+    });
+
+    // Register DeployType filter dropdown
+    window.dropdownManager.register("deploy-type-filter", {
+      buttonId: "deploy-type-filter",
+      dropdownId: "deploy-type-filter-menu",
+      placeholder: "Deploy Type",
+      filterType: "select",
+      onSelect: (value, label, id) => {
+        this.currentDeployTypeFilter = value;
+        this.currentPage = 1; // Reset to first page when filter changes
+        this.loadJobs(); // Reload data from server
+        console.log(`DeployType filter changed to: ${value}`);
+      },
+    });
+
+    // Register ComputingResource filter dropdown
+    window.dropdownManager.register("computing-resource-filter", {
+      buttonId: "computing-resource-filter",
+      dropdownId: "computing-resource-filter-menu",
+      placeholder: "Computing Resource",
+      filterType: "select",
+      onSelect: (value, label, id) => {
+        this.currentComputingResourceFilter = value;
+        this.currentPage = 1; // Reset to first page when filter changes
+        this.loadJobs(); // Reload data from server
+        console.log(`ComputingResource filter changed to: ${value}`);
       },
     });
 
     // Initialize all job dropdowns
-    window.dropdownManager.init("created-by-filter");
-    window.dropdownManager.init("use-mcp-filter");
-    window.dropdownManager.init("use-terraform-filter");
+    window.dropdownManager.init("tool-type-filter");
+    window.dropdownManager.init("iac-type-filter");
+    window.dropdownManager.init("copilot-model-filter");
+    window.dropdownManager.init("deploy-type-filter");
+    window.dropdownManager.init("computing-resource-filter");
   }
 
   showLoading(show) {

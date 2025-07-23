@@ -59,6 +59,34 @@
           <ul class="dropdown-menu" id="language-dropdown">
             <li><a class="dropdown-item" href="#" data-filter="all">All</a></li>
           </ul>
+        </div>        <div class="dropdown">
+          <button
+            class="btn btn-outline-secondary dropdown-toggle"
+            type="button"
+            id="app-pattern-filter"
+            aria-expanded="false"
+          >
+            AppPattern <span class="badge bg-primary">equals</span>
+            <span class="badge bg-secondary">all</span>
+          </button>
+          <ul class="dropdown-menu" id="app-pattern-dropdown">
+            <li><a class="dropdown-item" href="#" data-filter="all">All</a></li>
+          </ul>
+        </div>
+
+        <div class="dropdown">
+          <button
+            class="btn btn-outline-secondary dropdown-toggle"
+            type="button"
+            id="repo-group-filter"
+            aria-expanded="false"
+          >
+            RepoGroup <span class="badge bg-primary">equals</span>
+            <span class="badge bg-secondary">all</span>
+          </button>
+          <ul class="dropdown-menu" id="repo-group-dropdown">
+            <li><a class="dropdown-item" href="#" data-filter="all">All</a></li>
+          </ul>
         </div>
       </div>
     </div>
@@ -66,28 +94,26 @@
 
   <!-- Repo Table -->
   <div class="table-responsive">
-    <table class="table table-striped table-hover">
-      <thead class="table-light">
-        <tr>
-          <th class="sortable" data-sort="repoName">
+    <table class="table table-striped table-hover">      <thead class="table-light">
+        <tr>          <th class="sortable" data-sort="repoName" title="Click to sort by repository name">
             RepoName
-            <i class="bi bi-arrow-down-up ms-1"></i>
+            <i class="bi bi-arrow-down-up ms-1" title="Click to toggle sort direction"></i>
           </th>
-          <th class="sortable" data-sort="languages">
+          <th class="sortable" data-sort="languages" title="Click to sort by language">
             Language
-            <i class="bi bi-arrow-down-up ms-1"></i>
+            <i class="bi bi-arrow-down-up ms-1" title="Click to toggle sort direction"></i>
           </th>
-          <th class="sortable" data-sort="repoType">
+          <th class="sortable" data-sort="repoType" title="Click to sort by repository type">
             RepoType
-            <i class="bi bi-arrow-down-up ms-1"></i>
+            <i class="bi bi-arrow-down-up ms-1" title="Click to toggle sort direction"></i>
           </th>
-          <th class="sortable" data-sort="appPattern">
+          <th class="sortable" data-sort="appPattern" title="Click to sort by application pattern">
             App Pattern
-            <i class="bi bi-arrow-down-up ms-1"></i>
+            <i class="bi bi-arrow-down-up ms-1" title="Click to toggle sort direction"></i>
           </th>
-          <th class="sortable" data-sort="successRate">
+          <th class="sortable" data-sort="successRate" title="Click to sort by success rate">
             Success Rate
-            <i class="bi bi-arrow-down-up ms-1"></i>
+            <i class="bi bi-arrow-down-up ms-1" title="Click to toggle sort direction"></i>
           </th>
         </tr>
       </thead>

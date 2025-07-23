@@ -8,6 +8,7 @@ export interface ApiRepoData {
   TotalTasks: number;
   SuccessTasks: number;
   RepoType: string;
+  RepoGroup: string;
 }
 
 export interface ApiRepoResponse {

@@ -2,6 +2,8 @@
 .sortable {
   cursor: pointer;
   user-select: none;
+  position: relative;
+  transition: background-color 0.2s ease;
 }
 
 .sortable:hover {
@@ -10,11 +12,49 @@
 
 .sortable i {
   opacity: 0.5;
-  transition: opacity 0.2s ease;
+  transition: all 0.2s ease;
+  display: inline-block;
+  vertical-align: middle;
+  padding: 2px 4px;
+  border-radius: 3px;
+  cursor: pointer;
 }
 
 .sortable:hover i {
   opacity: 1;
+  background-color: rgba(0, 123, 255, 0.1);
+}
+
+/* Active sort column styling */
+.sortable.active-sort {
+  background-color: rgba(0, 123, 255, 0.1);
+}
+
+.sortable.active-sort i {
+  opacity: 1;
+  color: #007bff;
+  background-color: rgba(0, 123, 255, 0.15);
+}
+
+/* Add a special effect for the double-clickable icons */
+.sortable i:active {
+  background-color: rgba(0, 123, 255, 0.3);
+  transform: scale(1.1);
+}
+
+/* Animation for sort icon change */
+@keyframes sortAnimation {
+  0% {
+    transform: scale(1);
+    opacity: 0.5;
+  }
+  50% {
+    transform: scale(1.15);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(1);
+  }
 }
 
 /* Repo name links styling */
