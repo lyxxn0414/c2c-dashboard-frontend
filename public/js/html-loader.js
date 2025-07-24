@@ -28,11 +28,11 @@ async function loadTemplate(templateName, filePath) {
 document.addEventListener("DOMContentLoaded", async () => {
   console.log("🚀 Loading HTML templates from files...");
 
-  try {
-    // Load all templates
+  try {    // Load all templates
     await Promise.all([
       loadTemplate("jobsView", "/partials/jobs-view.html"),
       loadTemplate("jobDetail", "/partials/job-detail.html"),
+      loadTemplate("jobCompare", "/partials/job-compare.html"),
       loadTemplate("modals", "/partials/modals.html"),
       loadTemplate("reposView", "/partials/repos-view.html"),
       loadTemplate("repoDetail", "/partials/repo-detail.html"),
@@ -52,14 +52,22 @@ document.addEventListener("DOMContentLoaded", async () => {
       console.log("✅ Jobs view template loaded");
     } else {
       console.error("❌ jobs-content element not found or template not loaded");
-    }
-
-    if (jobDetailContent && HTMLTemplates.jobDetail) {
+    }    if (jobDetailContent && HTMLTemplates.jobDetail) {
       jobDetailContent.innerHTML = HTMLTemplates.jobDetail;
       console.log("✅ Job detail template loaded");
     } else {
       console.error(
         "❌ job-detail-content element not found or template not loaded"
+      );
+    }
+
+    const jobCompareContent = document.getElementById("job-compare-view");
+    if (jobCompareContent && HTMLTemplates.jobCompare) {
+      jobCompareContent.innerHTML = HTMLTemplates.jobCompare;
+      console.log("✅ Job comparison template loaded");
+    } else {
+      console.error(
+        "❌ job-compare-view element not found or template not loaded"
       );
     }
 

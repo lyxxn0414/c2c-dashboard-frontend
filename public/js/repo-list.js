@@ -558,13 +558,17 @@ class ReposView {
       const self = this;
       
       // Remove existing handlers (if any) by replacing with a new one
-      submitBtn.onclick = function(e) {
+      submitBtn.removeEventListener("click", submitBtn._handleAddRepo);
+      
+      submitBtn._handleAddRepo = function(e) {
         e.preventDefault();
         // Only proceed if button isn't disabled
         if (!this.disabled) {
           self.handleAddRepo();
         }
       };
+      
+      submitBtn.addEventListener("click", submitBtn._handleAddRepo);
       
       // show file size info when file input changes
       const fileInput = document.getElementById('repo-upload');

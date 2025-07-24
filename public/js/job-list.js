@@ -10,6 +10,7 @@ class JobsView {  constructor() {
     this.currentComputingResourceFilter = "all";
     this.externalServiceStatus = null;
     this.jobDropdownsInitialized = false;
+    this.selectedJobIds = new Set(); // Track selected jobs for comparison
 
     setTimeout(() => {
       this.initializeElements();
@@ -21,8 +22,7 @@ class JobsView {  constructor() {
 
   initJobsView() {
     this.loadJobs();
-  }
-  initializeElements() {
+  }  initializeElements() {
     // Core view element
     this.jobsView = document.getElementById("jobs-view");
 
@@ -42,8 +42,14 @@ class JobsView {  constructor() {
     this.copilotModelFilter = document.getElementById("copilot-model-filter");
     this.deployTypeFilter = document.getElementById("deploy-type-filter");
     this.computingResourceFilter = document.getElementById("computing-resource-filter");
-  }
 
+    // Job comparison elements
+    this.selectAllCheckbox = document.getElementById("select-all-jobs");
+    this.selectedCountSpan = document.getElementById("selected-count");
+    this.compareBtn = document.getElementById("compare-jobs-btn");
+    this.clearSelectionBtn = document.getElementById("clear-selection-btn");
+    this.comparisonSection = document.getElementById("job-comparison-section");
+  }
   bindEvents() {
     // Check if elements exist before binding events
     if (!this.filterInput) {
@@ -58,8 +64,21 @@ class JobsView {  constructor() {
       }, 300)
     );
 
+    // Job comparison event handlers
+    this.selectAllCheckbox?.addEventListener('change', (e) => {
+      this.handleSelectAll(e.target.checked);
+    });
+
+    this.compareBtn?.addEventListener('click', () => {
+      this.navigateToComparison();
+    });
+
+    this.clearSelectionBtn?.addEventListener('click', () => {
+      this.clearSelection();
+    });
+
     this.setupJobDropdownItemHandlers();
-  }  async loadJobs() {
+  }async loadJobs() {
     this.showLoading(true);    try {
       const params = new URLSearchParams({
         sortBy: this.currentSort.field,
@@ -325,7 +344,6 @@ class JobsView {  constructor() {
       }
     });
   }
-
   renderJobs(jobs) {
     const tbody = document.getElementById("jobs-table-body");
     if (!tbody) {
@@ -338,7 +356,7 @@ class JobsView {  constructor() {
     if (jobs.length === 0) {
       tbody.innerHTML = `
                 <tr>
-                    <td colspan="8" class="text-center text-muted py-4">
+                    <td colspan="9" class="text-center text-muted py-4">
                         <i class="bi bi-inbox fs-1 d-block mb-2"></i>
                         No jobs found
                     </td>
@@ -351,7 +369,13 @@ class JobsView {  constructor() {
       const row = document.createElement("tr");
       row.className = "fade-in";
       const jobType = job.TestJobID.startsWith("xiaofan")? "MCP" : job.Tool;
+      const isSelected = this.selectedJobIds.has(job.TestJobID);
+      
       row.innerHTML = `
+                <td>
+                    <input type="checkbox" class="form-check-input job-checkbox" 
+                           data-job-id="${job.TestJobID}" ${isSelected ? 'checked' : ''}>
+                </td>
                 <td>
                     <a href="#" class="job-id-link" data-job-id="${job.TestJobID}">
                         ${job.TestJobID}
@@ -379,6 +403,18 @@ class JobsView {  constructor() {
         window.navigateToJobDetail(e.target.dataset.jobId);
       });
     });
+
+    // Bind checkbox events
+    document.querySelectorAll(".job-checkbox").forEach((checkbox) => {
+      checkbox.addEventListener("change", (e) => {
+        this.handleJobSelection(e.target.dataset.jobId, e.target.checked);
+      });
+    });
+
+    // Update the select all checkbox state
+    this.updateSelectAllState();
+    // Update the selection count and button states
+    this.updateSelectionUI();
   }
   setupJobDropdownItemHandlers() {
     // Use event delegation for dropdown items to handle dynamic content
@@ -543,6 +579,139 @@ class JobsView {  constructor() {
       loadingIndicator.classList.add("d-none");
       table.style.opacity = "1";
     }
+  }
+
+  // Job selection management methods
+  handleJobSelection(jobId, isChecked) {
+    if (isChecked) {
+      this.selectedJobIds.add(jobId);
+    } else {
+      this.selectedJobIds.delete(jobId);
+    }
+    this.updateSelectionUI();
+    this.updateSelectAllState();
+  }
+
+  handleSelectAll(isChecked) {
+    const checkboxes = document.querySelectorAll('.job-checkbox');
+    checkboxes.forEach(checkbox => {
+      const jobId = checkbox.dataset.jobId;
+      checkbox.checked = isChecked;
+      
+      if (isChecked) {
+        this.selectedJobIds.add(jobId);
+      } else {
+        this.selectedJobIds.delete(jobId);
+      }
+    });
+    this.updateSelectionUI();
+  }
+
+  updateSelectAllState() {
+    if (!this.selectAllCheckbox) return;
+    
+    const checkboxes = document.querySelectorAll('.job-checkbox');
+    const checkedBoxes = document.querySelectorAll('.job-checkbox:checked');
+    
+    if (checkboxes.length === 0) {
+      this.selectAllCheckbox.indeterminate = false;
+      this.selectAllCheckbox.checked = false;
+    } else if (checkedBoxes.length === checkboxes.length) {
+      this.selectAllCheckbox.indeterminate = false;
+      this.selectAllCheckbox.checked = true;
+    } else if (checkedBoxes.length > 0) {
+      this.selectAllCheckbox.indeterminate = true;
+      this.selectAllCheckbox.checked = false;
+    } else {
+      this.selectAllCheckbox.indeterminate = false;
+      this.selectAllCheckbox.checked = false;
+    }
+  }  updateSelectionUI() {
+    const selectedCount = this.selectedJobIds.size;
+    
+    if (this.selectedCountSpan) {
+      this.selectedCountSpan.textContent = selectedCount;
+    }
+    
+    if (this.compareBtn) {
+      this.compareBtn.disabled = selectedCount < 2 || selectedCount > 5;
+    }
+    
+    if (this.clearSelectionBtn) {
+      this.clearSelectionBtn.disabled = selectedCount === 0;
+    }
+
+    // Show/hide comparison section based on selection
+    if (this.comparisonSection) {
+      if (selectedCount > 0) {
+        this.comparisonSection.style.display = 'block';
+      } else {
+        this.comparisonSection.style.display = 'none';
+      }
+    }
+
+    // Update selected jobs preview
+    this.updateSelectedJobsPreview();
+  }
+
+  updateSelectedJobsPreview() {
+    const previewContainer = document.getElementById("selected-jobs-preview");
+    if (!previewContainer) return;
+
+    const selectedJobIds = Array.from(this.selectedJobIds);
+    if (selectedJobIds.length === 0) {
+      previewContainer.innerHTML = '<span class="text-muted">No jobs selected</span>';
+      return;
+    }
+
+    const previewHtml = selectedJobIds.map(jobId => `
+      <span class="badge bg-primary me-1 mb-1">
+        ${jobId}
+        <button type="button" class="btn-close btn-close-white ms-2" 
+                data-job-id="${jobId}" style="font-size: 0.6em;"></button>
+      </span>
+    `).join('');
+
+    previewContainer.innerHTML = previewHtml;
+
+    // Add click handlers for remove buttons
+    previewContainer.querySelectorAll('.btn-close').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const jobId = e.target.dataset.jobId;
+        this.selectedJobIds.delete(jobId);
+        
+        // Update the corresponding checkbox
+        const checkbox = document.querySelector(`[data-job-id="${jobId}"]`);
+        if (checkbox) {
+          checkbox.checked = false;
+        }
+        
+        this.updateSelectionUI();
+        this.updateSelectAllState();
+      });
+    });
+  }
+
+  clearSelection() {
+    this.selectedJobIds.clear();
+    const checkboxes = document.querySelectorAll('.job-checkbox');
+    checkboxes.forEach(checkbox => {
+      checkbox.checked = false;
+    });
+    this.updateSelectionUI();
+    this.updateSelectAllState();
+  }
+
+  navigateToComparison() {
+    if (this.selectedJobIds.size < 2 || this.selectedJobIds.size > 5) {
+      alert('Please select 2-5 jobs to compare.');
+      return;
+    }
+    
+    // Convert Set to Array and pass to comparison view
+    const jobIds = Array.from(this.selectedJobIds);
+    window.navigateToJobComparison(jobIds);
   }
 }
 let jobsView;

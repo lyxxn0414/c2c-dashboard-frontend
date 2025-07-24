@@ -90,6 +90,56 @@ class ErrorCenter {
         this.loadErrorData();
       });
     }
+
+    // Event delegation for dynamically created buttons
+    document.addEventListener("click", (e) => {
+      // Toggle category buttons
+      if (e.target.closest(".toggle-category-btn")) {
+        e.preventDefault();
+        const button = e.target.closest(".toggle-category-btn");
+        const category = button.dataset.category;
+        this.toggleCategory(category);
+      }
+
+      // Toggle error description buttons
+      if (e.target.closest(".toggle-error-desc-btn")) {
+        e.preventDefault();
+        const button = e.target.closest(".toggle-error-desc-btn");
+        const taskId = button.dataset.taskId;
+        this.toggleErrorDescription(taskId);
+      }
+
+      // Toggle error detail buttons
+      if (e.target.closest(".toggle-error-detail-btn")) {
+        e.preventDefault();
+        const button = e.target.closest(".toggle-error-detail-btn");
+        const taskId = button.dataset.taskId;
+        this.toggleErrorDetail(taskId);
+      }
+
+      // Show error detail buttons
+      if (e.target.closest(".show-error-detail-btn")) {
+        e.preventDefault();
+        const button = e.target.closest(".show-error-detail-btn");
+        const taskId = button.dataset.taskId;
+        this.showErrorDetail(taskId);
+      }
+
+      // Task and job links
+      if (e.target.closest(".task-link")) {
+        e.preventDefault();
+        const link = e.target.closest(".task-link");
+        const taskId = link.dataset.taskId;
+        window.navigateToTaskDetail(taskId);
+      }
+
+      if (e.target.closest(".job-link")) {
+        e.preventDefault();
+        const link = e.target.closest(".job-link");
+        const jobId = link.dataset.jobId;
+        window.navigateToJobDetail(jobId);
+      }
+    });
   }
 
   async loadErrorData() {
@@ -295,8 +345,7 @@ class ErrorCenter {
                             </h5>
                             <div class="d-flex align-items-center gap-2">
                                 <span class="badge bg-light text-dark">${errors.length} error${errors.length !== 1 ? "s" : ""}</span>
-                                <span class="badge bg-primary">${percentage}%</span>
-                                <button class="btn btn-sm btn-outline-secondary" onclick="errorCenter.toggleCategory('${category}')">
+                                <span class="badge bg-primary">${percentage}%</span>                                <button class="btn btn-sm btn-outline-secondary toggle-category-btn" data-category="${category}">
                                     <i class="bi bi-chevron-down" id="chevron-${category}"></i>
                                 </button>
                             </div>
@@ -332,19 +381,39 @@ class ErrorCenter {
                         <div class="col-md-2">
                             <strong>Date:</strong><br>
                             <small>${formatDateTime(error.CreatedDate)}</small>
-                        </div>
-                        <div class="col-md-3">
+                        </div>                        <div class="col-md-3">
                             <strong>Description:</strong><br>
-                            <span class="text-muted">${this.truncateText(error.ErrorDescription || "No description", 50)}</span>
+                            <div class="error-description">
+                                <span class="error-description-short text-muted" id="desc-short-${error.TaskID}">
+                                    ${this.truncateText(error.ErrorDescription || "No description", 50)}
+                                </span>
+                                <span class="error-description-full text-muted" id="desc-full-${error.TaskID}" style="display: none;">
+                                    ${error.ErrorDescription || "No description"}
+                                </span>
+                                ${(error.ErrorDescription || "").length > 50 ? `                                    <br><button class="btn btn-link btn-sm p-0 text-decoration-none toggle-error-desc-btn" data-task-id="${error.TaskID}">
+                                        <span id="toggle-btn-${error.TaskID}">
+                                            <i class="bi bi-chevron-down me-1"></i>Show Details
+                                        </span>
+                                    </button>
+                                ` : ''}
+                            </div>
                         </div>
                         <div class="col-md-2">
-                            <strong>Terraform:</strong><br>
-                            <span class="badge ${error.UseTerraform ? "bg-success" : "bg-secondary"}">${error.UseTerraform ? "Yes" : "No"}</span>
-                        </div>
-                        <div class="col-md-1 text-end">
-                            <button class="btn btn-sm btn-outline-primary" onclick="errorCenter.showErrorDetail('${error.TaskID}')">
-                                <i class="bi bi-eye"></i>
-                            </button>
+                            <strong>Error Detail:</strong><br>
+                            <div class="error-detail">
+                                <span class="error-detail-short text-muted" id="detail-short-${error.TaskID}">
+                                    ${this.truncateText(error.ErrorDetail || "No details", 50)}
+                                </span>
+                                <span class="error-detail-full text-muted" id="detail-full-${error.TaskID}" style="display: none;">
+                                    ${error.ErrorDetail || "No details"}
+                                </span>
+                                ${(error.ErrorDetail || "").length > 50 ? `                                    <br><button class="btn btn-link btn-sm p-0 text-decoration-none toggle-error-detail-btn" data-task-id="${error.TaskID}">
+                                        <span id="toggle-detail-btn-${error.TaskID}">
+                                            <i class="bi bi-chevron-down me-1"></i>Show Details
+                                        </span>
+                                    </button>
+                                ` : ''}
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -354,19 +423,62 @@ class ErrorCenter {
       .join("");
   }
 
+  toggleErrorDescription(taskId) {
+    const shortDesc = document.getElementById(`desc-short-${taskId}`);
+    const fullDesc = document.getElementById(`desc-full-${taskId}`);
+    const toggleBtn = document.getElementById(`toggle-btn-${taskId}`);
+    
+    if (!shortDesc || !fullDesc || !toggleBtn) return;
+    
+    const isExpanded = fullDesc.style.display !== 'none';
+    
+    if (isExpanded) {
+      // Collapse - show short description
+      shortDesc.style.display = 'inline';
+      fullDesc.style.display = 'none';
+      toggleBtn.innerHTML = '<i class="bi bi-chevron-down me-1"></i>Show Details';
+    } else {
+      // Expand - show full description
+      shortDesc.style.display = 'none';
+      fullDesc.style.display = 'inline';
+      toggleBtn.innerHTML = '<i class="bi bi-chevron-up me-1"></i>Hide Details';
+    }
+  }
+
+  toggleErrorDetail(taskId) {
+    const shortDetail = document.getElementById(`detail-short-${taskId}`);
+    const fullDetail = document.getElementById(`detail-full-${taskId}`);
+    const toggleBtn = document.getElementById(`toggle-detail-btn-${taskId}`);
+    
+    if (!shortDetail || !fullDetail || !toggleBtn) return;
+    
+    const isExpanded = fullDetail.style.display !== 'none';
+    
+    if (isExpanded) {
+      // Collapse - show short detail
+      shortDetail.style.display = 'inline';
+      fullDetail.style.display = 'none';
+      toggleBtn.innerHTML = '<i class="bi bi-chevron-down me-1"></i>Show Details';
+    } else {
+      // Expand - show full detail
+      shortDetail.style.display = 'none';
+      fullDetail.style.display = 'inline';
+      toggleBtn.innerHTML = '<i class="bi bi-chevron-up me-1"></i>Hide Details';
+    }
+  }
   getCategoryClass(category) {
     const categoryLower = category.toLowerCase();
-    if (categoryLower.includes("docker")) return "bg-danger text-white";
+    if (categoryLower.includes("docker")) return "error-category-docker";
     if (categoryLower.includes("bicep") || categoryLower.includes("terraform"))
-      return "bg-warning text-dark";
+      return "error-category-bicep";
     if (
       categoryLower.includes("network") ||
       categoryLower.includes("connection")
     )
-      return "bg-info text-white";
+      return "error-category-network";
     if (categoryLower.includes("permission") || categoryLower.includes("auth"))
-      return "bg-dark text-white";
-    return "bg-secondary text-white";
+      return "error-category-permission";
+    return "error-category-general";
   }
 
   updateFilteredCount() {
@@ -412,18 +524,20 @@ class ErrorCenter {
     document.getElementById("modal-error-description").textContent =
       error.ErrorDescription || "No description available";
     document.getElementById("modal-error-detail").textContent =
-      error.ErrorDetail || "No details available";
-
-    // Setup view task button
+      error.ErrorDetail || "No details available";    // Setup view task button
     const viewTaskBtn = document.getElementById("view-task-detail-btn");
     if (viewTaskBtn) {
-      viewTaskBtn.onclick = () => {
+      // Remove existing event listeners to prevent duplicates
+      viewTaskBtn.replaceWith(viewTaskBtn.cloneNode(true));
+      const newViewTaskBtn = document.getElementById("view-task-detail-btn");
+      
+      newViewTaskBtn.addEventListener("click", () => {
         // Navigate to task detail
         window.navigateToTaskDetail(error.TaskID);
         bootstrap.Modal.getInstance(
           document.getElementById("errorDetailModal")
         ).hide();
-      };
+      });
     }
 
     // Show modal

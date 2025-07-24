@@ -167,41 +167,6 @@ export class RepoService {
       });
   }
 
-  private inferRepoType(repoName: string, language: string): RepoType {
-    const name = repoName.toLowerCase();
-    const lang = language.toLowerCase();
-
-    // Check for common patterns in repo names
-    if (
-      name.includes("api") ||
-      name.includes("service") ||
-      name.includes("backend")
-    ) {
-      return RepoType.Service;
-    }
-
-    if (
-      name.includes("lib") ||
-      name.includes("package") ||
-      name.includes("utils") ||
-      name.includes("shared")
-    ) {
-      return RepoType.Library;
-    }
-
-    if (
-      name.includes("tool") ||
-      name.includes("cli") ||
-      name.includes("build") ||
-      name.includes("script")
-    ) {
-      return RepoType.Tool;
-    }
-
-    // Default to Application for most cases
-    return RepoType.Application;
-  }
-
   private parseSuccessRate(successRateString: string): number {
     if (!successRateString || successRateString === "") return 0;
 

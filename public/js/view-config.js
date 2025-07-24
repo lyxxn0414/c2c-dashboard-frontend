@@ -20,8 +20,7 @@ function setupViewConfiguration() {
   }
 
   // Configure all application views
-  window.viewManager.registerViews({
-    // Jobs List View
+  window.viewManager.registerViews({    // Jobs List View
     jobs: {
       show: ["jobs-view", "jobs-content"],
       hide: [
@@ -30,6 +29,7 @@ function setupViewConfiguration() {
         "repo-detail-view",
         "task-detail-view",
         "error-center-content",
+        "job-compare-view",
       ],
       css: {
         "jobs-content": { display: "block" },
@@ -40,9 +40,7 @@ function setupViewConfiguration() {
       onHide: async () => {
         console.log("Jobs view hidden");
       },
-    },
-
-    // Job Detail View
+    },// Job Detail View
     "job-detail": {
       show: ["job-detail-view", "job-detail-content"],
       hide: [
@@ -51,6 +49,7 @@ function setupViewConfiguration() {
         "repo-detail-view",
         "task-detail-view",
         "error-center-content",
+        "job-compare-view",
       ],
       css: {
         "job-detail-content": { display: "block" },
@@ -63,9 +62,29 @@ function setupViewConfiguration() {
       onHide: async () => {
         console.log("Job detail view hidden");
       },
-    },
-
-    // Repos List View
+    },    // Job Comparison View
+    "job-compare": {
+      show: ["job-compare-view"],
+      hide: [
+        "jobs-view",
+        "job-detail-view",
+        "repos-content",
+        "repo-detail-view",
+        "task-detail-view",
+        "error-center-content",
+      ],
+      css: {
+        "job-compare-view": { display: "block" },
+      },
+      addTransition: true,
+      onShow: async (data) => {
+        console.log("Job comparison view shown", data);
+        // Initialize will be handled by the router
+      },
+      onHide: async () => {
+        console.log("Job comparison view hidden");
+      },
+    },// Repos List View
     repos: {
       show: ["repos-content"],
       hide: [
@@ -76,6 +95,7 @@ function setupViewConfiguration() {
         "job-detail-content",
         "task-detail-view",
         "error-center-content",
+        "job-compare-view",
       ],
       css: {
         "repos-content": { display: "block" },
@@ -98,9 +118,7 @@ function setupViewConfiguration() {
       onHide: async () => {
         console.log("Repos view hidden");
       },
-    },
-
-    // Repo Detail View
+    },    // Repo Detail View
     "repo-detail": {
       show: ["repo-detail-view"],
       hide: [
@@ -110,6 +128,7 @@ function setupViewConfiguration() {
         "repos-content",
         "task-detail-view",
         "error-center-content",
+        "job-compare-view",
       ],
       addTransition: true,
       onShow: async (data) => {
@@ -122,9 +141,7 @@ function setupViewConfiguration() {
       onHide: async () => {
         console.log("Repo detail view hidden");
       },
-    },
-
-    // Task Detail View
+    },    // Task Detail View
     "task-detail": {
       show: ["task-detail-view"],
       hide: [
@@ -134,6 +151,7 @@ function setupViewConfiguration() {
         "repos-content",
         "repo-detail-view",
         "error-center-content",
+        "job-compare-view",
       ],
       addTransition: true,
       onShow: async (data) => {
@@ -146,9 +164,7 @@ function setupViewConfiguration() {
       onHide: async () => {
         console.log("Task detail view hidden");
       },
-    },
-
-    // Error Center View
+    },    // Error Center View
     "error-center": {
       show: ["error-center-content"],
       hide: [
@@ -159,6 +175,7 @@ function setupViewConfiguration() {
         "repo-detail-view",
         "job-detail-content",
         "task-detail-view",
+        "job-compare-view",
       ],
       css: {
         "error-center-content": { display: "block" },

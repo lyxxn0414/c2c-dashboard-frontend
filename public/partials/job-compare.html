@@ -1,0 +1,153 @@
+<!-- Job Compare View -->
+<div class="job-compare-view">
+  <!-- Header -->
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+      <h2 class="mb-1">
+        <i class="bi bi-graph-up text-primary me-2"></i>
+        Job Comparison
+      </h2>
+      <p class="text-muted mb-0">Compare selected jobs side by side</p>
+    </div>
+    <div class="btn-toolbar" role="toolbar">
+      <div class="btn-group me-2" role="group">
+        <button
+          type="button"
+          class="btn btn-outline-secondary"
+          id="back-to-jobs-btn"
+        >
+          <i class="bi bi-arrow-left me-1"></i>Back to Jobs
+        </button>
+        <button
+          type="button"
+          class="btn btn-outline-primary"
+          id="export-comparison-btn"
+        >
+          <i class="bi bi-download me-1"></i>Export Comparison
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Selected Jobs Summary -->
+  <div class="selected-jobs-summary mb-4">
+    <div class="card">
+      <div class="card-header">
+        <h5 class="mb-0">
+          <i class="bi bi-check-square me-2"></i>
+          Selected Jobs (<span id="selected-jobs-count">0</span>)
+        </h5>
+      </div>
+      <div class="card-body">
+        <div id="selected-jobs-list" class="d-flex flex-wrap gap-2">
+          <!-- Selected job badges will be populated here -->
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Loading State -->
+  <div id="job-compare-loading" class="text-center py-5" style="display: none">
+    <div class="spinner-border text-primary mb-3" role="status">
+      <span class="visually-hidden">Loading...</span>
+    </div>
+    <p class="text-muted">Loading job details for comparison...</p>
+  </div>
+
+  <!-- Comparison Table -->
+  <div id="job-comparison-section" style="display: none">
+    <div class="card">
+      <div class="card-header">
+        <h5 class="mb-0">
+          <i class="bi bi-table me-2"></i>Job Comparison Details
+        </h5>
+      </div>
+      <div class="card-body">
+        <div class="table-responsive">
+          <table class="table table-bordered table-hover">
+            <thead class="table-light">
+              <tr>
+                <th style="width: 20%">Property</th>
+                <th class="job-header" id="job-header-0">Job 1</th>
+                <th class="job-header" id="job-header-1">Job 2</th>
+                <th class="job-header" id="job-header-2" style="display: none">
+                  Job 3
+                </th>
+                <th class="job-header" id="job-header-3" style="display: none">
+                  Job 4
+                </th>
+                <th class="job-header" id="job-header-4" style="display: none">
+                  Job 5
+                </th>
+              </tr>
+            </thead>
+            <tbody id="comparison-table-body">
+              <!-- Comparison rows will be populated here -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Task Comparison Section -->
+  <div id="task-comparison-section" class="mt-4" style="display: none">
+    <div class="card">
+      <div class="card-header">
+        <h5 class="mb-0">
+          <i class="bi bi-list-task me-2"></i>Task Status Comparison
+        </h5>
+      </div>
+      <div class="card-body">
+        <div id="task-comparison-content">
+          <!-- Task comparison charts and tables will be populated here -->
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Error Comparison Section -->
+  <div id="error-comparison-section" class="mt-4" style="display: none">
+    <div class="card">
+      <div class="card-header">
+        <h5 class="mb-0">
+          <i class="bi bi-exclamation-triangle me-2"></i>Error Analysis
+          Comparison
+        </h5>
+      </div>
+      <div class="card-body">
+        <div id="error-comparison-content">
+          <!-- Error comparison will be populated here -->
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- No Jobs Selected State -->
+  <div id="no-jobs-selected" class="text-center py-5">
+    <div class="text-muted mb-3">
+      <i class="bi bi-inbox fs-1"></i>
+    </div>
+    <h4 class="text-muted">No Jobs Selected</h4>
+    <p class="text-muted">
+      Please go back to the jobs view and select 2 or more jobs to compare.
+    </p>
+    <button class="btn btn-primary" id="select-jobs-btn">
+      <i class="bi bi-arrow-left me-1"></i>Select Jobs to Compare
+    </button>
+  </div>
+
+  <!-- Error State -->
+  <div id="job-compare-error" class="text-center py-5" style="display: none">
+    <div class="text-danger mb-3">
+      <i class="bi bi-exclamation-triangle fs-1"></i>
+    </div>
+    <h4 class="text-danger">Failed to Load Job Data</h4>
+    <p class="text-muted">
+      There was an error loading the job comparison data. Please try again.
+    </p>
+    <button class="btn btn-primary" id="retry-comparison-btn">
+      <i class="bi bi-arrow-clockwise me-1"></i>Retry
+    </button>
+  </div>
+</div>
