@@ -1,180 +1,342 @@
 <!-- Task Detail View Content -->
-<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
-        <div class="d-flex align-items-center">
-            <h1 class="h2 mb-0">Task Detail</h1>
-        </div>
-        <div class="btn-toolbar mb-2 mb-md-0">
-            <button class="btn btn-outline-primary me-2" id="download-task-details-btn">
-                <i class="bi bi-download"></i>
-                Download Details
-            </button>
-        </div>
-    </div>
+<div
+  class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom"
+>
+  <div class="d-flex align-items-center">
+    <h1 class="h2 mb-0">Task Detail</h1>
+  </div>
+  <div class="btn-toolbar mb-2 mb-md-0">
+    <button class="btn btn-outline-primary me-2" id="download-task-details-btn">
+      <i class="bi bi-download"></i>
+      Download Details
+    </button>
+  </div>
+</div>
 
-    <!-- Task Header -->
-    <div class="task-header-card mb-4">
-        <div class="d-flex align-items-center mb-3">
-            <i class="bi bi-list-task fs-2 me-3 text-primary"></i>
-            <div>
-                <h3 class="mb-1" id="task-detail-title">Task-sample</h3>
-                <div class="text-muted">
-                    <span class="me-3"><strong>TaskID:</strong> <span id="task-detail-id">123456</span></span>
-                    <span class="me-3"><strong>JobID:</strong> <a href="#" id="task-detail-job-link" class="text-primary text-decoration-none">job-sample</a></span>
-                    <span><strong>Created Time:</strong> <span id="task-detail-creation-time">2025-06-23 14:57</span></span>
-                </div>
-            </div>
-        </div>
-        <div class="mb-3">
-            <strong>Repo Name:</strong> <span id="task-detail-repo-name">-</span>
-        </div>
+<!-- Task Header -->
+<div class="task-header-card mb-4">
+  <div class="d-flex align-items-center mb-3">
+    <i class="bi bi-list-task fs-2 me-3 text-primary"></i>
+    <div>
+      <h3 class="mb-1" id="task-detail-title">Task-sample</h3>
+      <div class="text-muted">
+        <span class="me-3"
+          ><strong>TaskID:</strong>
+          <span id="task-detail-id">123456</span></span
+        >
+        <span class="me-3"
+          ><strong>JobID:</strong>
+          <a
+            href="#"
+            id="task-detail-job-link"
+            class="text-primary text-decoration-none"
+            >job-sample</a
+          ></span
+        >
+        <span
+          ><strong>Created Time:</strong>
+          <span id="task-detail-creation-time">2025-06-23 14:57</span></span
+        >
+      </div>
     </div>
+  </div>
+  <div class="mb-3">
+    <strong>Repo Name:</strong> <span id="task-detail-repo-name">-</span>
+  </div>
+</div>
 
-    <!-- Tool Call Summary -->
-    <div class="result-section mb-4">
-        <h4 class="mb-3">Tool Call Summary</h4>
-        <div class="row g-3 mb-4">
-            <div class="col-md-2">
-                <div class="metric-card text-center">
-                    <div class="metric-label">Recommend</div>
-                    <div class="metric-value" id="task-recommend-count">xx</div>
-                </div>
-            </div>
-            <div class="col-md-2">
-                <div class="metric-card text-center">
-                    <div class="metric-label">Predeploy</div>
-                    <div class="metric-value" id="task-predeploy-count">xx</div>
-                </div>
-            </div>
-            <div class="col-md-2">
-                <div class="metric-card text-center">
-                    <div class="metric-label">Deploy</div>
-                    <div class="metric-value" id="task-deploy-count">xx</div>
-                </div>
-            </div>
-            <div class="col-md-2">
-                <div class="metric-card text-center">
-                    <div class="metric-label">Region</div>
-                    <div class="metric-value" id="task-region-count">xx</div>
-                </div>
-            </div>
-            <div class="col-md-2">
-                <div class="metric-card text-center">
-                    <div class="metric-label">Quota</div>
-                    <div class="metric-value" id="task-quota-count">xx</div>
-                </div>
-            </div>
-            <div class="col-md-2">
-                <div class="metric-card text-center">
-                    <div class="metric-label">GetLogs</div>
-                    <div class="metric-value" id="task-getlogs-count">xx</div>
-                </div>
-            </div>
+<!-- Comprehensive Task Details -->
+<div class="task-details-section mb-4">
+  <h4 class="mb-3">
+    <i class="bi bi-info-circle me-2 text-info"></i>
+    Task Details
+  </h4>
+  <div class="row g-3">
+    <div class="col-md-6">
+      <div class="card">
+        <div class="card-header">
+          <h6 class="mb-0">Basic Information</h6>
         </div>
-    </div>
-
-    <!-- AI Integration -->
-    <div class="ai-integration-section mb-4">
-        <h4 class="mb-3">
-            <i class="bi bi-robot me-2 text-info"></i>
-            AI Integration
-        </h4>
-        <div class="row g-3">
-            <div class="col-md-6">
-                <div class="card border-info">
-                    <div class="card-body text-center">
-                        <h5 class="card-title text-info">fillMainParametersJSONWithOpenAI</h5>
-                        <div class="display-6 text-info" id="task-fill-params-count">2</div>
-                    </div>
-                </div>
-            </div>
-            <div class="col-md-6">
-                <div class="card border-info">
-                    <div class="card-body text-center">
-                        <h5 class="card-title text-info">generateUserInputWithOpenAI</h5>
-                        <div class="display-6 text-info" id="task-generate-input-count">5</div>
-                    </div>
-                </div>
-            </div>
-            <div class="col-md-12">
-                <div class="card border-success">
-                    <div class="card-body text-center">
-                        <h5 class="card-title text-success">judgeAzdUpSuccessWithOpenAI</h5>
-                        <div class="display-6 text-success" id="task-judge-success-count">5</div>
-                    </div>
-                </div>
-            </div>
+        <div class="card-body">
+          <table class="table table-sm table-borderless">
+            <tr>
+              <td><strong>Task Type:</strong></td>
+              <td id="task-type">-</td>
+            </tr>
+            <tr>
+              <td><strong>Deploy Type:</strong></td>
+              <td id="task-deploy-type">-</td>
+            </tr>
+            <tr>
+              <td><strong>Computing Type:</strong></td>
+              <td id="task-computing-type">-</td>
+            </tr>
+            <tr>
+              <td><strong>Copilot Model:</strong></td>
+              <td id="task-copilot-model">-</td>
+            </tr>
+            <tr>
+              <td><strong>Command Line:</strong></td>
+              <td id="task-command-line">-</td>
+            </tr>
+            <tr>
+              <td><strong>Success Status:</strong></td>
+              <td id="task-success-status">-</td>
+            </tr>
+          </table>
         </div>
+      </div>
     </div>
-
-    <!-- Deploy Failure Details -->
-    <div class="failure-details-section mb-4">
-        <h4 class="mb-3 text-danger">
-            <i class="bi bi-exclamation-triangle me-2"></i>
-            Deploy Failure Details
-        </h4>
-        <div class="card border-danger">
-            <div class="card-body">
-                <div class="table-responsive">
-                    <table class="table table-striped" id="failure-details-table">
-                        <thead>
-                            <tr>
-                                <th>IterationNum</th>
-                                <th>Time</th>
-                                <th>Error Category</th>
-                                <th>Error Description</th>
-                                <th>Error Detail</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <!-- Failure details will be populated here -->
-                        </tbody>
-                    </table>
-                </div>
-            </div>
+    <div class="col-md-6">
+      <div class="card">
+        <div class="card-header">
+          <h6 class="mb-0">Environment & Configuration</h6>
         </div>
-    </div>
-
-    <!-- Copilot Response per Iteration -->
-    <div class="copilot-response-section">
-        <h4 class="mb-3 text-primary">
-            <i class="bi bi-chat-dots me-2"></i>
-            Copilot Response per Iteration
-        </h4>
-        <div class="card border-primary">
-            <div class="card-body">
-                <div class="table-responsive">
-                    <table class="table table-striped" id="copilot-response-table">
-                        <thead>
-                            <tr>
-                                <th style="width: 15%;">Time</th>
-                                <th style="width: 25%;">Input Command</th>
-                                <th style="width: 15%;">Tool Call</th>
-                                <th style="width: 45%;">Copilot Response</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <!-- Copilot responses will be populated here -->
-                        </tbody>
-                    </table>
-                </div>
-            </div>
+        <div class="card-body">
+          <table class="table table-sm table-borderless">
+            <tr>
+              <td><strong>VS Code Version:</strong></td>
+              <td id="task-vscode-version">-</td>
+            </tr>
+            <tr>
+              <td><strong>Extension Versions:</strong></td>
+              <td id="task-extension-versions">-</td>
+            </tr>
+            <tr>
+              <td><strong>Use Terraform:</strong></td>
+              <td id="task-use-terraform">-</td>
+            </tr>
+            <tr>
+              <td><strong>Is Throttled:</strong></td>
+              <td id="task-is-throttled">-</td>
+            </tr>
+            <tr>
+              <td><strong>Use Bicep Schemas:</strong></td>
+              <td id="task-use-bicep-schemas">-</td>
+            </tr>
+            <tr>
+              <td><strong>Use Azure Best Practices:</strong></td>
+              <td id="task-use-best-practices">-</td>
+            </tr>
+          </table>
         </div>
+      </div>
     </div>
+  </div>
+</div>
 
-    <!-- Loading State -->
-    <div id="task-detail-loading" class="d-none text-center py-5">
-        <div class="spinner-border text-primary" role="status">
-            <span class="visually-hidden">Loading...</span>
+<!-- Task Statistics -->
+<div class="task-stats-section mb-4">
+  <h4 class="mb-3">
+    <i class="bi bi-graph-up me-2 text-success"></i>
+    Task Statistics
+  </h4>
+  <div class="row g-3">
+    <div class="col-md-2">
+      <div class="metric-card text-center">
+        <div class="metric-label">Iterations</div>
+        <div class="metric-value text-primary" id="task-iterations">-</div>
+      </div>
+    </div>
+    <div class="col-md-2">
+      <div class="metric-card text-center">
+        <div class="metric-label">File Edits</div>
+        <div class="metric-value text-info" id="task-file-edits-num">-</div>
+      </div>
+    </div>
+    <div class="col-md-2">
+      <div class="metric-card text-center">
+        <div class="metric-label">AI Integration</div>
+        <div class="metric-value text-warning" id="task-ai-integration">-</div>
+      </div>
+    </div>
+    <div class="col-md-6">
+      <div class="card">
+        <div class="card-header">
+          <h6 class="mb-0">File Edits List</h6>
         </div>
-        <div class="mt-3">Loading task details...</div>
+        <div class="card-body">
+          <div id="task-file-edits-list" class="small">
+            <!-- File edits list will be populated here -->
+          </div>
+        </div>
+      </div>
     </div>
+  </div>
+</div>
 
-    <!-- Error State -->
-    <div id="task-detail-error" class="d-none alert alert-danger" role="alert">
-        <h4 class="alert-heading">Error Loading Task</h4>
-        <p id="task-detail-error-message">Unable to load task details. Please try again later.</p>
-        <hr>
-        <button class="btn btn-outline-danger" id="retry-task-detail-btn">
-            <i class="bi bi-arrow-clockwise me-2"></i>            Retry
-        </button>
+<!-- Initial Prompt -->
+<div class="initial-prompt-section mb-4">
+  <h4 class="mb-3">
+    <i class="bi bi-chat-square-text me-2 text-primary"></i>
+    Initial Prompt
+  </h4>
+  <div class="card">
+    <div class="card-body">
+      <div
+        class="form-control"
+        style="min-height: 100px; background-color: #f8f9fa"
+        id="task-initial-prompt"
+        readonly
+      >
+        <!-- Initial prompt will be populated here -->
+      </div>
     </div>
+  </div>
+</div>
+
+<!-- Tool Call Summary -->
+<div class="result-section mb-4">
+  <h4 class="mb-3">Tool Call Summary</h4>
+  <div class="row g-3 mb-4">
+    <div class="col-md-2">
+      <div class="metric-card text-center">
+        <div class="metric-label">Recommend</div>
+        <div class="metric-value" id="task-recommend-count">xx</div>
+      </div>
+    </div>
+    <div class="col-md-2">
+      <div class="metric-card text-center">
+        <div class="metric-label">Predeploy</div>
+        <div class="metric-value" id="task-predeploy-count">xx</div>
+      </div>
+    </div>
+    <div class="col-md-2">
+      <div class="metric-card text-center">
+        <div class="metric-label">Deploy</div>
+        <div class="metric-value" id="task-deploy-count">xx</div>
+      </div>
+    </div>
+    <div class="col-md-2">
+      <div class="metric-card text-center">
+        <div class="metric-label">Region</div>
+        <div class="metric-value" id="task-region-count">xx</div>
+      </div>
+    </div>
+    <div class="col-md-2">
+      <div class="metric-card text-center">
+        <div class="metric-label">Quota</div>
+        <div class="metric-value" id="task-quota-count">xx</div>
+      </div>
+    </div>
+    <div class="col-md-2">
+      <div class="metric-card text-center">
+        <div class="metric-label">GetLogs</div>
+        <div class="metric-value" id="task-getlogs-count">xx</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- AI Integration -->
+<div class="ai-integration-section mb-4">
+  <h4 class="mb-3">
+    <i class="bi bi-robot me-2 text-info"></i>
+    AI Integration
+  </h4>
+  <div class="row g-3">
+    <div class="col-md-6">
+      <div class="card border-info">
+        <div class="card-body text-center">
+          <h5 class="card-title text-info">fillMainParametersJSONWithOpenAI</h5>
+          <div class="display-6 text-info" id="task-fill-params-count">2</div>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-6">
+      <div class="card border-info">
+        <div class="card-body text-center">
+          <h5 class="card-title text-info">generateUserInputWithOpenAI</h5>
+          <div class="display-6 text-info" id="task-generate-input-count">
+            5
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-12">
+      <div class="card border-success">
+        <div class="card-body text-center">
+          <h5 class="card-title text-success">judgeAzdUpSuccessWithOpenAI</h5>
+          <div class="display-6 text-success" id="task-judge-success-count">
+            5
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Deploy Failure Details -->
+<div class="failure-details-section mb-4">
+  <h4 class="mb-3 text-danger">
+    <i class="bi bi-exclamation-triangle me-2"></i>
+    Deploy Failure Details
+  </h4>
+  <div class="card border-danger">
+    <div class="card-body">
+      <div class="table-responsive">
+        <table class="table table-striped" id="failure-details-table">
+          <thead>
+            <tr>
+              <th>IterationNum</th>
+              <th>Time</th>
+              <th>Error Category</th>
+              <th>Error Description</th>
+              <th>Error Detail</th>
+            </tr>
+          </thead>
+          <tbody>
+            <!-- Failure details will be populated here -->
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Copilot Response per Iteration -->
+<div class="copilot-response-section">
+  <h4 class="mb-3 text-primary">
+    <i class="bi bi-chat-dots me-2"></i>
+    Copilot Response per Iteration
+  </h4>
+  <div class="card border-primary">
+    <div class="card-body">
+      <div class="table-responsive">
+        <table class="table table-striped" id="copilot-response-table">
+          <thead>
+            <tr>
+              <th style="width: 15%">Time</th>
+              <th style="width: 25%">Input Command</th>
+              <th style="width: 15%">Tool Call</th>
+              <th style="width: 45%">Copilot Response</th>
+            </tr>
+          </thead>
+          <tbody>
+            <!-- Copilot responses will be populated here -->
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Loading State -->
+<div id="task-detail-loading" class="d-none text-center py-5">
+  <div class="spinner-border text-primary" role="status">
+    <span class="visually-hidden">Loading...</span>
+  </div>
+  <div class="mt-3">Loading task details...</div>
+</div>
+
+<!-- Error State -->
+<div id="task-detail-error" class="d-none alert alert-danger" role="alert">
+  <h4 class="alert-heading">Error Loading Task</h4>
+  <p id="task-detail-error-message">
+    Unable to load task details. Please try again later.
+  </p>
+  <hr />
+  <button class="btn btn-outline-danger" id="retry-task-detail-btn">
+    <i class="bi bi-arrow-clockwise me-2"></i> Retry
+  </button>
+</div>

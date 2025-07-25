@@ -140,7 +140,7 @@ class JobsView {  constructor() {
   populateJobFilters(jobs) {
     // Extract unique values for each filter
     const toolTypes = [...new Set(jobs.map(job => {
-      const jobType = job.TestJobID.startsWith("xiaofan") ? "MCP" : job.Tool;
+      const jobType = job.Tool;
       return jobType;
     }).filter(Boolean))].sort();
 
@@ -173,7 +173,7 @@ class JobsView {  constructor() {
     // Apply ToolType filter
     if (this.currentToolTypeFilter !== "all") {
       filteredJobs = filteredJobs.filter((job) => {
-        const jobType = job.TestJobID.startsWith("xiaofan") ? "MCP" : job.Tool;
+        const jobType = job.Tool;
         return jobType === this.currentToolTypeFilter;
       });
     }
@@ -213,7 +213,7 @@ class JobsView {  constructor() {
       
       filteredJobs = filteredJobs.filter((job) => {
         // Search in multiple fields including ID and new columns
-        const jobType = job.TestJobID.startsWith("xiaofan") ? "MCP" : job.Tool;
+        const jobType = job.Tool;
         const searchFields = [
           job.TestJobID?.toString() || "",
           formatDateTime(job.CreatedTime || job.creationTime) || "",
@@ -368,7 +368,7 @@ class JobsView {  constructor() {
     jobs.forEach((job) => {
       const row = document.createElement("tr");
       row.className = "fade-in";
-      const jobType = job.TestJobID.startsWith("xiaofan")? "MCP" : job.Tool;
+      const jobType = job.Tool;
       const isSelected = this.selectedJobIds.has(job.TestJobID);
       
       row.innerHTML = `

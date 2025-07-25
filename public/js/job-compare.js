@@ -159,8 +159,16 @@ class JobCompare {
           // Try to get tasks data, but don't fail if it's not available
           try {
             const tasksRawData = await tasksResponse.json();
-            // Extract tasks data from the response
-            tasksData = tasksRawData.data || tasksRawData.tasks || tasksRawData;
+            // Extract tasks data from the response - handle API format {name: "PrimaryResult", data: [...]}
+            if (
+              tasksRawData.name === "PrimaryResult" &&
+              Array.isArray(tasksRawData.data)
+            ) {
+              tasksData = tasksRawData.data;
+            } else {
+              tasksData =
+                tasksRawData.data || tasksRawData.tasks || tasksRawData;
+            }
           } catch (taskError) {
             console.warn(
               `Failed to parse tasks data for job ${jobId}:`,
@@ -424,17 +432,19 @@ class JobCompare {
       listElement.innerHTML = badgesHtml;
     }
   }
-
   generateComparison() {
+    console.log("Generating comparison data...");
     this.comparisonData = {
       basic: this.generateBasicComparison(),
-      tasks: this.generateTaskComparison(),
-      errors: this.generateErrorComparison(),
+      config: this.generateConfigComparison(),
+      results: this.generateResultsComparison(),
+      dimensions: this.generateDimensionComparison(),
     };
 
     this.renderBasicComparison();
-    this.renderTaskComparison();
-    this.renderErrorComparison();
+    this.renderSameConfigSection();
+    this.renderConfigResultsSection();
+    this.renderDimensionTables();
   }
   generateBasicComparison() {
     const properties = [
@@ -447,8 +457,6 @@ class JobCompare {
       { key: "SuccessTasks", label: "Success Tasks" },
       { key: "FailedTasks", label: "Failed Tasks" },
       { key: "SuccessRate", label: "Success Rate" },
-      { key: "UseMCP", label: "Use MCP" },
-      { key: "UseTerraform", label: "Use Terraform" },
       { key: "AvgSuccessIteration", label: "Avg Success Iteration" },
       { key: "AvgInfraChanges", label: "Avg Infra Changes" },
       { key: "RecommendCalls", label: "Recommend Calls" },
@@ -456,6 +464,7 @@ class JobCompare {
       { key: "DeployCalls", label: "Deploy Calls" },
       { key: "RegionCalls", label: "Region Calls" },
       { key: "QuotaCalls", label: "Quota Calls" },
+      { key: "GetLogsCalls", label: "Get Logs Calls" },
       { key: "AIIntegration", label: "AI Integration" },
     ];
 
@@ -467,22 +476,258 @@ class JobCompare {
     }));
   }
 
-  generateTaskComparison() {
-    return this.jobsData.map((job) => {
-      const jobId = job.TestJobID || job.JobID || job.id || "Unknown";
-      const stats = job.computedStats || {
-        total: 0,
-        completed: 0,
-        failed: 0,
-        pending: 0,
-        running: 0,
-      };
+  generateConfigComparison() {
+    // Configuration comparison for the 5 dimensions
+    const configProperties = [
+      { key: "Tool", label: "Tool" },
+      { key: "CopilotModel", label: "Copilot Model" },
+      { key: "DeployType", label: "Deploy Type" },
+      { key: "IacType", label: "IaC Type" },
+      { key: "ComputingType", label: "Computing Type" },
+    ];
 
-      return {
-        jobId: jobId,
-        taskStats: stats,
-      };
+    return configProperties.map((prop) => ({
+      property: prop.label,
+      values: this.jobsData.map((job) =>
+        this.formatPropertyValue(job, prop.key)
+      ),
+    }));
+  }
+  renderSameConfigSection() {
+    const container = document.getElementById("same-config-content");
+    if (!container) return;
+
+    const configData = this.comparisonData.config;
+
+    // Check which configurations are the same across all jobs
+    const sameConfigs = [];
+    configData.forEach((item) => {
+      const uniqueValues = [...new Set(item.values.filter((v) => v !== "N/A"))];
+      if (uniqueValues.length <= 1) {
+        sameConfigs.push({
+          property: item.property,
+          value: uniqueValues[0] || "N/A",
+        });
+      }
     });
+
+    if (sameConfigs.length > 0) {
+      const sameConfigHtml = `
+        <div class="same-config-display">
+          <p class="mb-0 text-success">
+            ${sameConfigs.map((config) => `${config.value}`).join(", ")}
+          </p>
+        </div>
+      `;
+      container.innerHTML = sameConfigHtml;
+    } else {
+      container.innerHTML =
+        '<p class="text-muted mb-0">No configurations are the same across all jobs.</p>';
+    }
+  }
+
+  renderConfigResultsSection() {
+    const container = document.getElementById("config-results-table-body");
+    const tableContainer = document.getElementById("config-results-section");
+    if (!container || !tableContainer) return;
+
+    const configData = this.comparisonData.config;
+    const resultsData = this.comparisonData.results;
+
+    // Get different configurations
+    const differentConfigs = [];
+    configData.forEach((item) => {
+      const uniqueValues = [...new Set(item.values.filter((v) => v !== "N/A"))];
+      if (uniqueValues.length > 1) {
+        differentConfigs.push(item);
+      }
+    });
+
+    // Update job headers
+    this.jobsData.forEach((job, index) => {
+      const header = document.getElementById(`job-header-config-${index}`);
+      if (header) {
+        header.textContent =
+          job.TestJobID || job.JobID || job.id || `Job ${index + 1}`;
+        header.style.display = "table-cell";
+      }
+    });
+
+    // Hide unused headers
+    for (let i = this.jobsData.length; i < 5; i++) {
+      const header = document.getElementById(`job-header-config-${i}`);
+      if (header) {
+        header.style.display = "none";
+      }
+    }
+
+    // Generate table rows for different configs and results
+    let rowsHtml = "";
+
+    // Add different configuration rows
+    differentConfigs.forEach((item) => {
+      rowsHtml += `
+        <tr class="table-warning">
+          <td class="fw-semibold">${item.property}</td>
+          ${item.values.map((value) => `<td>${value}</td>`).join("")}
+          ${Array(5 - item.values.length)
+            .fill('<td style="display: none;"></td>')
+            .join("")}
+        </tr>
+      `;
+    });
+
+    // Add results rows
+    const resultProperties = [
+      { key: "successRate", label: "Success Rate" },
+      { key: "avgIteration", label: "Avg Interaction with Copilot" },
+      { key: "avgInfraChanges", label: "Avg IaC Edits" },
+    ];
+
+    resultProperties.forEach((prop) => {
+      rowsHtml += `
+        <tr>
+          <td class="fw-semibold">${prop.label}</td>
+          ${resultsData.summary
+            .map((job) => {
+              let value = job[prop.key];
+              if (
+                prop.key === "avgIteration" ||
+                prop.key === "avgInfraChanges"
+              ) {
+                value = typeof value === "number" ? value.toFixed(1) : value;
+              }
+              return `<td>${value}</td>`;
+            })
+            .join("")}
+          ${Array(5 - resultsData.summary.length)
+            .fill('<td style="display: none;"></td>')
+            .join("")}
+        </tr>
+      `;
+    });
+
+    container.innerHTML = rowsHtml;
+  }
+
+  generateResultsComparison() {
+    // Total results comparison
+    return {
+      summary: this.jobsData.map((job) => {
+        const jobId = job.TestJobID || job.JobID || job.id || "Unknown";
+        const stats = job.computedStats || {};
+
+        return {
+          jobId: jobId,
+          total: job.TaskNum || 0,
+          success: job.SuccessTasks || 0,
+          failed: job.FailedTasks || 0,
+          successRate:
+            job.SuccessRate +
+              " (" +
+              job.SuccessTasks +
+              "/" +
+              job.TaskNum +
+              ")" || "0%",
+          avgIteration: job.AvgSuccessIteration || 0,
+          avgInfraChanges: job.AvgInfraChanges || 0,
+          aiIntegration: job.AIIntegration || 0,
+        };
+      }),
+      detailed: this.generateTaskComparison(),
+      errors: this.generateErrorComparison(),
+    };
+  }
+
+  renderResultsComparison() {
+    const container = document.getElementById("results-comparison-content");
+    if (!container) return;
+
+    const resultsData = this.comparisonData.results;
+
+    const resultsHtml = `
+      <div class="row">
+        <!-- Summary Cards -->
+        <div class="col-12 mb-4">
+          <div class="row">
+            ${resultsData.summary
+              .map(
+                (job) => `
+              <div class="col-md-6 col-lg-4 mb-3">
+                <div class="card">
+                  <div class="card-header">
+                    <h6 class="mb-0">${job.jobId}</h6>
+                  </div>
+                  <div class="card-body">
+                    <div class="row text-center">
+                      <div class="col-4">
+                        <div class="text-primary">
+                          <div class="fs-4 fw-bold">${job.total}</div>
+                          <small>Total Tasks</small>
+                        </div>
+                      </div>
+                      <div class="col-4">
+                        <div class="text-success">
+                          <div class="fs-4 fw-bold">${job.success}</div>
+                          <small>Success</small>
+                        </div>
+                      </div>
+                      <div class="col-4">
+                        <div class="text-danger">
+                          <div class="fs-4 fw-bold">${job.failed}</div>
+                          <small>Failed</small>
+                        </div>
+                      </div>
+                    </div>
+                    <div class="mt-3">
+                      <div class="progress mb-2" style="height: 8px;">
+                        <div class="progress-bar bg-success" style="width: ${
+                          (job.success / job.total) * 100
+                        }%"></div>
+                        <div class="progress-bar bg-danger" style="width: ${
+                          (job.failed / job.total) * 100
+                        }%"></div>
+                      </div>
+                      <div class="text-center">
+                        <span class="badge bg-primary">${job.successRate}</span>
+                      </div>
+                    </div>
+                    <hr>
+                    <div class="small">
+                      <div>Avg Iterations: <strong>${
+                        job.avgIteration
+                      }</strong></div>
+                      <div>Avg Infra Changes: <strong>${
+                        job.avgInfraChanges
+                      }</strong></div>
+                      <div>AI Integration: <strong>${
+                        job.aiIntegration
+                      }%</strong></div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            `
+              )
+              .join("")}
+          </div>
+        </div>
+        
+        <!-- Detailed Task Status (reuse existing task comparison) -->
+        <div class="col-12">
+          <div class="card">
+            <div class="card-header">
+              <h5 class="mb-0">Detailed Task Analysis</h5>
+            </div>
+            <div class="card-body" id="detailed-task-comparison-content">
+              ${this.renderDetailedTaskComparison()}
+            </div>
+          </div>
+        </div>
+      </div>
+    `;
+
+    container.innerHTML = resultsHtml;
   }
 
   generateErrorComparison() {
@@ -496,121 +741,6 @@ class JobCompare {
         totalErrors: stats.failed || 0,
       };
     });
-  }
-
-  renderBasicComparison() {
-    const tableBody = document.getElementById("comparison-table-body");
-    if (!tableBody) return;
-
-    // Update table headers
-    this.jobsData.forEach((job, index) => {
-      const header = document.getElementById(`job-header-${index}`);
-      if (header) {
-        header.textContent = job.JobID;
-        header.style.display = "";
-      }
-    });
-
-    // Hide unused headers
-    for (let i = this.jobsData.length; i < 5; i++) {
-      const header = document.getElementById(`job-header-${i}`);
-      if (header) {
-        header.style.display = "none";
-      }
-    }
-
-    // Generate comparison rows
-    const rowsHtml = this.comparisonData.basic
-      .map((item) => {
-        const cellsHtml = item.values
-          .map((value, index) => {
-            const cellClass = this.getCellClass(
-              item.property,
-              value,
-              item.values
-            );
-            return `<td class="${cellClass}">${value}</td>`;
-          })
-          .join("");
-
-        return `
-        <tr>
-          <td class="fw-semibold">${item.property}</td>
-          ${cellsHtml}
-        </tr>
-      `;
-      })
-      .join("");
-
-    tableBody.innerHTML = rowsHtml;
-  }
-
-  renderTaskComparison() {
-    const container = document.getElementById("task-comparison-content");
-    if (!container) return;
-
-    const chartsHtml = this.comparisonData.tasks
-      .map((job) => {
-        const { total, completed, failed, pending } = job.taskStats;
-        const successRate =
-          total > 0 ? ((completed / total) * 100).toFixed(1) : 0;
-
-        return `
-        <div class="col-md-6 mb-4">
-          <div class="card">
-            <div class="card-header">
-              <h6 class="mb-0">${job.jobId} - Task Status</h6>
-            </div>
-            <div class="card-body">
-              <div class="row text-center mb-3">
-                <div class="col-3">
-                  <div class="text-success">
-                    <i class="bi bi-check-circle fs-4"></i>
-                    <div class="fw-bold">${completed}</div>
-                    <small>Completed</small>
-                  </div>
-                </div>
-                <div class="col-3">
-                  <div class="text-danger">
-                    <i class="bi bi-x-circle fs-4"></i>
-                    <div class="fw-bold">${failed}</div>
-                    <small>Failed</small>
-                  </div>
-                </div>
-                <div class="col-3">
-                  <div class="text-warning">
-                    <i class="bi bi-clock fs-4"></i>
-                    <div class="fw-bold">${pending}</div>
-                    <small>Pending</small>
-                  </div>
-                </div>
-                <div class="col-3">
-                  <div class="text-primary">
-                    <i class="bi bi-graph-up fs-4"></i>
-                    <div class="fw-bold">${successRate}%</div>
-                    <small>Success</small>
-                  </div>
-                </div>
-              </div>
-              <div class="progress" style="height: 10px;">
-                <div class="progress-bar bg-success" style="width: ${
-                  (completed / total) * 100
-                }%"></div>
-                <div class="progress-bar bg-danger" style="width: ${
-                  (failed / total) * 100
-                }%"></div>
-                <div class="progress-bar bg-warning" style="width: ${
-                  (pending / total) * 100
-                }%"></div>
-              </div>
-            </div>
-          </div>
-        </div>
-      `;
-      })
-      .join("");
-
-    container.innerHTML = `<div class="row">${chartsHtml}</div>`;
   }
 
   renderErrorComparison() {
@@ -659,6 +789,423 @@ class JobCompare {
 
     container.innerHTML = `<div class="row">${errorChartsHtml}</div>`;
   }
+  generateDimensionComparison() {
+    // More dimension results: repoType, AppPattern, Language
+    const dimensionData = {};
+
+    // Aggregate data by dimensions from tasks
+    this.jobsData.forEach((job) => {
+      const jobId = job.TestJobID || job.JobID || job.id || "Unknown";
+      const tasks = job.tasks || [];
+
+      // Initialize job dimension data
+      dimensionData[jobId] = {
+        repoTypes: {},
+        appPatterns: {},
+        languages: {},
+        copilotModels: {},
+      };
+
+      tasks.forEach((task) => {
+        // Repository Types
+        if (task.RepoType) {
+          dimensionData[jobId].repoTypes[task.RepoType] =
+            (dimensionData[jobId].repoTypes[task.RepoType] || 0) + 1;
+        }
+
+        // App Patterns
+        if (task.AppPattern) {
+          dimensionData[jobId].appPatterns[task.AppPattern] =
+            (dimensionData[jobId].appPatterns[task.AppPattern] || 0) + 1;
+        }
+
+        // Languages (array handling)
+        if (task.Languages && Array.isArray(task.Languages)) {
+          task.Languages.forEach((lang) => {
+            dimensionData[jobId].languages[lang] =
+              (dimensionData[jobId].languages[lang] || 0) + 1;
+          });
+        }
+
+        // Copilot Models
+        if (task.CopilotModel) {
+          dimensionData[jobId].copilotModels[task.CopilotModel] =
+            (dimensionData[jobId].copilotModels[task.CopilotModel] || 0) + 1;
+        }
+      });
+    });
+
+    return dimensionData;
+  }
+  renderDimensionTables() {
+    const dimensionData = this.comparisonData.dimensions;
+
+    // Get all unique dimensions across all jobs for each table
+    const allRepoTypes = new Set();
+    const allAppPatterns = new Set();
+    const allLanguages = new Set();
+
+    Object.values(dimensionData).forEach((jobData) => {
+      Object.keys(jobData.repoTypes || {}).forEach((type) =>
+        allRepoTypes.add(type)
+      );
+      Object.keys(jobData.appPatterns || {}).forEach((pattern) =>
+        allAppPatterns.add(pattern)
+      );
+      Object.keys(jobData.languages || {}).forEach((lang) =>
+        allLanguages.add(lang)
+      );
+    });
+
+    const repoTypeList = Array.from(allRepoTypes).sort();
+    const appPatternList = Array.from(allAppPatterns).sort();
+    const languageList = Array.from(allLanguages).sort();
+
+    // Update table headers
+    this.updateTableHeader("repo-type-table-header", repoTypeList);
+    this.updateTableHeader("app-pattern-table-header", appPatternList);
+    this.updateTableHeader("language-table-header", languageList);
+
+    // Render tables with dynamic data
+    this.renderDimensionTable(
+      "repo-type-table-body",
+      dimensionData,
+      "repoTypes",
+      repoTypeList
+    );
+
+    this.renderDimensionTable(
+      "app-pattern-table-body",
+      dimensionData,
+      "appPatterns",
+      appPatternList
+    );
+
+    this.renderDimensionTable(
+      "language-table-body",
+      dimensionData,
+      "languages",
+      languageList
+    );
+  }
+
+  updateTableHeader(headerId, dimensionList) {
+    const header = document.getElementById(headerId);
+    if (!header) return;
+
+    // Keep the first column (Job/Language) and add dynamic columns
+    const headerHtml =
+      `<th>Job/Dimension</th>` +
+      dimensionList.map((dim) => `<th>${dim}</th>`).join("");
+
+    header.innerHTML = headerHtml;
+  }
+  renderDimensionTable(
+    tableBodyId,
+    dimensionData,
+    dimensionType,
+    dimensionList
+  ) {
+    const tableBody = document.getElementById(tableBodyId);
+    if (!tableBody) return;
+
+    let rowsHtml = "";
+
+    Object.entries(dimensionData).forEach(([jobId, jobData]) => {
+      const data = jobData[dimensionType] || {};
+
+      // Create success rate row for this job
+      const cells = dimensionList
+        .map((dimension) => {
+          const successRate = this.getSuccessRateForDimension(
+            jobId,
+            dimensionType,
+            dimension
+          );
+
+          // Only show additional metrics if there's actual data (not N/A)
+          if (successRate === "N/A") {
+            return `<td class="text-muted">N/A</td>`;
+          }
+
+          const avgInteraction = this.getAvgInteraction(
+            jobId,
+            dimensionType,
+            dimension
+          );
+          const avgIaCEdits = this.getAvgIaCEdits(
+            jobId,
+            dimensionType,
+            dimension
+          );
+
+          let cellContent = `<div>Success Rate: ${successRate}</div>`;
+          if (avgInteraction !== "N/A") {
+            cellContent += `<br/><small class="text-muted">Avg interaction: ${avgInteraction}</small>`;
+          }
+          if (avgIaCEdits !== "N/A") {
+            cellContent += `<br/><small class="text-muted">Avg IaC edits: ${avgIaCEdits}</small>`;
+          }
+
+          return `<td>${cellContent}</td>`;
+        })
+        .join("");
+
+      rowsHtml += `<tr><td class="fw-semibold">${jobId}(${this.getJobConfig(
+        jobId
+      )})</td>${cells}</tr>`;
+    });
+
+    tableBody.innerHTML = rowsHtml;
+  }
+  getJobConfig(jobId) {
+    const job = this.jobsData.find(
+      (j) => (j.TestJobID || j.JobID || j.id) === jobId
+    );
+    if (!job) return "";
+
+    // Get all 5 configuration dimensions
+    const allConfigs = {
+      Tool: job.Tool || "N/A",
+      CopilotModel: job.CopilotModel || "N/A",
+      DeployType: job.DeployType || "N/A",
+      IacType: job.IacType || "N/A",
+      ComputingType: job.ComputingType || "N/A",
+    };
+
+    // Check which configs are different across all jobs
+    const configData = this.comparisonData.config || [];
+    const differentConfigs = [];
+
+    configData.forEach((item) => {
+      const uniqueValues = [...new Set(item.values.filter((v) => v !== "N/A"))];
+      if (uniqueValues.length > 1) {
+        // This config is different across jobs - find matching config key
+        const property = item.property;
+        let configKey = null;
+
+        if (property === "Tool") configKey = "Tool";
+        else if (property === "Copilot Model") configKey = "CopilotModel";
+        else if (property === "Deploy Type") configKey = "DeployType";
+        else if (property === "IaC Type") configKey = "IacType";
+        else if (property === "Computing Type") configKey = "ComputingType";
+
+        if (configKey && allConfigs[configKey] !== "N/A") {
+          differentConfigs.push(allConfigs[configKey]);
+        }
+      }
+    });
+
+    return differentConfigs.length > 0 ? differentConfigs.join(",") : "";
+  }
+
+  getSuccessRateForDimension(jobId, dimensionType, dimension) {
+    const job = this.jobsData.find(
+      (j) => (j.TestJobID || j.JobID || j.id) === jobId
+    );
+    if (!job || !job.tasks || job.tasks.length === 0) {
+      return "N/A"; // No task data available
+    }
+
+    let total = 0;
+    let successful = 0;
+
+    job.tasks.forEach((task) => {
+      let matches = false;
+
+      if (dimensionType === "repoTypes" && task.RepoType === dimension) {
+        matches = true;
+      } else if (
+        dimensionType === "appPatterns" &&
+        task.AppPattern === dimension
+      ) {
+        matches = true;
+      } else if (
+        dimensionType === "languages" &&
+        task.Languages &&
+        Array.isArray(task.Languages) &&
+        task.Languages.includes(dimension)
+      ) {
+        matches = true;
+      }
+
+      if (matches) {
+        total++;
+        if (task.IsSuccessful === true) {
+          successful++;
+        }
+      }
+    });
+
+    if (total === 0) {
+      return "N/A"; // No tasks match this dimension combination
+    }
+
+    const rate = ((successful / total) * 100).toFixed(0);
+    return `${rate}%(${successful}/${total})`;
+  }
+  getAvgInteraction(jobId, dimensionType, dimension) {
+    const job = this.jobsData.find(
+      (j) => (j.TestJobID || j.JobID || j.id) === jobId
+    );
+    if (!job || !job.tasks || job.tasks.length === 0) {
+      return "N/A";
+    }
+
+    let totalIterations = 0;
+    let count = 0;
+
+    job.tasks.forEach((task) => {
+      let matches = false;
+
+      if (dimensionType === "repoTypes" && task.RepoType === dimension) {
+        matches = true;
+      } else if (
+        dimensionType === "appPatterns" &&
+        task.AppPattern === dimension
+      ) {
+        matches = true;
+      } else if (
+        dimensionType === "languages" &&
+        task.Languages &&
+        Array.isArray(task.Languages) &&
+        task.Languages.includes(dimension)
+      ) {
+        matches = true;
+      }
+
+      if (
+        matches &&
+        typeof task.Iterations === "number" &&
+        task.Iterations > 0
+      ) {
+        totalIterations += task.Iterations;
+        count++;
+      }
+    });
+
+    return count > 0 ? (totalIterations / count).toFixed(1) : "N/A";
+  }
+  getAvgIaCEdits(jobId, dimensionType, dimension) {
+    const job = this.jobsData.find(
+      (j) => (j.TestJobID || j.JobID || j.id) === jobId
+    );
+    if (!job || !job.tasks || job.tasks.length === 0) {
+      return "N/A";
+    }
+
+    let totalEdits = 0;
+    let count = 0;
+
+    job.tasks.forEach((task) => {
+      let matches = false;
+
+      if (dimensionType === "repoTypes" && task.RepoType === dimension) {
+        matches = true;
+      } else if (
+        dimensionType === "appPatterns" &&
+        task.AppPattern === dimension
+      ) {
+        matches = true;
+      } else if (
+        dimensionType === "languages" &&
+        task.Languages &&
+        Array.isArray(task.Languages) &&
+        task.Languages.includes(dimension)
+      ) {
+        matches = true;
+      }
+
+      if (
+        matches &&
+        typeof task.FileEditsNum === "number" &&
+        task.FileEditsNum >= 0
+      ) {
+        totalEdits += task.FileEditsNum;
+        count++;
+      }
+    });
+
+    return count > 0 ? (totalEdits / count).toFixed(1) : "N/A";
+  }
+  renderDetailedTaskComparison() {
+    const taskData = this.comparisonData.results.detailed;
+
+    return taskData
+      .map((job) => {
+        const { total, completed, failed, pending, running } = job.taskStats;
+        const successRate =
+          total > 0 ? ((completed / total) * 100).toFixed(0) : 0;
+        const successRateDisplay =
+          total > 0 ? `${successRate}%(${completed}/${total})` : "N/A";
+
+        return `
+        <div class="mb-3">
+          <h6>${job.jobId}</h6>
+          <div class="row text-center">
+            <div class="col-2">
+              <div class="text-success">
+                <i class="bi bi-check-circle"></i>
+                <div class="fw-bold">${completed}</div>
+                <small>Completed</small>
+              </div>
+            </div>
+            <div class="col-2">
+              <div class="text-danger">
+                <i class="bi bi-x-circle"></i>
+                <div class="fw-bold">${failed}</div>
+                <small>Failed</small>
+              </div>
+            </div>
+            <div class="col-2">
+              <div class="text-warning">
+                <i class="bi bi-clock"></i>
+                <div class="fw-bold">${pending}</div>
+                <small>Pending</small>
+              </div>
+            </div>
+            <div class="col-2">
+              <div class="text-info">
+                <i class="bi bi-play-circle"></i>
+                <div class="fw-bold">${running}</div>
+                <small>Running</small>
+              </div>
+            </div>
+            <div class="col-2">
+              <div class="text-primary">
+                <i class="bi bi-graph-up"></i>
+                <div class="fw-bold">${successRateDisplay}</div>
+                <small>Success Rate</small>
+              </div>
+            </div>
+            <div class="col-2">
+              <div class="text-dark">
+                <i class="bi bi-list-check"></i>
+                <div class="fw-bold">${total}</div>
+                <small>Total</small>
+              </div>
+            </div>
+          </div>
+          <div class="progress mt-2" style="height: 6px;">
+            <div class="progress-bar bg-success" style="width: ${
+              (completed / total) * 100
+            }%"></div>
+            <div class="progress-bar bg-danger" style="width: ${
+              (failed / total) * 100
+            }%"></div>
+            <div class="progress-bar bg-warning" style="width: ${
+              (pending / total) * 100
+            }%"></div>
+            <div class="progress-bar bg-info" style="width: ${
+              (running / total) * 100
+            }%"></div>
+          </div>
+        </div>
+      `;
+      })
+      .join("");
+  }
+
   formatPropertyValue(job, key) {
     // Handle nested properties like "computedStats.total"
     let value;
@@ -676,8 +1223,14 @@ class JobCompare {
       case "CreatedTime":
         return value ? formatDateTime(value) : "N/A";
       case "SuccessRate":
-        // SuccessRate from API is already formatted as "59.4%"
-        return value || "N/A";
+        // Calculate success rate in format like "50%(5/10)"
+        const successTasks = job.SuccessTasks || 0;
+        const totalTasks = job.TaskNum || 0;
+        if (totalTasks === 0) {
+          return "N/A";
+        }
+        const rate = ((successTasks / totalTasks) * 100).toFixed(0);
+        return `${rate}%(${successTasks}/${totalTasks})`;
       case "UseMCP":
       case "UseTerraform":
         // These are numbers representing counts
@@ -692,6 +1245,7 @@ class JobCompare {
       case "DeployCalls":
       case "RegionCalls":
       case "QuotaCalls":
+      case "GetLogsCalls":
         // These are integers
         return value !== undefined ? value.toString() : "N/A";
       case "TaskNum":
@@ -704,94 +1258,19 @@ class JobCompare {
       case "PoolName":
       case "JobDiscription":
         return value || "N/A";
+      // New configuration fields
+      case "Tool":
+      case "CopilotModel":
+      case "DeployType":
+      case "IacType":
+      case "ComputingType":
+        return value || "N/A";
       default:
         return value !== undefined && value !== null ? value : "N/A";
     }
   }
 
-  formatDuration(startDate, endDate) {
-    if (!startDate) return "N/A";
-
-    // If no end date, calculate duration from now
-    const start = new Date(startDate);
-    const end = endDate ? new Date(endDate) : new Date();
-    const diffMs = end - start;
-
-    if (diffMs < 0) return "N/A";
-
-    const hours = Math.floor(diffMs / (1000 * 60 * 60));
-    const minutes = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
-
-    if (hours === 0 && minutes === 0) {
-      const seconds = Math.floor(diffMs / 1000);
-      return `${seconds}s`;
-    }
-
-    return `${hours}h ${minutes}m`;
-  }
-
-  formatStatus(status) {
-    const statusClasses = {
-      Completed: "badge bg-success",
-      Running: "badge bg-primary",
-      Failed: "badge bg-danger",
-      Pending: "badge bg-warning",
-    };
-
-    const className = statusClasses[status] || "badge bg-secondary";
-    return `<span class="${className}">${status || "Unknown"}</span>`;
-  }
-
-  getCellClass(property, value, allValues) {
-    // Highlight best/worst values in certain properties
-    if (property === "Success Rate") {
-      const numericValues = allValues.map((v) => parseFloat(v) || 0);
-      const maxValue = Math.max(...numericValues);
-      const currentValue = parseFloat(value) || 0;
-      return currentValue === maxValue && currentValue > 0
-        ? "table-success"
-        : "";
-    }
-
-    if (property === "Failed Tasks") {
-      const numericValues = allValues.map((v) => parseInt(v) || 0);
-      const minValue = Math.min(...numericValues);
-      const currentValue = parseInt(value) || 0;
-      return currentValue === minValue
-        ? "table-success"
-        : currentValue > 0
-        ? "table-warning"
-        : "";
-    }
-
-    return "";
-  }
-  removeJobFromComparison(jobId) {
-    this.selectedJobIds = this.selectedJobIds.filter((id) => id !== jobId);
-    this.jobsData = this.jobsData.filter((job) => {
-      const currentJobId = job.TestJobID || job.JobID || job.id;
-      return currentJobId !== jobId;
-    });
-
-    // Update session storage
-    sessionStorage.setItem(
-      "selectedJobIds",
-      JSON.stringify(this.selectedJobIds)
-    );
-
-    // Update global state if available
-    if (window.selectedJobIds) {
-      window.selectedJobIds = [...this.selectedJobIds];
-    }
-
-    if (this.selectedJobIds.length < 2) {
-      this.showNoJobsSelected();
-    } else {
-      this.updateSelectedJobsSummary();
-      this.generateComparison();
-    }
-  }
-
+  // ...existing code...
   exportComparison() {
     if (this.jobsData.length === 0) {
       alert("No jobs to export");
@@ -835,8 +1314,9 @@ class JobCompare {
     const elements = [
       { id: "job-compare-loading", display: "block" },
       { id: "job-comparison-section", display: "none" },
-      { id: "task-comparison-section", display: "none" },
-      { id: "error-comparison-section", display: "none" },
+      { id: "same-config-section", display: "none" },
+      { id: "config-results-section", display: "none" },
+      { id: "dimensions-comparison-section", display: "none" },
       { id: "no-jobs-selected", display: "none" },
       { id: "job-compare-error", display: "none" },
     ];
@@ -848,13 +1328,13 @@ class JobCompare {
       }
     });
   }
-
   showComparisonState() {
     const elements = [
       { id: "job-compare-loading", display: "none" },
       { id: "job-comparison-section", display: "block" },
-      { id: "task-comparison-section", display: "block" },
-      { id: "error-comparison-section", display: "block" },
+      { id: "same-config-section", display: "block" },
+      { id: "config-results-section", display: "block" },
+      { id: "dimensions-comparison-section", display: "block" },
       { id: "no-jobs-selected", display: "none" },
       { id: "job-compare-error", display: "none" },
     ];
@@ -866,13 +1346,13 @@ class JobCompare {
       }
     });
   }
-
   showNoJobsSelected() {
     const elements = [
       { id: "job-compare-loading", display: "none" },
       { id: "job-comparison-section", display: "none" },
-      { id: "task-comparison-section", display: "none" },
-      { id: "error-comparison-section", display: "none" },
+      { id: "same-config-section", display: "none" },
+      { id: "config-results-section", display: "none" },
+      { id: "dimensions-comparison-section", display: "none" },
       { id: "no-jobs-selected", display: "block" },
       { id: "job-compare-error", display: "none" },
     ];
@@ -889,8 +1369,9 @@ class JobCompare {
     const elements = [
       { id: "job-compare-loading", display: "none" },
       { id: "job-comparison-section", display: "none" },
-      { id: "task-comparison-section", display: "none" },
-      { id: "error-comparison-section", display: "none" },
+      { id: "same-config-section", display: "none" },
+      { id: "config-results-section", display: "none" },
+      { id: "dimensions-comparison-section", display: "none" },
       { id: "no-jobs-selected", display: "none" },
       { id: "job-compare-error", display: "block" },
     ];
@@ -956,7 +1437,14 @@ class JobCompare {
       DeployCalls: jobData.DeployCalls || jobData.deployCalls || 0,
       RegionCalls: jobData.RegionCalls || jobData.regionCalls || 0,
       QuotaCalls: jobData.QuotaCalls || jobData.quotaCalls || 0,
+      GetLogsCalls: jobData.GetLogsCalls || jobData.getLogsCalls || 0,
       AIIntegration: jobData.AIIntegration || jobData.aiIntegration || 0,
+      // Configuration fields from job-level data
+      Tool: jobData.Tool || jobData.tool || "N/A",
+      CopilotModel: jobData.CopilotModel || jobData.copilotModel || "N/A",
+      DeployType: jobData.DeployType || jobData.deployType || "N/A",
+      IacType: jobData.IacType || jobData.iacType || "N/A",
+      ComputingType: jobData.ComputingType || jobData.computingType || "N/A",
       tasks: jobData.tasks || [],
       computedStats: jobData.computedStats || {
         total: 0,
@@ -978,6 +1466,94 @@ class JobCompare {
 
     console.log(`Sanitized job data for ${jobId}:`, sanitized);
     return sanitized;
+  }
+  generateTaskComparison() {
+    return this.jobsData.map((job) => {
+      const jobId = job.TestJobID || job.JobID || job.id || "Unknown";
+      const stats = job.computedStats || {
+        total: 0,
+        completed: 0,
+        failed: 0,
+        pending: 0,
+        running: 0,
+      };
+
+      return {
+        jobId: jobId,
+        taskStats: stats,
+      };
+    });
+  }
+  renderBasicComparison() {
+    const tableBody = document.getElementById("comparison-table-body");
+    if (!tableBody) return;
+
+    // Update table headers
+    this.jobsData.forEach((job, index) => {
+      const header = document.getElementById(`job-header-${index}`);
+      if (header) {
+        header.textContent = job.TestJobID || job.JobID || job.id || "Job";
+        header.style.display = "";
+      }
+    });
+
+    // Hide unused headers
+    for (let i = this.jobsData.length; i < 5; i++) {
+      const header = document.getElementById(`job-header-${i}`);
+      if (header) {
+        header.style.display = "none";
+      }
+    }
+
+    // Generate comparison rows
+    const rowsHtml = this.comparisonData.basic
+      .map((item) => {
+        const cellsHtml = item.values
+          .map((value, index) => {
+            const cellClass = this.getCellClass(
+              item.property,
+              value,
+              item.values
+            );
+            return `<td class="${cellClass}">${value}</td>`;
+          })
+          .join("");
+
+        return `
+        <tr>
+          <td class="fw-semibold">${item.property}</td>
+          ${cellsHtml}
+        </tr>
+      `;
+      })
+      .join("");
+
+    tableBody.innerHTML = rowsHtml;
+  }
+
+  getCellClass(property, value, allValues) {
+    // Highlight best/worst values in certain properties
+    if (property === "Success Rate") {
+      const numericValues = allValues.map((v) => parseFloat(v) || 0);
+      const maxValue = Math.max(...numericValues);
+      const currentValue = parseFloat(value) || 0;
+      return currentValue === maxValue && currentValue > 0
+        ? "table-success"
+        : "";
+    }
+
+    if (property === "Failed Tasks") {
+      const numericValues = allValues.map((v) => parseInt(v) || 0);
+      const minValue = Math.min(...numericValues);
+      const currentValue = parseInt(value) || 0;
+      return currentValue === minValue
+        ? "table-success"
+        : currentValue > 0
+        ? "table-warning"
+        : "";
+    }
+
+    return "";
   }
 }
 

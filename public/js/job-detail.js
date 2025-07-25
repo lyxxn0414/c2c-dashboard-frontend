@@ -43,8 +43,6 @@ class JobDetail {
     );
     this.jobDetailPoolID = document.getElementById("job-detail-pool-id");
 
-    // Metric elements
-    this.jobCompletedTasks = document.getElementById("job-completed-tasks");
     this.jobSuccessTasks = document.getElementById("job-success-tasks");
     this.jobFailedTasks = document.getElementById("job-failed-tasks");
     this.jobSuccessRate = document.getElementById("job-success-rate");
@@ -100,12 +98,8 @@ class JobDetail {
     document.getElementById("job-detail-pool-id").textContent = job.PoolName;
 
     // Populate metrics - handle both new and old field names for compatibility
-    document.getElementById("job-completed-tasks").textContent =
-      job.TaskNum || 0;
-    document.getElementById("job-success-tasks").textContent = job.SuccessTasks;
-    document.getElementById("job-failed-tasks").textContent = job.FailedTasks;
     document.getElementById("job-success-rate").textContent =
-      job.SuccessRate || "0%";
+      job.SuccessRate+" ("+job.SuccessTasks+"/"+job.TaskNum+")" || "0%";
 
     // Additional metrics from backend
     console.log("Job metrics:", job);
@@ -113,6 +107,9 @@ class JobDetail {
       job.AvgSuccessIteration || "10";
     document.getElementById("job-iterations-changes").textContent = (
       job.AvgInfraChanges || "xx"
+    ).toFixed(2);
+    document.getElementById("job-avg-file-edits").textContent = (
+      job.AvgFileChanges || "xx"
     ).toFixed(2);
 
     // Tool call metrics
@@ -123,6 +120,8 @@ class JobDetail {
     document.getElementById("tool-deploy").textContent = job.DeployCalls || 0;
     document.getElementById("tool-region").textContent = job.RegionCalls || 0;
     document.getElementById("tool-quota").textContent = job.QuotaCalls || 0;
+    document.getElementById("tool-get-logs").textContent = job.GetLogsCalls || 0;
+
 
     this.populateModelStatistics(classifiedResults); // Failed tasks analysis
     this.populateFailedTasks(taskErrors);
@@ -166,17 +165,16 @@ class JobDetail {
       '<span class="spinner-border spinner-border-sm" role="status"></span>';
 
     const metricsElements = [
-      "job-completed-tasks",
-      "job-success-tasks",
-      "job-failed-tasks",
       "job-success-rate",
       "job-avg-iterations",
       "job-iterations-changes",
+      "job-avg-file-edits",
       "tool-recommend",
       "tool-predeploy",
       "tool-deploy",
       "tool-region",
       "tool-quota",
+      "tool-get-logs",
     ];
 
     metricsElements.forEach((elementId) => {

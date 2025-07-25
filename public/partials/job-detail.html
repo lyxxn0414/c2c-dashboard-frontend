@@ -23,29 +23,10 @@
 
     <!-- Overall Result -->
     <div class="result-section">
-        <div class="row mb-4">
-            <div class="col-md-3">
+        <div class="row mb-4">            <div class="col-md-4">
                 <div class="metric-card text-center">
-                    <div class="metric-label">Completed</div>
-                    <div class="metric-value" id="job-completed-tasks">63</div>
-                </div>
-            </div>
-            <div class="col-md-3">
-                <div class="metric-card text-center">
-                    <div class="metric-label text-success">Success</div>
-                    <div class="metric-value text-success" id="job-success-tasks">58</div>
-                </div>
-            </div>
-            <div class="col-md-3">
-                <div class="metric-card text-center">
-                    <div class="metric-label text-danger">Failed</div>
-                    <div class="metric-value text-danger" id="job-failed-tasks">5</div>
-                </div>
-            </div>
-            <div class="col-md-3">
-                <div class="metric-card text-center">
-                    <div class="metric-label text-primary">Success Rate</div>
-                    <div class="metric-value text-primary" id="job-success-rate">92%</div>
+                    <div class="metric-label text-success">Success Rate</div>
+                    <div class="metric-value text-success" id="job-success-rate">92%</div>
                 </div>
             </div>
         </div>
@@ -53,22 +34,22 @@
         <div class="row mb-4">
             <div class="col-md-4">
                 <div class="metric-card text-center">
-                    <div class="metric-label">Avg Copilot Interactions per Success Task</div>
+                    <div class="metric-label">Avg Copilot Interactions</div>
                     <div class="metric-value" id="job-avg-iterations">10</div>
                 </div>
             </div>
             <div class="col-md-4">
                 <div class="metric-card text-center">
-                    <div class="metric-label">Avg Code Edits per Success Task</div>
+                    <div class="metric-label">Avg IaC File Edits</div>
                     <div class="metric-value" id="job-iterations-changes">xx</div>
                 </div>
             </div>
-            <!-- <div class="col-md-4">
+            <div class="col-md-4">
                 <div class="metric-card text-center">
-                    <div class="metric-label">Avg AI Integration per Task</div>
-                    <div class="metric-value" id="job-avg-ai-integration">10</div>
+                    <div class="metric-label">Avg File Edits</div>
+                    <div class="metric-value" id="job-avg-file-edits">10</div>
                 </div>
-            </div> -->
+            </div>
         </div>
 
         <!-- Tool Call Section -->
@@ -103,6 +84,12 @@
                     <div class="tool-metric">
                         <div class="tool-label">Quota</div>
                         <div class="tool-value" id="tool-quota">xx</div>
+                    </div>
+                </div>
+                <div class="col-md-2">
+                    <div class="tool-metric">
+                        <div class="tool-label">Get Logs Call</div>
+                        <div class="tool-value" id="tool-get-logs">xx</div>
                     </div>
                 </div>
             </div>

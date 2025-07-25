@@ -53,13 +53,12 @@
     </div>
     <p class="text-muted">Loading job details for comparison...</p>
   </div>
-
-  <!-- Comparison Table -->
+  <!-- Basic Job Information Comparison -->
   <div id="job-comparison-section" style="display: none">
     <div class="card">
       <div class="card-header">
         <h5 class="mb-0">
-          <i class="bi bi-table me-2"></i>Job Comparison Details
+          <i class="bi bi-table me-2"></i>Job Basic Information Comparison
         </h5>
       </div>
       <div class="card-body">
@@ -89,35 +88,134 @@
       </div>
     </div>
   </div>
-
-  <!-- Task Comparison Section -->
-  <div id="task-comparison-section" class="mt-4" style="display: none">
+  <!-- Same Config Section -->
+  <div id="same-config-section" class="mt-4" style="display: none">
     <div class="card">
       <div class="card-header">
         <h5 class="mb-0">
-          <i class="bi bi-list-task me-2"></i>Task Status Comparison
+          <i class="bi bi-check-circle text-success me-2"></i>Same Config
         </h5>
       </div>
       <div class="card-body">
-        <div id="task-comparison-content">
-          <!-- Task comparison charts and tables will be populated here -->
+        <div id="same-config-content">
+          <!-- Same config content will be populated here -->
         </div>
       </div>
     </div>
   </div>
 
-  <!-- Error Comparison Section -->
-  <div id="error-comparison-section" class="mt-4" style="display: none">
+  <!-- Different Config & Total Results -->
+  <div id="config-results-section" class="mt-4" style="display: none">
     <div class="card">
       <div class="card-header">
         <h5 class="mb-0">
-          <i class="bi bi-exclamation-triangle me-2"></i>Error Analysis
-          Comparison
+          <i class="bi bi-table me-2"></i>Different Config & Total Results
         </h5>
       </div>
       <div class="card-body">
-        <div id="error-comparison-content">
-          <!-- Error comparison will be populated here -->
+        <div class="table-responsive">
+          <table class="table table-bordered table-hover">
+            <thead class="table-light">
+              <tr>
+                <th style="width: 20%">Property</th>
+                <th class="job-header-config" id="job-header-config-0">
+                  Job 1
+                </th>
+                <th class="job-header-config" id="job-header-config-1">
+                  Job 2
+                </th>
+                <th
+                  class="job-header-config"
+                  id="job-header-config-2"
+                  style="display: none"
+                >
+                  Job 3
+                </th>
+                <th
+                  class="job-header-config"
+                  id="job-header-config-3"
+                  style="display: none"
+                >
+                  Job 4
+                </th>
+                <th
+                  class="job-header-config"
+                  id="job-header-config-4"
+                  style="display: none"
+                >
+                  Job 5
+                </th>
+              </tr>
+            </thead>
+            <tbody id="config-results-table-body">
+              <!-- Config and results comparison rows will be populated here -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+  <!-- More Dimension Results -->
+  <div id="dimensions-comparison-section" class="mt-4" style="display: none">
+    <div class="card">
+      <div class="card-header">
+        <h5 class="mb-0">
+          <i class="bi bi-collection me-2"></i>More Dimension Results
+        </h5>
+      </div>
+      <div class="card-body">
+        <!-- Repo Type Table -->
+        <div class="dimension-table mb-4">
+          <h6 class="fw-bold">repo-type:</h6>
+          <div class="table-responsive">
+            <table class="table table-sm table-bordered">
+              <thead class="table-light">
+                <tr id="repo-type-table-header">
+                  <th>Job/Language</th>
+                  <!-- Dynamic headers will be populated here -->
+                </tr>
+              </thead>
+              <tbody id="repo-type-table-body">
+                <!-- Repo type data will be populated here -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- App Pattern Table -->
+        <div class="dimension-table mb-4">
+          <h6 class="fw-bold">app pattern:</h6>
+          <div class="table-responsive">
+            <table class="table table-sm table-bordered">
+              <thead class="table-light">
+                <tr id="app-pattern-table-header">
+                  <th>Job/Language</th>
+                  <!-- Dynamic headers will be populated here -->
+                </tr>
+              </thead>
+              <tbody id="app-pattern-table-body">
+                <!-- App pattern data will be populated here -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Language Table -->
+        <div class="dimension-table">
+          <h6 class="fw-bold">language:</h6>
+          <div class="table-responsive">
+            <table class="table table-sm table-bordered">
+              <thead class="table-light">
+                <tr id="language-table-header">
+                  <th>Job/Language</th>
+                  <!-- Dynamic headers will be populated here -->
+                </tr>
+              </thead>
+              <tbody id="language-table-body">
+                <!-- Language data will be populated here -->
+              </tbody>
+            </table>
+          </div>
         </div>
       </div>
     </div>

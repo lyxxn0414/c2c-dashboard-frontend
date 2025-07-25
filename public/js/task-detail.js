@@ -65,76 +65,106 @@ class TaskDetail {
       this.showErrorState(error.message);
     }
   }
-
   // Populate task detail view with data
   populateTaskDetail(taskData) {
     // Update back button text based on context
     this.updateBackButtonText();
 
+    // Extract TaskDetails if it exists, otherwise use taskData directly
+    const details = taskData.TaskDetails || taskData;
+
     // Basic task information
-    this.setElementText("task-detail-title", taskData.name || "Task-sample");
-    this.setElementText("task-detail-id", taskData.taskId || "123456");
+    this.setElementText("task-detail-title", details.TaskID || taskData.name || "Task-sample");
+    this.setElementText("task-detail-id", details.TaskID || taskData.taskId || "123456");
     this.setElementText(
       "task-detail-creation-time",
-      formatDateTime(taskData.creationTime) || "2025-06-23 14:57"
+      formatDateTime(details.CreatedDate || details.Timestamp || taskData.creationTime) || "2025-06-23 14:57"
     );
     this.setElementText(
       "task-detail-repo-name",
-      taskData.repoName || this.currentRepoName || "-"
+      details.RepoName || taskData.repoName || this.currentRepoName || "-"
     );
 
     // Set job link
     const jobLink = document.getElementById("task-detail-job-link");
-    if (jobLink && taskData.jobId) {
-      jobLink.textContent = taskData.jobId;
-      jobLink.href = `#/job-detail/${taskData.jobId}`;
-      this.currentJobId = taskData.jobId;
+    if (jobLink && (details.TestJobID || taskData.jobId)) {
+      const jobId = details.TestJobID || taskData.jobId;
+      jobLink.textContent = jobId;
+      jobLink.href = `#/job-detail/${jobId}`;
+      this.currentJobId = jobId;
     }
 
-    // Tool call counts
-    this.setElementText(
-      "task-recommend-count",
-      taskData.toolCalls?.recommend || "xx"
-    );
-    this.setElementText(
-      "task-predeploy-count",
-      taskData.toolCalls?.predeploy || "xx"
-    );
-    this.setElementText(
-      "task-deploy-count",
-      taskData.toolCalls?.deploy || "xx"
-    );
-    this.setElementText(
-      "task-region-count",
-      taskData.toolCalls?.region || "xx"
-    );
-    this.setElementText("task-quota-count", taskData.toolCalls?.quota || "xx");
-    this.setElementText(
-      "task-getlogs-count",
-      taskData.toolCalls?.getLogs || "xx"
-    );
+    // Populate comprehensive task details
+    this.setElementText("task-type", details.TaskType || "-");
+    this.setElementText("task-deploy-type", details.DeployType || "-");
+    this.setElementText("task-computing-type", details.ComputingType || "-");
+    this.setElementText("task-copilot-model", details.CopilotModel || "-");
+    this.setElementText("task-command-line", details.CommandLine || "-");
+    
+    // Success status with color coding
+    const successElement = document.getElementById("task-success-status");
+    if (successElement) {
+      const isSuccessful = details.IsSuccessful;
+      if (isSuccessful === true) {
+        successElement.textContent = "Success";
+        successElement.className = "badge bg-success";
+      } else if (isSuccessful === false) {
+        successElement.textContent = "Failed";
+        successElement.className = "badge bg-danger";
+      } else {
+        successElement.textContent = "-";
+        successElement.className = "";
+      }
+    }
 
-    // AI Integration counts
-    this.setElementText(
-      "task-fill-params-count",
-      taskData.aiIntegration?.fillMainParametersJSONWithOpenAI || "2"
-    );
-    this.setElementText(
-      "task-generate-input-count",
-      taskData.aiIntegration?.generateUserInputWithOpenAI || "5"
-    );
-    this.setElementText(
-      "task-judge-success-count",
-      taskData.aiIntegration?.judgeAzdUpSuccessWithOpenAI || "5"
-    );
+    // Environment & Configuration
+    this.setElementText("task-vscode-version", details.VSCodeVersion || "-");
+    this.setElementText("task-extension-versions", details.ExtensionVersions || "-");
+    this.setElementText("task-use-terraform", details.UseTerraform ? "Yes" : "No");
+    this.setElementText("task-is-throttled", details.IsThrottled ? "Yes" : "No");
+    this.setElementText("task-use-bicep-schemas", details.UseBicepSchemasTool ? "Yes" : "No");
+    this.setElementText("task-use-best-practices", details.UseAzureAgentBestPractices ? "Yes" : "No");
 
-    // Populate failure details table
-    this.populateFailureDetailsTable(taskData.deployFailureDetails || []);
+    // Task Statistics
+    this.setElementText("task-iterations", details.Iterations || "-");
+    this.setElementText("task-file-edits-num", details.FileEditsNum || "-");
+    this.setElementText("task-ai-integration", details.AIIntegration || "-");
 
-    // Populate copilot response table
-    this.populateCopilotResponseTable(taskData.copilotResponses || []);
+    // File Edits List
+    const fileEditsElement = document.getElementById("task-file-edits-list");
+    if (fileEditsElement && details.FileEditsList) {
+      if (Array.isArray(details.FileEditsList) && details.FileEditsList.length > 0) {
+        fileEditsElement.innerHTML = details.FileEditsList
+          .map(file => `<div class="mb-1"><i class="bi bi-file-earmark-code me-2"></i>${this.escapeHtml(file)}</div>`)
+          .join("");
+      } else {
+        fileEditsElement.innerHTML = '<div class="text-muted">No file edits recorded</div>';
+      }
+    }
+
+    // Initial Prompt
+    const promptElement = document.getElementById("task-initial-prompt");
+    if (promptElement && details.InitialPrompt) {
+      promptElement.textContent = details.InitialPrompt;
+    } else if (promptElement) {
+      promptElement.textContent = "No initial prompt available";
+    }    // Tool call counts - updated to use the new API structure
+    this.setElementText("task-recommend-count", details.RecommendToolCount || taskData.toolCalls?.recommend || "0");
+    this.setElementText("task-predeploy-count", details.PredeployToolCount || taskData.toolCalls?.predeploy || "0");
+    this.setElementText("task-deploy-count", details.DeployToolCount || taskData.toolCalls?.deploy || "0");
+    this.setElementText("task-region-count", details.RegionToolCount || taskData.toolCalls?.region || "0");
+    this.setElementText("task-quota-count", details.QuotaToolCount || taskData.toolCalls?.quota || "0");
+    this.setElementText("task-getlogs-count", details.GetLogsCalls || taskData.toolCalls?.getLogs || "0");
+
+    // AI Integration counts - updated to use the new API structure
+    this.setElementText("task-fill-params-count", details.FillMainParametersJSONWithOpenAI || taskData.aiIntegration?.fillMainParametersJSONWithOpenAI || "0");
+    this.setElementText("task-generate-input-count", details.GenerateUserInputWithOpenAI || taskData.aiIntegration?.generateUserInputWithOpenAI || "0");
+    this.setElementText("task-judge-success-count", details.JudgeAzdUpSuccessWithOpenAI || taskData.aiIntegration?.judgeAzdUpSuccessWithOpenAI || "0");    // Populate failure details table
+    this.populateFailureDetailsTable(details.DeployFailureDetails || taskData.deployFailureDetails || []);
+
+    // Populate copilot response table  
+    this.populateCopilotResponseTable(details.DeployIterationData || taskData.copilotResponses || []);
   }
-
   // Populate failure details table
   populateFailureDetailsTable(failureDetails) {
     const tableBody = document.querySelector("#failure-details-table tbody");
@@ -142,7 +172,7 @@ class TaskDetail {
 
     tableBody.innerHTML = "";
 
-    if (failureDetails.length === 0) {
+    if (!failureDetails || failureDetails.length === 0) {
       const row = tableBody.insertRow();
       const cell = row.insertCell();
       cell.colSpan = 5;
@@ -153,22 +183,21 @@ class TaskDetail {
 
     failureDetails.forEach((failure) => {
       const row = tableBody.insertRow();
-      row.insertCell().textContent = failure.iterationNum || "-";
-      row.insertCell().textContent = formatDateTime(failure.time) || "-";
-      row.insertCell().textContent = failure.errorCategory || "-";
-      row.insertCell().textContent = failure.errorDescription || "-";
-      row.insertCell().textContent = failure.errorDetail || "-";
+      row.insertCell().textContent = failure.IterationNum || failure.iterationNum || "-";
+      row.insertCell().textContent = formatDateTime(failure.Time || failure.time) || "-";
+      row.insertCell().textContent = failure.ErrorCategory || failure.errorCategory || "-";
+      row.insertCell().textContent = failure.ErrorDescription || failure.errorDescription || "-";
+      row.insertCell().textContent = failure.ErrorDetail || failure.errorDetail || "-";
     });
   }
-
   // Populate copilot response table
-  populateCopilotResponseTable(copilotResponses) {
+  populateCopilotResponseTable(deployIterationData) {
     const tableBody = document.querySelector("#copilot-response-table tbody");
     if (!tableBody) return;
 
     tableBody.innerHTML = "";
 
-    if (copilotResponses.length === 0) {
+    if (!deployIterationData || deployIterationData.length === 0) {
       const row = tableBody.insertRow();
       const cell = row.insertCell();
       cell.colSpan = 4;
@@ -177,13 +206,13 @@ class TaskDetail {
       return;
     }
 
-    copilotResponses.forEach((response, index) => {
+    deployIterationData.forEach((iteration, index) => {
       const row = tableBody.insertRow();
-      row.insertCell().textContent = formatDateTime(response.time) || "-";
+      row.insertCell().textContent = formatDateTime(iteration.Time || iteration.time) || "-";
 
       // Input command cell with truncation
       const inputCell = row.insertCell();
-      const inputText = response.inputCommand || "-";
+      const inputText = iteration.InputCommand || iteration.inputCommand || "-";
       if (inputText.length > 100) {
         inputCell.innerHTML = `
                     <span class="truncated-text" title="${this.escapeHtml(inputText)}">
@@ -194,11 +223,11 @@ class TaskDetail {
         inputCell.textContent = inputText;
       }
 
-      row.insertCell().textContent = response.toolCall || "-";
+      row.insertCell().textContent = iteration.ToolCall || iteration.toolCall || "-";
 
       // Copilot response cell with expandable content
       const responseCell = row.insertCell();
-      const responseText = response.copilotResponse || "-";
+      const responseText = iteration.CopilotResponse || iteration.copilotResponse || "-";
 
       if (responseText !== "-") {
         // Convert \\n to actual line breaks and clean up the text
@@ -306,34 +335,31 @@ class TaskDetail {
       alert("Error downloading task details. Please try again.");
     }
   }
-
   // Show loading state
   showLoadingState() {
     this.hideErrorState();
     document.getElementById("task-detail-loading")?.classList.remove("d-none");
     document
       .querySelectorAll(
-        ".task-header-card, .result-section, .ai-integration-section, .failure-details-section, .copilot-response-section"
+        ".task-header-card, .task-details-section, .task-stats-section, .initial-prompt-section, .result-section, .ai-integration-section, .failure-details-section, .copilot-response-section"
       )
       .forEach((section) => section.classList.add("d-none"));
   }
-
   // Hide loading state
   hideLoadingState() {
     document.getElementById("task-detail-loading")?.classList.add("d-none");
     document
       .querySelectorAll(
-        ".task-header-card, .result-section, .ai-integration-section, .failure-details-section, .copilot-response-section"
+        ".task-header-card, .task-details-section, .task-stats-section, .initial-prompt-section, .result-section, .ai-integration-section, .failure-details-section, .copilot-response-section"
       )
       .forEach((section) => section.classList.remove("d-none"));
   }
-
   // Show error state
   showErrorState(errorMessage) {
     this.hideLoadingState();
     document
       .querySelectorAll(
-        ".task-header-card, .result-section, .ai-integration-section, .failure-details-section, .copilot-response-section"
+        ".task-header-card, .task-details-section, .task-stats-section, .initial-prompt-section, .result-section, .ai-integration-section, .failure-details-section, .copilot-response-section"
       )
       .forEach((section) => section.classList.add("d-none"));
 

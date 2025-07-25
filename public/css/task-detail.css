@@ -2,355 +2,464 @@
 
 /* Ensure task detail view is properly displayed */
 #task-detail-view {
-    width: 100%;
-    min-height: 100vh;
-    padding: 1rem;
+  width: 100%;
+  min-height: 100vh;
+  padding: 1rem;
 }
 
 #task-detail-view.d-none {
-    display: none !important;
+  display: none !important;
 }
 
 #task-detail-view:not(.d-none) {
-    display: block !important;
+  display: block !important;
 }
 
 .task-header-card {
-    background: #f8f9fa;
-    border: 1px solid #dee2e6;
-    border-radius: 8px;
-    padding: 1.5rem;
-    margin-bottom: 1.5rem;
+  background: #f8f9fa;
+  border: 1px solid #dee2e6;
+  border-radius: 8px;
+  padding: 1.5rem;
+  margin-bottom: 1.5rem;
 }
 
 .task-header-card h3 {
-    color: #495057;
-    font-weight: 600;
+  color: #495057;
+  font-weight: 600;
 }
 
 .task-header-card .text-muted {
-    font-size: 0.9rem;
+  font-size: 0.9rem;
 }
 
 .task-header-card .text-muted strong {
-    color: #6c757d;
+  color: #6c757d;
 }
 
 /* Result Section */
 .result-section {
-    margin-bottom: 2rem;
+  margin-bottom: 2rem;
 }
 
 .result-section h4 {
-    color: #495057;
-    font-weight: 600;
-    margin-bottom: 1rem;
+  color: #495057;
+  font-weight: 600;
+  margin-bottom: 1rem;
 }
 
 /* Metric Cards */
 .metric-card {
-    background: linear-gradient(135deg, #fff 0%, #f8f9fa 100%);
-    border: 1px solid #e9ecef;
-    border-radius: 8px;
-    padding: 1.25rem;
-    transition: all 0.3s ease;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  background: linear-gradient(135deg, #fff 0%, #f8f9fa 100%);
+  border: 1px solid #e9ecef;
+  border-radius: 8px;
+  padding: 1.25rem;
+  transition: all 0.3s ease;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 }
 
 .metric-card:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-    border-color: #007bff;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  border-color: #007bff;
 }
 
 .metric-label {
-    font-size: 0.875rem;
-    font-weight: 600;
-    color: #6c757d;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-    margin-bottom: 0.5rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #6c757d;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 0.5rem;
 }
 
 .metric-value {
-    font-size: 1.75rem;
-    font-weight: 700;
-    color: #007bff;
-    line-height: 1;
+  font-size: 1.75rem;
+  font-weight: 700;
+  color: #007bff;
+  line-height: 1;
 }
 
 /* AI Integration Section */
 .ai-integration-section {
-    margin-bottom: 2rem;
+  margin-bottom: 2rem;
 }
 
 .ai-integration-section .card {
-    transition: all 0.3s ease;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
 .ai-integration-section .card:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
 }
 
 .ai-integration-section .card-title {
-    font-size: 1rem;
-    font-weight: 600;
-    margin-bottom: 1rem;
+  font-size: 1rem;
+  font-weight: 600;
+  margin-bottom: 1rem;
 }
 
 .ai-integration-section .display-6 {
-    font-weight: 700;
+  font-weight: 700;
 }
 
 /* Failure Details Section */
 .failure-details-section {
-    margin-bottom: 2rem;
+  margin-bottom: 2rem;
 }
 
 .failure-details-section h4 {
-    color: #dc3545;
-    font-weight: 600;
+  color: #dc3545;
+  font-weight: 600;
 }
 
 .failure-details-section .card {
-    box-shadow: 0 2px 8px rgba(220, 53, 69, 0.1);
+  box-shadow: 0 2px 8px rgba(220, 53, 69, 0.1);
 }
 
 .failure-details-section .table {
-    margin-bottom: 0;
+  margin-bottom: 0;
 }
 
 .failure-details-section .table th {
-    background-color: #f8f9fa;
-    border-top: none;
-    font-weight: 600;
-    color: #495057;
-    font-size: 0.875rem;
+  background-color: #f8f9fa;
+  border-top: none;
+  font-weight: 600;
+  color: #495057;
+  font-size: 0.875rem;
 }
 
 .failure-details-section .table td {
-    vertical-align: middle;
-    font-size: 0.875rem;
+  vertical-align: middle;
+  font-size: 0.875rem;
 }
 
 /* Copilot Response Section */
 .copilot-response-section {
-    margin-bottom: 2rem;
+  margin-bottom: 2rem;
 }
 
 .copilot-response-section h4 {
-    color: #007bff;
-    font-weight: 600;
+  color: #007bff;
+  font-weight: 600;
 }
 
 .copilot-response-section .card {
-    box-shadow: 0 2px 8px rgba(0, 123, 255, 0.1);
+  box-shadow: 0 2px 8px rgba(0, 123, 255, 0.1);
 }
 
 .copilot-response-section .table {
-    margin-bottom: 0;
+  margin-bottom: 0;
 }
 
 .copilot-response-section .table th {
-    background-color: #f8f9fa;
-    border-top: none;
-    font-weight: 600;
-    color: #495057;
-    font-size: 0.875rem;
+  background-color: #f8f9fa;
+  border-top: none;
+  font-weight: 600;
+  color: #495057;
+  font-size: 0.875rem;
 }
 
 .copilot-response-section .table td {
-    vertical-align: middle;
-    font-size: 0.875rem;
-    max-width: 300px;
-    word-wrap: break-word;
+  vertical-align: middle;
+  font-size: 0.875rem;
+  max-width: 300px;
+  word-wrap: break-word;
 }
 
 /* Copilot response content styling */
 .copilot-response-content {
-    max-width: 100%;
+  max-width: 100%;
 }
 
 .copilot-response-content .response-text {
-    background-color: #f8f9fa;
-    border: 1px solid #e9ecef;
-    border-radius: 4px;
-    padding: 0.75rem;
-    margin: 0;
-    font-size: 0.8rem;
-    line-height: 1.4;
-    white-space: pre-wrap;
-    word-wrap: break-word;
-    overflow-wrap: break-word;
-    max-height: none;
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  background-color: #f8f9fa;
+  border: 1px solid #e9ecef;
+  border-radius: 4px;
+  padding: 0.75rem;
+  margin: 0;
+  font-size: 0.8rem;
+  line-height: 1.4;
+  white-space: pre-wrap;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+  max-height: none;
+  font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
 }
 
 .copilot-response-content .response-preview .response-text {
-    max-height: 120px;
-    overflow: hidden;
-    position: relative;
+  max-height: 120px;
+  overflow: hidden;
+  position: relative;
 }
 
 .copilot-response-content .response-preview .response-text::after {
-    content: '';
-    position: absolute;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    height: 20px;
-    background: linear-gradient(transparent, #f8f9fa);
+  content: "";
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 20px;
+  background: linear-gradient(transparent, #f8f9fa);
 }
 
 .copilot-response-content .response-full .response-text {
-    max-height: 400px;
-    overflow-y: auto;
+  max-height: 400px;
+  overflow-y: auto;
 }
 
 .show-details-btn,
 .hide-details-btn {
-    font-size: 0.75rem;
-    padding: 0.25rem 0.5rem;
-    line-height: 1.2;
-    transition: all 0.2s ease;
+  font-size: 0.75rem;
+  padding: 0.25rem 0.5rem;
+  line-height: 1.2;
+  transition: all 0.2s ease;
 }
 
 .show-details-btn:hover,
 .hide-details-btn:hover {
-    transform: translateY(-1px);
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  transform: translateY(-1px);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
 .show-details-btn i,
 .hide-details-btn i {
-    font-size: 0.7rem;
+  font-size: 0.7rem;
 }
 
 /* Truncated text styling */
 .truncated-text {
-    cursor: help;
-    position: relative;
+  cursor: help;
+  position: relative;
 }
 
 .truncated-text:hover {
-    color: #007bff;
+  color: #007bff;
 }
 
 /* Loading and error states */
 #task-detail-loading {
-    padding: 3rem 0;
-    color: #6c757d;
+  padding: 3rem 0;
+  color: #6c757d;
 }
 
 #task-detail-loading .spinner-border {
-    width: 3rem;
-    height: 3rem;
+  width: 3rem;
+  height: 3rem;
 }
 
 #task-detail-error {
-    margin: 2rem 0;
+  margin: 2rem 0;
 }
 
 /* Button styles */
 #back-to-job-btn {
-    transition: all 0.3s ease;
+  transition: all 0.3s ease;
 }
 
 #back-to-job-btn:hover {
-    background-color: #6c757d;
-    border-color: #6c757d;
-    color: white;
+  background-color: #6c757d;
+  border-color: #6c757d;
+  color: white;
 }
 
 #download-task-details-btn {
-    transition: all 0.3s ease;
+  transition: all 0.3s ease;
 }
 
 #download-task-details-btn:hover {
-    background-color: #007bff;
-    border-color: #007bff;
-    color: white;
+  background-color: #007bff;
+  border-color: #007bff;
+  color: white;
 }
 
 /* Job link styling */
 #task-detail-job-link {
-    font-weight: 600;
-    text-decoration: none !important;
-    transition: color 0.3s ease;
+  font-weight: 600;
+  text-decoration: none !important;
+  transition: color 0.3s ease;
 }
 
 #task-detail-job-link:hover {
-    color: #0056b3 !important;
+  color: #0056b3 !important;
 }
 
 /* Table responsive improvements */
 .table-responsive {
-    border-radius: 6px;
+  border-radius: 6px;
 }
 
 .table-responsive .table {
-    margin-bottom: 0;
+  margin-bottom: 0;
 }
 
 .table-responsive .table th:first-child,
 .table-responsive .table td:first-child {
-    padding-left: 1rem;
+  padding-left: 1rem;
 }
 
 .table-responsive .table th:last-child,
 .table-responsive .table td:last-child {
-    padding-right: 1rem;
+  padding-right: 1rem;
 }
 
 /* Section headers with icons */
 .ai-integration-section h4 i,
 .failure-details-section h4 i,
 .copilot-response-section h4 i {
-    font-size: 1.2em;
+  font-size: 1.2em;
+}
+
+/* Task Details Section */
+.task-details-section {
+  margin-bottom: 2rem;
+}
+
+.task-details-section h4 {
+  color: #17a2b8;
+  font-weight: 600;
+  margin-bottom: 1rem;
+}
+
+.task-details-section .card {
+  box-shadow: 0 2px 8px rgba(23, 162, 184, 0.1);
+  border: 1px solid #e9ecef;
+}
+
+.task-details-section .card-header {
+  background-color: #f8f9fa;
+  border-bottom: 1px solid #e9ecef;
+}
+
+.task-details-section .card-header h6 {
+  color: #495057;
+  font-weight: 600;
+}
+
+.task-details-section .table td:first-child {
+  width: 40%;
+  font-weight: 500;
+  color: #6c757d;
+}
+
+.task-details-section .table td:last-child {
+  color: #495057;
+}
+
+.task-details-section .badge {
+  font-size: 0.75rem;
+  padding: 0.375rem 0.75rem;
+}
+
+/* Task Statistics Section */
+.task-stats-section {
+  margin-bottom: 2rem;
+}
+
+.task-stats-section h4 {
+  color: #28a745;
+  font-weight: 600;
+  margin-bottom: 1rem;
+}
+
+.task-stats-section .metric-card {
+  height: 120px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+}
+
+.task-stats-section .card {
+  box-shadow: 0 2px 8px rgba(40, 167, 69, 0.1);
+  border: 1px solid #e9ecef;
+}
+
+.task-stats-section .card-header {
+  background-color: #f8f9fa;
+  border-bottom: 1px solid #e9ecef;
+}
+
+.task-stats-section .card-header h6 {
+  color: #495057;
+  font-weight: 600;
+}
+
+/* Initial Prompt Section */
+.initial-prompt-section {
+  margin-bottom: 2rem;
+}
+
+.initial-prompt-section h4 {
+  color: #007bff;
+  font-weight: 600;
+  margin-bottom: 1rem;
+}
+
+.initial-prompt-section .card {
+  box-shadow: 0 2px 8px rgba(0, 123, 255, 0.1);
+  border: 1px solid #e9ecef;
+}
+
+.initial-prompt-section .form-control {
+  border: none;
+  font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+  font-size: 0.9rem;
+  line-height: 1.5;
+  resize: none;
+}
+
+/* File Edits List Styling */
+#task-file-edits-list {
+  max-height: 200px;
+  overflow-y: auto;
+}
+
+#task-file-edits-list .bi {
+  color: #6f42c1;
 }
 
 /* Responsive adjustments */
 @media (max-width: 768px) {
-    .task-header-card {
-        padding: 1rem;
-    }
-    
-    .metric-card {
-        margin-bottom: 1rem;
-    }
-    
-    .metric-value {
-        font-size: 1.5rem;
-    }
-    
-    .ai-integration-section .display-6 {
-        font-size: 1.5rem;
-    }
-    
-    .table-responsive .table th,
-    .table-responsive .table td {
-        font-size: 0.8rem;
-        padding: 0.5rem;
-    }
+  .task-header-card {
+    padding: 1rem;
+  }
+
+  .metric-card {
+    margin-bottom: 1rem;
+  }
+
+  .metric-value {
+    font-size: 1.5rem;
+  }
+
+  .ai-integration-section .display-6 {
+    font-size: 1.5rem;
+  }
+
+  .table-responsive .table th,
+  .table-responsive .table td {
+    font-size: 0.8rem;
+    padding: 0.5rem;
+  }
 }
 
 @media (max-width: 576px) {
-    .task-header-card .text-muted span {
-        display: block;
-        margin-bottom: 0.25rem;
-    }
-    
-    .task-header-card .text-muted span:not(:last-child) {
-        margin-right: 0;
-    }
-    
-    .metric-value {
-        font-size: 1.25rem;
-    }
-    
-    .ai-integration-section .display-6 {
-        font-size: 1.25rem;
-    }
+  .task-header-card .text-muted span {
+    display: block;
+    margin-bottom: 0.25rem;
+  }
+
+  .task-header-card .text-muted span:not(:last-child) {
+    margin-right: 0;
+  }
+
+  .metric-value {
+    font-size: 1.25rem;
+  }
+
+  .ai-integration-section .display-6 {
+    font-size: 1.25rem;
+  }
 }
