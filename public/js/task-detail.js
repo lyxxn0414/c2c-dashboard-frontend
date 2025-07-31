@@ -208,6 +208,7 @@ class TaskDetail {
 
     deployIterationData.forEach((iteration, index) => {
       const row = tableBody.insertRow();
+      row.insertCell().textContent = iteration.iteration;
       row.insertCell().textContent = formatDateTime(iteration.Time || iteration.time) || "-";
 
       // Input command cell with truncation

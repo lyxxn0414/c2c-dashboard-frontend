@@ -99,18 +99,24 @@ class JobDetail {
 
     // Populate metrics - handle both new and old field names for compatibility
     document.getElementById("job-success-rate").textContent =
-      job.SuccessRate+" ("+job.SuccessTasks+"/"+job.TaskNum+")" || "0%";
-
-    // Additional metrics from backend
+      job.SuccessRate+" ("+job.SuccessTasks+"/"+job.TaskNum+")" || "0%";    // Additional metrics from backend
     console.log("Job metrics:", job);
     document.getElementById("job-avg-iterations").textContent =
       job.AvgSuccessIteration || "10";
-    document.getElementById("job-iterations-changes").textContent = (
-      job.AvgInfraChanges || "xx"
-    ).toFixed(2);
-    document.getElementById("job-avg-file-edits").textContent = (
-      job.AvgFileChanges || "xx"
-    ).toFixed(2);
+    
+    // Fix for AvgInfraChanges - only call toFixed on numbers
+    const avgInfraChanges = job.AvgInfraChanges;
+    document.getElementById("job-iterations-changes").textContent = 
+      (typeof avgInfraChanges === 'number' && !isNaN(avgInfraChanges)) 
+        ? avgInfraChanges.toFixed(2) 
+        : (avgInfraChanges || "xx");
+    
+    // Fix for AvgFileChanges - only call toFixed on numbers
+    const avgFileChanges = job.AvgFileChanges;
+    document.getElementById("job-avg-file-edits").textContent = 
+      (typeof avgFileChanges === 'number' && !isNaN(avgFileChanges)) 
+        ? avgFileChanges.toFixed(2) 
+        : (avgFileChanges || "xx");
 
     // Tool call metrics
     document.getElementById("tool-recommend").textContent =
@@ -517,14 +523,27 @@ class JobDetail {
                 </div>
             `;
       return;
-    }
-
-    // Generate HTML for failed tasks using Bootstrap row/col structure
+    }    // Generate HTML for failed tasks using Bootstrap row/col structure
     const failedTasksHTML = tasks
       .map((task) => {
         // Normalize error category, handle undefined/null cases
         const errorCategory = task.ErrorCategory || "General Error";
         const taskName = task.TaskID || "Unknown Task";
+        
+        // Determine success status styling based on IsSuccessful property
+        let statusText = "";
+        let statusClass = "";
+        
+        if (task.IsSuccessful === true) {
+          statusText = "Success";
+          statusClass = "badge bg-success";
+        } else if (task.IsSuccessful === false) {
+          statusText = "Failed";
+          statusClass = "badge bg-danger";
+        } else {
+          statusText = "Unknown";
+          statusClass = "badge bg-secondary";
+        }
 
         return `
                 <div class="failed-task-item" data-category="${errorCategory}" data-task-name="${taskName.toLowerCase()}">
@@ -533,12 +552,15 @@ class JobDetail {
                             <a href="/task-detail/${task.TaskID}" class="task-name-link" data-task-id="${task.TaskID}">${taskName}</a>
                         </div>
                         <div class="col-md-1">
-                            <span class="error-category">${formatDateTime(task.CreatedDate)}</span>
+                            <span class="${statusClass}">${statusText}</span>
+                        </div>
+                        <div class="col-md-1">
+                            <span class="created-date">${formatDateTime(task.CreatedDate)}</span>
                         </div>
                         <div class="col-md-1">
                             <span class="error-category badge bg-danger-subtle text-danger">${errorCategory}</span>
                         </div>
-                        <div class="col-md-3">
+                        <div class="col-md-2">
                             <span class="error-description">${task.ErrorDescription || "No error description available"}</span>
                         </div>
                         <div class="col-md-5">

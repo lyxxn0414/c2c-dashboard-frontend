@@ -258,13 +258,33 @@ router.get("/by-encoded-name/:encodedName", async (req, res) => {
     console.log("Fetching repository details for (from base64):", repoName);
     
     const repo = await repoService.getRepositoryDetails(repoName);
-    if (repo) {
-      res.json(repo);
+    if (repo) {    res.json(repo);
     } else {
       res.status(404).json({ error: "Repository not found" });
     }
   } catch (error) {
     console.error("Error decoding or fetching repository details:", error);
+    res.status(400).json({ error: "Invalid encoded repository name" });
+  }
+});
+
+// GET /api/repos/by-encoded-name/:encodedName/tasks
+router.get("/by-encoded-name/:encodedName/tasks", async (req, res) => {
+  try {
+    // Decode the base64 encoded repository name
+    const encodedName = req.params.encodedName;
+    // Convert URL-safe base64 back to regular base64
+    const base64Name = encodedName.replace(/-/g, '+').replace(/_/g, '/');
+    // Add padding if needed
+    const paddedBase64 = base64Name + '='.repeat((4 - base64Name.length % 4) % 4);
+    
+    const repoName = Buffer.from(paddedBase64, 'base64').toString('utf-8');
+    console.log("Fetching related tasks for repository (from base64):", repoName);
+    
+    const tasks = await repoService.getRelatedTasks(repoName);
+    res.json(tasks);
+  } catch (error) {
+    console.error("Error decoding or fetching related tasks:", error);
     res.status(400).json({ error: "Invalid encoded repository name" });
   }
 });

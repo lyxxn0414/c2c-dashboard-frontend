@@ -134,7 +134,6 @@ class RepoDetail {
       this.populateRepoDetails(this.createPlaceholderRepoData(repoName));
     }
   }
-
   async loadRelatedTasks(repoName = this.currentRepoName) {
     try {
       console.log("Loading related tasks for:", repoName);
@@ -145,17 +144,35 @@ class RepoDetail {
         loadingIndicator.classList.remove("d-none");
       }
 
-      // Try to fetch related tasks from API
+      // Use base64 encoding for repo names with special characters to avoid URL issues
+      const encodedRepoName = btoa(repoName).replace(
+        /[+/=]/g,
+        function (match) {
+          return { "+": "-", "/": "_", "=": "" }[match];
+        }
+      );
+
+      // Try to fetch related tasks from API using encoded name
       const response = await fetch(
-        `/api/repos/${encodeURIComponent(repoName)}/tasks`
+        `/api/repos/by-encoded-name/${encodedRepoName}/tasks`
       );
 
       if (response.ok) {
         this.relatedTasksData = await response.json();
         console.log("Related tasks loaded from API:", this.relatedTasksData);
       } else {
-        console.log("API failed for tasks, using mock data");
-        this.relatedTasksData = [];
+        console.log("Encoded API failed for tasks, trying fallback with URI encoding...");
+        // Fallback to the original method
+        const fallbackResponse = await fetch(
+          `/api/repos/${encodeURIComponent(repoName)}/tasks`
+        );
+        if (fallbackResponse.ok) {
+          this.relatedTasksData = await fallbackResponse.json();
+          console.log("Related tasks loaded from fallback API:", this.relatedTasksData);
+        } else {
+          console.log("Both API methods failed for tasks, using empty array");
+          this.relatedTasksData = [];
+        }
       }
 
       if (!this.relatedTasksData || this.relatedTasksData.length === 0) {
