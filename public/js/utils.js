@@ -586,8 +586,8 @@ function escapeHtml(text) {
 
 function getSuccessRateClass(successRate) {
   const percentage = parseInt(successRate);
-  if (percentage >= 90) return "high";
-  if (percentage >= 70) return "medium";
+  if (percentage >= 80) return "high";
+  if (percentage >= 50) return "medium";
   return "low";
 }
 
