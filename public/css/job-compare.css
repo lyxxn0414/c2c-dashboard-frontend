@@ -341,3 +341,51 @@
   background-color: #e9ecef;
   font-weight: 600;
 }
+
+/* Job ID Links */
+.job-id-link {
+  color: inherit !important;
+  transition: all 0.2s ease;
+}
+
+.job-id-link:hover {
+  color: #0d6efd !important;
+  transform: translateY(-1px);
+}
+
+/* Table header job links */
+th .job-id-link {
+  font-weight: 600;
+}
+
+th .job-id-link:hover {
+  color: #0d6efd !important;
+}
+
+/* Badge job links */
+.badge .job-id-link {
+  color: white !important;
+}
+
+.badge .job-id-link:hover {
+  color: #e3f2fd !important;
+}
+
+/* Card header job links */
+.card-header .job-id-link {
+  color: inherit !important;
+  font-weight: 600;
+}
+
+.card-header .job-id-link:hover {
+  color: #0d6efd !important;
+}
+
+/* Dimension table job links */
+.dimension-table .job-id-link {
+  font-weight: 600;
+}
+
+.dimension-table .job-id-link:hover {
+  color: #0d6efd !important;
+}

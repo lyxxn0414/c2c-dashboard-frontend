@@ -25,7 +25,6 @@ class JobCompare {
     this.bindEvents();
     this.loadSelectedJobs();
   }
-
   bindEvents() {
     // Back to jobs button
     const backBtn = document.getElementById("back-to-jobs-btn");
@@ -66,6 +65,18 @@ class JobCompare {
         const button = e.target.closest(".remove-job-btn");
         const jobId = button.dataset.jobId;
         this.removeJobFromComparison(jobId);
+      }
+    });
+
+    // Event delegation for job ID links
+    document.addEventListener("click", (e) => {
+      if (e.target.closest(".job-id-link")) {
+        e.preventDefault();
+        const link = e.target.closest(".job-id-link");
+        const jobId = link.dataset.jobId;
+        if (jobId) {
+          window.navigateToJobDetail(jobId);
+        }
       }
     });
   }
@@ -411,7 +422,6 @@ class JobCompare {
     if (countElement) {
       countElement.textContent = this.jobsData.length;
     }
-
     if (listElement) {
       const badgesHtml = this.jobsData
         .map((job) => {
@@ -419,7 +429,7 @@ class JobCompare {
           const jobId = job.TestJobID || job.JobID || job.id || "Unknown";
           return `
         <span class="badge bg-primary me-2 mb-2 d-flex align-items-center">
-          <span class="me-2">${jobId}</span>
+          <a href="#" class="job-id-link text-white text-decoration-none me-2" data-job-id="${jobId}">${jobId}</a>
           <button class="btn-close btn-close-white remove-job-btn" 
                   data-job-id="${jobId}" 
                   style="font-size: 0.7em;"
@@ -541,14 +551,14 @@ class JobCompare {
       if (uniqueValues.length > 1) {
         differentConfigs.push(item);
       }
-    });
-
-    // Update job headers
+    }); // Update job headers
     this.jobsData.forEach((job, index) => {
       const header = document.getElementById(`job-header-config-${index}`);
       if (header) {
-        header.textContent =
+        const jobId =
           job.TestJobID || job.JobID || job.id || `Job ${index + 1}`;
+        // Make the job header clickable
+        header.innerHTML = `<a href="#" class="job-id-link text-decoration-none" data-job-id="${jobId}">${jobId}</a>`;
         header.style.display = "table-cell";
       }
     });
@@ -654,9 +664,10 @@ class JobCompare {
               .map(
                 (job) => `
               <div class="col-md-6 col-lg-4 mb-3">
-                <div class="card">
-                  <div class="card-header">
-                    <h6 class="mb-0">${job.jobId}</h6>
+                <div class="card">                  <div class="card-header">
+                    <h6 class="mb-0"><a href="#" class="job-id-link text-decoration-none" data-job-id="${
+                      job.jobId
+                    }">${job.jobId}</a></h6>
                   </div>
                   <div class="card-body">
                     <div class="row text-center">
@@ -950,8 +961,7 @@ class JobCompare {
           return `<td>${cellContent}</td>`;
         })
         .join("");
-
-      rowsHtml += `<tr><td class="fw-semibold">${jobId}(${this.getJobConfig(
+      rowsHtml += `<tr><td class="fw-semibold"><a href="#" class="job-id-link text-decoration-none" data-job-id="${jobId}">${jobId}</a>(${this.getJobConfig(
         jobId
       )})</td>${cells}</tr>`;
     });
@@ -1492,7 +1502,9 @@ class JobCompare {
     this.jobsData.forEach((job, index) => {
       const header = document.getElementById(`job-header-${index}`);
       if (header) {
-        header.textContent = job.TestJobID || job.JobID || job.id || "Job";
+        const jobId = job.TestJobID || job.JobID || job.id || "Job";
+        // Make the job header clickable
+        header.innerHTML = `<a href="#" class="job-id-link text-decoration-none" data-job-id="${jobId}">${jobId}</a>`;
         header.style.display = "";
       }
     });
@@ -1554,6 +1566,27 @@ class JobCompare {
     }
 
     return "";
+  }
+  removeJobFromComparison(jobId) {
+    console.log("Removing job from comparison:", jobId);
+
+    // Remove from selected job IDs
+    this.selectedJobIds = this.selectedJobIds.filter((id) => id !== jobId);
+
+    // Remove from jobs data
+    this.jobsData = this.jobsData.filter((job) => {
+      const currentJobId = job.TestJobID || job.JobID || job.id;
+      return currentJobId !== jobId;
+    });
+
+    // Check if we still have enough jobs for comparison
+    if (this.jobsData.length < 2) {
+      this.showNoJobsSelected();
+    } else {
+      // Regenerate comparison with remaining jobs
+      this.updateSelectedJobsSummary();
+      this.generateComparison();
+    }
   }
 }
 
