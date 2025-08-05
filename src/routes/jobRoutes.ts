@@ -104,17 +104,10 @@ router.get('/:id', asyncHandler(async (req: Request, res: Response) => {
     const job = await externalJobService.getJobById(id);
     console.log(`Fetched job ${id} from external service:`, job);
     const taskErrors = await externalJobService.getTaskFirstErrorDetailByJobID(id);
-    const classifications = ['Model','RepoType','AppPattern','Language'];
-    const classifiedResults: { [key: string]: any } = {};
-    for (const classification of classifications) {
-      classifiedResults[classification] = await externalJobService.getClassifiedResultsByJobID(id, classification);
-      console.log(`Fetched classified results for ${classification}:`, classifiedResults[classification]);
-    }
     console.log("Fetched task errors:", taskErrors);
     res.json({
       job: job,
-      taskErrors: taskErrors,
-      classifiedResults: classifiedResults
+      taskErrors: taskErrors
     });
   } catch (error) {
     console.error(`Error fetching job ${id} from external service:`, error);

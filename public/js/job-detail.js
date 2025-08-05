@@ -72,11 +72,10 @@ class JobDetail {
       const jobDetail = await response.json();
       const job = jobDetail.job;
       const taskErrors = jobDetail.taskErrors;
-      const classifiedResults = jobDetail.classifiedResults;
       console.log("Fetched job for detail view:", job);
 
       // Show job detail view with actual data
-      this.showJobDetailView(job, taskErrors, classifiedResults);
+      this.showJobDetailView(job, taskErrors);
     } catch (error) {
       console.error("Error navigating to job detail:", error);
       showAlert(`Failed to load job details for job ${jobId}.`, "danger");
@@ -85,7 +84,7 @@ class JobDetail {
     }
   }
 
-  showJobDetailView(job, taskErrors, classifiedResults) {
+  showJobDetailView(job, taskErrors) {
     this.currentJob = job;
 
     // Populate job detail fields
@@ -129,7 +128,7 @@ class JobDetail {
     document.getElementById("tool-get-logs").textContent = job.GetLogsCalls || 0;
 
 
-    this.populateModelStatistics(classifiedResults); // Failed tasks analysis
+    this.populateModelStatistics(job.TestJobID); // Failed tasks analysis
     this.populateFailedTasks(taskErrors);
     document.querySelectorAll(".task-name-link").forEach((link) => {
       link.addEventListener("click", (e) => {
@@ -200,7 +199,7 @@ class JobDetail {
     }
   }
 
-  populateModelStatistics(classifiedResults) {
+  async populateModelStatistics(jobId) {
     const classificationContainer = document.getElementById(
       "classification-container"
     );
@@ -209,54 +208,53 @@ class JobDetail {
       return;
     }
 
-    console.log(
-      "Populating model statistics with classified results:",
-      classifiedResults
-    ); // Define classification categories with their data sources
-    const classificationCategories = [
-      {
-        title: "Result classified by Model",
-        subtitle: "",
-        data:
-          (classifiedResults["Model"] && classifiedResults["Model"].data) || [],
-      },
-      {
-        title: "Result classified by Language",
-        subtitle: "",
-        data:
-          (classifiedResults["Language"] &&
-            classifiedResults["Language"].data) ||
-          [],
-      },
-      {
-        title: "Result classified by Resource Type",
-        subtitle: "Num of Compute Resource + Num of Binding Resource",
-        data:
-          (classifiedResults["AppPattern"] &&
-            classifiedResults["AppPattern"].data) ||
-          [],
-      },
-      {
-        title: "Result classified by Repo Type",
-        subtitle: "Task Name",
-        data:
-          (classifiedResults["RepoType"] &&
-            classifiedResults["RepoType"].data) ||
-          [],
-      },
-    ];
+    try {
+      console.log("Loading classification data for job:", jobId);
+      
+      // Show loading state
+      classificationContainer.innerHTML = `
+        <div class="col-12 text-center py-4">
+          <div class="spinner-border text-primary" role="status">
+            <span class="visually-hidden">Loading...</span>
+          </div>
+          <p class="text-muted mt-2">Loading classification results...</p>
+        </div>
+      `;
 
-    // Clear existing content
-    classificationContainer.innerHTML = "";
-
-    classificationCategories.forEach((category) => {
-      console.log(`Processing classification category data: ${category.data}`);
-      if (category.data && category.data.length > 0) {
-        const cardHTML = this.generateClassificationCard(category);
-        classificationContainer.insertAdjacentHTML("beforeend", cardHTML);
-        console.log(`Added classification card for: ${category.title}`);
+      // Fetch task data for this job
+      const response = await fetch(`/api/jobs/${jobId}/tasks`);
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
       }
-    });
+
+      const tasksResponse = await response.json();
+      const tasks = tasksResponse.data || tasksResponse.tasks || tasksResponse;
+
+      if (!tasks || tasks.length === 0) {
+        classificationContainer.innerHTML = `
+          <div class="col-12 text-center py-4">
+            <i class="bi bi-info-circle text-muted" style="font-size: 2rem;"></i>
+            <p class="text-muted mt-2">No task data available for classification</p>
+          </div>
+        `;
+        return;
+      }
+
+      // Generate unified classification table
+      const unifiedTable = this.generateUnifiedClassificationTable(tasks);
+
+      // Clear existing content and render the unified table
+      classificationContainer.innerHTML = unifiedTable;
+
+    } catch (error) {
+      console.error("Error loading classification data:", error);
+      classificationContainer.innerHTML = `
+        <div class="col-12 text-center py-4">
+          <i class="bi bi-exclamation-triangle text-warning" style="font-size: 2rem;"></i>
+          <p class="text-muted mt-2">Failed to load classification data</p>
+        </div>
+      `;
+    }
   }
 
   populateFailedTasks(taskErrors) {
@@ -311,6 +309,194 @@ class JobDetail {
 
     // Setup filter event listeners
     this.setupFilterEventListeners();
+  }
+
+  generateUnifiedClassificationTable(tasks) {
+    console.log("Generating unified classification table from tasks:", tasks);
+
+    // Helper function to calculate metrics for a group of tasks
+    const calculateMetrics = (groupTasks) => {
+      const totalTasks = groupTasks.length;
+      const successfulTasks = groupTasks.filter(task => 
+        task.IsSuccessful === true || task.IsSuccessful === "true"
+      );
+      const successCount = successfulTasks.length;
+      const successRate = Math.round((successCount / totalTasks) * 100);
+      
+      // Calculate average iterations for successful tasks only
+      let avgIteration = 0;
+      if (successfulTasks.length > 0) {
+        const totalIterations = successfulTasks.reduce((sum, task) => 
+          sum + (task.Iterations || 0), 0
+        );
+        avgIteration = Math.round((totalIterations / successfulTasks.length) * 10) / 10;
+      }
+
+      return {
+        totalRepos: totalTasks,
+        successRate: successRate,
+        successCount: successCount,
+        avgIteration: avgIteration
+      };
+    };
+
+    // Helper function to get dimension value
+    const getDimensionValue = (task, dimension) => {
+      switch (dimension) {
+        case "Model":
+          return task.CopilotModel || task.Model || "Unknown";
+        case "Language":
+          if (task.Languages && Array.isArray(task.Languages)) {
+            return task.Languages.join(", ");
+          }
+          return task.Language || task.ProgrammingLanguage || "Unknown";
+        case "AppPattern":
+          return task.AppPattern || task.ApplicationPattern || "Unknown";
+        case "RepoType":
+          return task.RepoType || task.RepositoryType || "Unknown";
+        default:
+          return "Unknown";
+      }
+    };
+
+    // Create overall statistics
+    const overallMetrics = calculateMetrics(tasks);
+
+    // Group tasks by different dimensions
+    const dimensions = ["Model", "Language", "AppPattern"];
+    const classificationData = {};
+
+    dimensions.forEach(dimension => {
+      const grouped = {};
+      tasks.forEach(task => {
+        const value = getDimensionValue(task, dimension);
+        if (!grouped[value]) {
+          grouped[value] = [];
+        }
+        grouped[value].push(task);
+      });
+
+      classificationData[dimension] = Object.entries(grouped)
+        .map(([type, groupTasks]) => ({
+          type: type,
+          ...calculateMetrics(groupTasks)
+        }))
+        .sort((a, b) => b.successRate - a.successRate);
+    });
+
+    // Calculate average iteration per success across all successful tasks
+    const avgIterationSummary = this.calculateAverageIterationSummary(tasks);
+
+    // Create the unified table HTML
+    return `
+      <div class="col-12">
+        <div class="classification-unified-card">
+          <div class="classification-unified-header">
+            <h5><i class="bi bi-grid-3x3 me-2"></i>Classification Results Summary</h5>
+          </div>
+          <div class="table-responsive">
+            <table class="table table-striped table-hover classification-table">
+              <thead class="table-dark">
+                <tr>
+                  <th scope="col">Categories</th>
+                  <th scope="col">Sub-categories</th>
+                  <th scope="col"># of test repos</th>
+                  <th scope="col">Deployment Success Rate</th>
+                  <th scope="col">Average iteration per success</th>
+                </tr>
+              </thead>
+              <tbody>
+                <!-- Overall Row -->
+                <tr class="table-primary">
+                  <th scope="row" rowspan="1">Overall</th>
+                  <td></td>
+                  <td><strong>${overallMetrics.totalRepos}</strong></td>
+                  <td><strong>${overallMetrics.successRate}%</strong></td>
+                  <td><strong>${overallMetrics.avgIteration}</strong></td>
+                </tr>
+                
+                <!-- Model Classification -->
+                ${this.generateCategoryRows("By Model", classificationData.Model)}
+                
+                <!-- Language Classification -->
+                ${this.generateCategoryRows("By Language", classificationData.Language)}
+                
+                <!-- App Pattern Classification -->
+                ${this.generateCategoryRows("By App Pattern (Compute + Binding Services)", classificationData.AppPattern)}
+                
+                <!-- Average iteration per success summary -->
+                <tr class="table-info">
+                  <th scope="row">Average iteration per success</th>
+                  <td></td>
+                  <td></td>
+                  <td></td>
+                  <td><strong>${avgIterationSummary}</strong></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    `;
+  }
+
+  calculateAverageIterationSummary(tasks) {
+    // Get all successful tasks and their iterations
+    const successfulTasks = tasks.filter(task => 
+      task.IsSuccessful === true || task.IsSuccessful === "true"
+    );
+
+    if (successfulTasks.length === 0) {
+      return 0;
+    }
+
+    // Calculate the overall average iterations for successful tasks
+    const totalIterations = successfulTasks.reduce((sum, task) => 
+      sum + (task.Iterations || 0), 0
+    );
+    
+    return Math.round((totalIterations / successfulTasks.length) * 10) / 10;
+  }
+
+  generateCategoryRows(categoryName, categoryData) {
+    if (!categoryData || categoryData.length === 0) {
+      return `
+        <tr>
+          <th scope="row">${categoryName}</th>
+          <td>No data</td>
+          <td>0</td>
+          <td>0%</td>
+          <td>0</td>
+        </tr>
+      `;
+    }
+
+    return categoryData.map((item, index) => {
+      const isFirstRow = index === 0;
+      const rowspan = categoryData.length;
+      
+      return `
+        <tr>
+          ${isFirstRow ? `<th scope="row" rowspan="${rowspan}">${categoryName}</th>` : ''}
+          <td>${item.type}</td>
+          <td>${item.totalRepos}</td>
+          <td>
+            <span class="badge ${this.getSuccessRateBadgeClass(item.successRate)}">
+              ${item.successRate}%
+            </span>
+            <small class="text-muted ms-1">(${item.successCount}/${item.totalRepos})</small>
+          </td>
+          <td>${item.avgIteration}</td>
+        </tr>
+      `;
+    }).join('');
+  }
+
+  getSuccessRateBadgeClass(successRate) {
+    if (successRate >= 80) return 'bg-success';
+    if (successRate >= 60) return 'bg-warning';
+    if (successRate >= 40) return 'bg-orange text-dark';
+    return 'bg-danger';
   }
 
   generateClassificationCard(category) {
