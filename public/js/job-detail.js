@@ -4,6 +4,7 @@ class JobDetail {
     this.initializeElements();
     this.twoDimensionalAnalysis = new TwoDimensionalAnalysis();
     this.currentJob = null; // Store current job for detail view
+    this.failedOnlyActive = false; // Track failed-only filter state
   }initializeElements() {
     this.jobDetailView = document.getElementById("job-detail-view");
 
@@ -765,6 +766,7 @@ class JobDetail {
     const categoryFilter = document.getElementById("category-filter");
     const clearFilterBtn = document.getElementById("clear-filter-btn");
     const taskSearch = document.getElementById("task-search");
+    const filterFailedOnlySwitch = document.getElementById("filter-failed-only-switch");
 
     if (categoryFilter) {
       // Remove existing event listener to avoid duplicates
@@ -789,6 +791,19 @@ class JobDetail {
       }, 300);
 
       taskSearch.addEventListener("input", this.handleTaskSearch);
+    }
+
+    if (filterFailedOnlySwitch) {
+      // Remove existing event listener to avoid duplicates
+      filterFailedOnlySwitch.removeEventListener("change", this.handleFilterFailedOnly);
+
+      // Add new event listener
+      this.handleFilterFailedOnly = (e) => {
+        this.failedOnlyActive = e.target.checked;
+        this.applyFilters();
+      };
+
+      filterFailedOnlySwitch.addEventListener("change", this.handleFilterFailedOnly);
     }
 
     if (clearFilterBtn) {
@@ -880,7 +895,7 @@ class JobDetail {
 
     // Show or hide clear filter button based on if filters are active
     if (clearFilterBtn) {
-      if (selectedCategory !== "all" || searchText) {
+      if (selectedCategory !== "all" || searchText || this.failedOnlyActive) {
         clearFilterBtn.style.display = "inline-block";
       } else {
         clearFilterBtn.style.display = "none";
@@ -889,6 +904,14 @@ class JobDetail {
 
     // Apply filters
     let filteredTasks = [...this.originalFailedTasks];
+
+    // Apply failed-only filter (Final State == "Failed")
+    if (this.failedOnlyActive) {
+      filteredTasks = filteredTasks.filter(task => {
+        // Check if the task has a final state of "Failed"
+        return task.IsSuccessful === false || task.IsSuccessful === "false";
+      });
+    }
 
     // Apply category filter
     if (selectedCategory !== "all") {
@@ -917,7 +940,7 @@ class JobDetail {
     if (failedTasksCountBadge) {
       failedTasksCountBadge.textContent = `${filteredTasks.length} Failed Task${filteredTasks.length !== 1 ? "s" : ""}`;
       // Add a filtered indicator if filters are active
-      if (selectedCategory !== "all" || searchText) {
+      if (selectedCategory !== "all" || searchText || this.failedOnlyActive) {
         failedTasksCountBadge.textContent += " (filtered)";
       }
     }
@@ -933,11 +956,18 @@ class JobDetail {
     const categoryFilter = document.getElementById("category-filter");
     const taskSearch = document.getElementById("task-search");
     const clearFilterBtn = document.getElementById("clear-filter-btn");
+    const filterFailedOnlySwitch = document.getElementById("filter-failed-only-switch");
     
     // Reset filter elements
     if (categoryFilter) categoryFilter.value = "all";
     if (taskSearch) taskSearch.value = "";
     if (clearFilterBtn) clearFilterBtn.style.display = "none";
+    
+    // Reset failed-only filter switch
+    if (filterFailedOnlySwitch) {
+      filterFailedOnlySwitch.checked = false;
+      this.failedOnlyActive = false;
+    }
     
     // Restore original task list
     if (this.originalFailedTasks) {

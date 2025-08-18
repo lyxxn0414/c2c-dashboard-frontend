@@ -448,12 +448,14 @@ class JobCompare {
       basic: this.generateBasicComparison(),
       config: this.generateConfigComparison(),
       results: this.generateResultsComparison(),
+      classification: this.generateClassificationComparison(),
       dimensions: this.generateDimensionComparison(),
     };
 
     this.renderBasicComparison();
     this.renderSameConfigSection();
     this.renderConfigResultsSection();
+    this.renderClassificationComparison();
     this.renderDimensionTables();
   }
   generateBasicComparison() {
@@ -1326,6 +1328,7 @@ class JobCompare {
       { id: "job-comparison-section", display: "none" },
       { id: "same-config-section", display: "none" },
       { id: "config-results-section", display: "none" },
+      { id: "classification-comparison-section", display: "none" },
       { id: "dimensions-comparison-section", display: "none" },
       { id: "no-jobs-selected", display: "none" },
       { id: "job-compare-error", display: "none" },
@@ -1344,6 +1347,7 @@ class JobCompare {
       { id: "job-comparison-section", display: "block" },
       { id: "same-config-section", display: "block" },
       { id: "config-results-section", display: "block" },
+      { id: "classification-comparison-section", display: "block" },
       { id: "dimensions-comparison-section", display: "block" },
       { id: "no-jobs-selected", display: "none" },
       { id: "job-compare-error", display: "none" },
@@ -1362,6 +1366,7 @@ class JobCompare {
       { id: "job-comparison-section", display: "none" },
       { id: "same-config-section", display: "none" },
       { id: "config-results-section", display: "none" },
+      { id: "classification-comparison-section", display: "none" },
       { id: "dimensions-comparison-section", display: "none" },
       { id: "no-jobs-selected", display: "block" },
       { id: "job-compare-error", display: "none" },
@@ -1381,6 +1386,7 @@ class JobCompare {
       { id: "job-comparison-section", display: "none" },
       { id: "same-config-section", display: "none" },
       { id: "config-results-section", display: "none" },
+      { id: "classification-comparison-section", display: "none" },
       { id: "dimensions-comparison-section", display: "none" },
       { id: "no-jobs-selected", display: "none" },
       { id: "job-compare-error", display: "block" },
@@ -1587,6 +1593,276 @@ class JobCompare {
       this.updateSelectedJobsSummary();
       this.generateComparison();
     }
+  }
+
+  generateClassificationComparison() {
+    console.log("Generating classification comparison data...");
+    
+    const classificationData = {};
+    
+    this.jobsData.forEach(job => {
+      const jobId = job.TestJobID || job.JobID || job.id;
+      const tasks = job.tasks || [];
+      
+      if (tasks.length > 0) {
+        classificationData[jobId] = this.generateJobClassificationData(tasks);
+      }
+    });
+    
+    return classificationData;
+  }
+
+  generateJobClassificationData(tasks) {
+    // Helper function to calculate metrics for a group of tasks
+    const calculateMetrics = (groupTasks) => {
+      const totalTasks = groupTasks.length;
+      const successfulTasks = groupTasks.filter(task => 
+        task.IsSuccessful === true || task.IsSuccessful === "true"
+      );
+      const successCount = successfulTasks.length;
+      const successRate = Math.round((successCount / totalTasks) * 100);
+      
+      // Calculate average iterations for successful tasks only
+      let avgIteration = 0;
+      if (successfulTasks.length > 0) {
+        const totalIterations = successfulTasks.reduce((sum, task) => 
+          sum + (task.Iterations || 0), 0
+        );
+        avgIteration = Math.round((totalIterations / successfulTasks.length) * 10) / 10;
+      }
+
+      return {
+        totalRepos: totalTasks,
+        successRate: successRate,
+        successCount: successCount,
+        avgIteration: avgIteration
+      };
+    };
+
+    // Helper function to get dimension value
+    const getDimensionValue = (task, dimension) => {
+      switch (dimension) {
+        case "Model":
+          return task.CopilotModel || task.Model || "Unknown";
+        case "Language":
+          if (task.Languages && Array.isArray(task.Languages)) {
+            return task.Languages.join(", ");
+          }
+          return task.Language || task.ProgrammingLanguage || "Unknown";
+        case "AppPattern":
+          return task.AppPattern || task.ApplicationPattern || "Unknown";
+        default:
+          return "Unknown";
+      }
+    };
+
+    // Create overall statistics
+    const overallMetrics = calculateMetrics(tasks);
+
+    // Group tasks by different dimensions
+    const dimensions = ["Model", "Language", "AppPattern"];
+    const dimensionData = {};
+
+    dimensions.forEach(dimension => {
+      const grouped = {};
+      tasks.forEach(task => {
+        const value = getDimensionValue(task, dimension);
+        if (!grouped[value]) {
+          grouped[value] = [];
+        }
+        grouped[value].push(task);
+      });
+
+      dimensionData[dimension] = Object.entries(grouped)
+        .map(([type, groupTasks]) => ({
+          type: type,
+          ...calculateMetrics(groupTasks)
+        }))
+        .sort((a, b) => b.successRate - a.successRate);
+    });
+
+    // Calculate average iteration per success across all successful tasks
+    const avgIterationSummary = this.calculateJobAverageIterationSummary(tasks);
+
+    return {
+      overall: overallMetrics,
+      dimensions: dimensionData,
+      avgIterationSummary: avgIterationSummary
+    };
+  }
+
+  calculateJobAverageIterationSummary(tasks) {
+    // Get all successful tasks and their iterations
+    const successfulTasks = tasks.filter(task => 
+      task.IsSuccessful === true || task.IsSuccessful === "true"
+    );
+
+    if (successfulTasks.length === 0) {
+      return 0;
+    }
+
+    // Calculate the overall average iterations for successful tasks
+    const totalIterations = successfulTasks.reduce((sum, task) => 
+      sum + (task.Iterations || 0), 0
+    );
+    
+    return Math.round((totalIterations / successfulTasks.length) * 10) / 10;
+  }
+
+  renderClassificationComparison() {
+    const container = document.getElementById('classification-comparison-content');
+    if (!container) {
+      console.warn('Classification comparison container not found');
+      return;
+    }
+
+    const classificationData = this.comparisonData.classification;
+    if (!classificationData || Object.keys(classificationData).length === 0) {
+      container.innerHTML = `
+        <div class="text-center py-4">
+          <i class="bi bi-info-circle text-muted" style="font-size: 2rem;"></i>
+          <p class="text-muted mt-2">No classification data available</p>
+        </div>
+      `;
+      return;
+    }
+
+    const jobIds = Object.keys(classificationData);
+    
+    // Generate comparison table HTML
+    const tableHTML = this.generateClassificationComparisonTable(jobIds, classificationData);
+    container.innerHTML = tableHTML;
+  }
+
+  generateClassificationComparisonTable(jobIds, classificationData) {
+    const dimensions = ["Model", "Language", "AppPattern"];
+    
+    // Create headers
+    const jobHeaders = jobIds.map(jobId => 
+      `<th class="text-center" style="min-width: 150px;">${jobId}</th>`
+    ).join('');
+    
+    // Generate rows for each dimension
+    let dimensionRows = '';
+    
+    dimensions.forEach(dimension => {
+      const dimensionName = dimension === "AppPattern" ? "App Pattern" : dimension;
+      
+      // Get all unique sub-categories across all jobs for this dimension
+      const allSubCategories = new Set();
+      jobIds.forEach(jobId => {
+        const jobData = classificationData[jobId];
+        if (jobData.dimensions[dimension]) {
+          jobData.dimensions[dimension].forEach(item => {
+            allSubCategories.add(item.type);
+          });
+        }
+      });
+      
+      const subCategoriesArray = Array.from(allSubCategories).sort();
+      const rowspan = Math.max(1, subCategoriesArray.length);
+      
+      if (subCategoriesArray.length === 0) {
+        dimensionRows += `
+          <tr>
+            <th scope="row" rowspan="1">By ${dimensionName}</th>
+            <td>No data</td>
+            ${jobIds.map(() => '<td class="text-center">-</td>').join('')}
+          </tr>
+        `;
+      } else {
+        subCategoriesArray.forEach((subCategory, index) => {
+          const isFirstRow = index === 0;
+          dimensionRows += `
+            <tr>
+              ${isFirstRow ? `<th scope="row" rowspan="${rowspan}">By ${dimensionName}</th>` : ''}
+              <td>${subCategory}</td>
+              ${jobIds.map(jobId => {
+                const jobData = classificationData[jobId];
+                const dimensionItems = jobData.dimensions[dimension] || [];
+                const item = dimensionItems.find(d => d.type === subCategory);
+                
+                if (item) {
+                  return `
+                    <td class="text-center">
+                      <span class="badge ${this.getSuccessRateBadgeClass(item.successRate)}">
+                        ${item.successRate}%
+                      </span>
+                      <br>
+                      <small class="text-muted">(${item.successCount}/${item.totalRepos})</small>
+                      <br>
+                      <small class="text-muted">Avg: ${item.avgIteration}</small>
+                    </td>
+                  `;
+                } else {
+                  return '<td class="text-center text-muted">-</td>';
+                }
+              }).join('')}
+            </tr>
+          `;
+        });
+      }
+    });
+    
+    // Add overall row
+    const overallRow = `
+      <tr class="table-primary">
+        <th scope="row">Overall</th>
+        <td></td>
+        ${jobIds.map(jobId => {
+          const jobData = classificationData[jobId];
+          return `
+            <td class="text-center">
+              <strong>${jobData.overall.totalRepos} repos</strong>
+              <br>
+              <span class="badge ${this.getSuccessRateBadgeClass(jobData.overall.successRate)}">
+                ${jobData.overall.successRate}%
+              </span>
+              <br>
+              <small class="text-muted">Avg: ${jobData.overall.avgIteration}</small>
+            </td>
+          `;
+        }).join('')}
+      </tr>
+    `;
+    
+    // Add average iteration summary row
+    const avgIterationRow = `
+      <tr class="table-info">
+        <th scope="row">Average iteration per success</th>
+        <td></td>
+        ${jobIds.map(jobId => {
+          const jobData = classificationData[jobId];
+          return `<td class="text-center"><strong>${jobData.avgIterationSummary}</strong></td>`;
+        }).join('')}
+      </tr>
+    `;
+
+    return `
+      <div class="table-responsive">
+        <table class="table table-striped table-hover classification-comparison-table">
+          <thead class="table-dark">
+            <tr>
+              <th scope="col" style="width: 20%;">Categories</th>
+              <th scope="col" style="width: 15%;">Sub-categories</th>
+              ${jobHeaders}
+            </tr>
+          </thead>
+          <tbody>
+            ${overallRow}
+            ${dimensionRows}
+            ${avgIterationRow}
+          </tbody>
+        </table>
+      </div>
+    `;
+  }
+
+  getSuccessRateBadgeClass(successRate) {
+    if (successRate >= 80) return 'bg-success';
+    if (successRate >= 60) return 'bg-warning';
+    if (successRate >= 40) return 'bg-orange text-dark';
+    return 'bg-danger';
   }
 }
 

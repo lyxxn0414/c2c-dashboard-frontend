@@ -311,20 +311,30 @@
                 
                 <!-- Filter Controls -->
                 <div class="row mb-3">
-                    <div class="col-md-6">
+                    <div class="col-md-4">
                         <div class="filter-controls">
                             <label for="task-search" class="form-label me-2">Search Tasks:</label>
                             <input type="text" class="form-control" id="task-search" placeholder="Search by task name...">
                         </div>
                     </div>
-                    <div class="col-md-6">
-                        <div class="filter-controls justify-content-end">
+                    <div class="col-md-4">
+                        <div class="filter-controls">
                             <label for="category-filter" class="form-label me-2">Filter by Category:</label>
                             <select class="form-select" id="category-filter">
                                 <option value="all">All Categories</option>
                             </select>
-                            <button class="btn btn-outline-secondary btn-sm ms-2" id="clear-filter-btn" style="display: none;">
-                                <i class="bi bi-x-circle"></i> Clear
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="filter-controls justify-content-end">
+                            <div class="form-check form-switch me-3">
+                                <input class="form-check-input" type="checkbox" id="filter-failed-only-switch">
+                                <label class="form-check-label" for="filter-failed-only-switch">
+                                    Failed Tasks Only
+                                </label>
+                            </div>
+                            <button class="btn btn-outline-secondary btn-sm" id="clear-filter-btn" style="display: none;">
+                                <i class="bi bi-x-circle"></i> Clear All
                             </button>
                         </div>
                     </div>
