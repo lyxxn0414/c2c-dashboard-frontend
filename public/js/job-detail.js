@@ -119,14 +119,11 @@ class JobDetail {
         ? avgFileChanges.toFixed(2)
         : avgFileChanges || "xx";
 
-    // Tool call metrics - use ToolUsageList if available, fallback to legacy fields
+    // Populate dynamic tool usage from ToolUsageList
     this.populateToolUsage(job);
 
-    document.getElementById("tool-get-logs").textContent =
-      job.GetLogsCalls || 0;
-
     this.populateModelStatistics(job.TestJobID); // Failed tasks analysis
-    this.populateFailedTasks(taskErrors);
+    this.populateAllTasks(job.TestJobID); // Load all tasks (both successful and failed)
     document.querySelectorAll(".task-name-link").forEach((link) => {
       link.addEventListener("click", (e) => {
         e.preventDefault();
@@ -206,6 +203,53 @@ class JobDetail {
     }
   }
 
+  populateToolUsage(job) {
+    const toolUsageContainer = document.getElementById("tool-usage-container");
+
+    if (!toolUsageContainer) {
+      console.warn("Tool usage container not found");
+      return;
+    }
+
+    // Check if job has ToolUsageList
+    if (
+      job.ToolUsageList &&
+      Array.isArray(job.ToolUsageList) &&
+      job.ToolUsageList.length > 0
+    ) {
+      // Clear existing content
+      toolUsageContainer.innerHTML = "";
+
+      // Generate tool usage items dynamically
+      job.ToolUsageList.forEach((toolUsage) => {
+        const toolName = toolUsage.ToolName || "Unknown Tool";
+        const taskCount = toolUsage.TaskCount || 0;
+
+        const toolMetricHTML = `
+          <div class="col-md-3 mb-3">
+            <div class="tool-metric">
+              <div class="tool-label">${toolName}</div>
+              <div class="tool-value">${taskCount}</div>
+            </div>
+          </div>
+        `;
+
+        toolUsageContainer.innerHTML += toolMetricHTML;
+      });
+    } else {
+      // Show message when no tool usage data is available
+      console.log("No ToolUsageList found");
+      toolUsageContainer.innerHTML = `
+        <div class="col-12 text-center py-3">
+          <div class="text-muted">
+            <i class="bi bi-info-circle me-2"></i>
+            No tool usage data available
+          </div>
+        </div>
+      `;
+    }
+  }
+
   async populateModelStatistics(jobId) {
     const classificationContainer = document.getElementById(
       "classification-container"
@@ -263,100 +307,85 @@ class JobDetail {
     }
   }
 
-  /**
-   * Populate tool usage data from ToolUsageList or fallback to legacy fields
-   */
-  populateToolUsage(job) {
-    const toolUsageContainer = document.getElementById("tool-usage-container");
-    const legacyToolMetrics = document.getElementById("legacy-tool-metrics");
-
-    if (!toolUsageContainer) {
-      console.warn("Tool usage container not found");
+  async populateAllTasks(jobId) {
+    const failedTasksContainer = document.getElementById("failed-tasks-content");
+    if (!failedTasksContainer) {
+      console.warn("Tasks container not found");
       return;
     }
 
-    // Check if ToolUsageList is available and not empty
-    if (
-      job.ToolUsageList &&
-      Array.isArray(job.ToolUsageList) &&
-      job.ToolUsageList.length > 0
-    ) {
-      // Use new ToolUsageList format
-      console.log("Using ToolUsageList data:", job.ToolUsageList);
+    try {
+      console.log("Loading all tasks for job:", jobId);
 
-      // Hide legacy metrics and show new container
-      if (legacyToolMetrics) legacyToolMetrics.style.display = "none";
-      toolUsageContainer.style.display = "flex";
+      // Show loading state
+      failedTasksContainer.innerHTML = `
+        <div class="text-center py-4">
+          <div class="spinner-border text-primary" role="status">
+            <span class="visually-hidden">Loading...</span>
+          </div>
+          <p class="text-muted mt-2">Loading tasks...</p>
+        </div>
+      `;
 
-      // Generate tool usage items
-      const toolUsageHTML = job.ToolUsageList.map((tool, index) => {
-        // Extract a display name from the tool name
-        const displayName = this.formatToolName(tool.ToolName);
+      // Fetch all tasks for this job
+      const response = await fetch(`/api/jobs/${jobId}/tasks`);
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
 
-        return `
-          <div class="col-md-2 col-sm-4 col-6 mb-3">
-            <div class="tool-metric">
-              <div class="tool-label" title="${
-                tool.ToolName
-              }">${displayName}</div>
-              <div class="tool-value">${tool.TaskCount || 0}</div>
-            </div>
+      const tasksResponse = await response.json();
+      const allTasks = tasksResponse.data || tasksResponse.tasks || tasksResponse;
+
+      if (!allTasks || allTasks.length === 0) {
+        failedTasksContainer.innerHTML = `
+          <div class="text-center py-4">
+            <i class="bi bi-info-circle text-muted" style="font-size: 2rem;"></i>
+            <p class="text-muted mt-2">No tasks found for this job</p>
           </div>
         `;
-      }).join("");
-
-      toolUsageContainer.innerHTML = toolUsageHTML;
-    } else {
-      // Fallback to legacy format
-      console.log("Using legacy tool call data");
-
-      // Hide new container and show legacy metrics
-      toolUsageContainer.style.display = "none";
-      if (legacyToolMetrics) {
-        legacyToolMetrics.style.display = "flex";
-
-        // Populate legacy fields
-        document.getElementById("tool-recommend").textContent =
-          job.RecommendCalls || 0;
-        document.getElementById("tool-predeploy").textContent =
-          job.PredeployCalls || 0;
-        document.getElementById("tool-deploy").textContent =
-          job.DeployCalls || 0;
-        document.getElementById("tool-region").textContent =
-          job.RegionCalls || 0;
-        document.getElementById("tool-quota").textContent = job.QuotaCalls || 0;
+        return;
       }
+
+      console.log("Loaded tasks:", allTasks);
+
+      // Store original data for filtering
+      this.originalFailedTasks = allTasks; // Rename this to originalTasks later
+
+      // Group errors by category (for error analysis)
+      const failedTasks = allTasks.filter(task => task.IsSuccessful === false || task.IsSuccessful === "false");
+      const errorsByCategory = this.groupErrorsByCategory(failedTasks);
+
+      // Update top error category module
+      this.populateTopErrorCategory(errorsByCategory);
+
+      // Update error categories summary
+      this.populateAllErrorCategories(errorsByCategory);
+
+      // Update tasks count badge
+      const failedTasksCountBadge = document.getElementById("failed-tasks-count");
+      if (failedTasksCountBadge) {
+        const failedCount = failedTasks.length;
+        failedTasksCountBadge.textContent = `${allTasks.length} Task${allTasks.length !== 1 ? "s" : ""} (${failedCount} Failed)`;
+      }
+
+      // Populate category filter dropdown
+      this.populateCategoryFilter(errorsByCategory);
+
+      // Render all tasks
+      this.renderFailedTasks(allTasks);
+
+      // Setup filter event listeners
+      this.setupFilterEventListeners();
+
+    } catch (error) {
+      console.error("Error loading tasks:", error);
+      failedTasksContainer.innerHTML = `
+        <div class="text-center py-4">
+          <i class="bi bi-exclamation-triangle text-warning" style="font-size: 2rem;"></i>
+          <p class="text-muted mt-2">Failed to load tasks</p>
+        </div>
+      `;
     }
-  }
-
-  /**
-   * Format tool name for display (extract meaningful part from full tool name)
-   */
-  formatToolName(toolName) {
-    if (!toolName) return "Unknown Tool";
-
-    // Handle format like "deploy deploy_plan-get" -> "Deploy Plan"
-    // or "deploy deploy_iac-rules-get" -> "Deploy IAC Rules"
-
-    // Remove common prefixes and split on common separators
-    let formatted = toolName
-      .replace(/^(deploy\s+)/i, "") // Remove "deploy " prefix
-      .replace(/[-_]/g, " ") // Replace dashes and underscores with spaces
-      .replace(/\b(get|post|put|delete)\b/gi, "") // Remove HTTP methods
-      .trim();
-
-    // Capitalize words
-    formatted = formatted
-      .split(" ")
-      .map((word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
-      .join(" ");
-
-    // Truncate if too long
-    if (formatted.length > 12) {
-      formatted = formatted.substring(0, 12) + "...";
-    }
-
-    return formatted || "Tool";
   }
 
   populateFailedTasks(taskErrors) {

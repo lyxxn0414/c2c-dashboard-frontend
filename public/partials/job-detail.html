@@ -1,425 +1,404 @@
 <!-- Job Detail View -->
 <div id="job-detail-view" class="d-none">
-    <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">        <div class="d-flex align-items-center">
-            <h1 class="h2 mb-0">Job Detail</h1>
+  <div
+    class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom"
+  >
+    <div class="d-flex align-items-center">
+      <h1 class="h2 mb-0">Job Detail</h1>
+    </div>
+  </div>
+
+  <!-- Job Header -->
+  <div class="job-header-card">
+    <div class="d-flex align-items-center mb-3">
+      <i class="bi bi-briefcase fs-2 me-3 text-primary"></i>
+      <div>
+        <h3 class="mb-1" id="job-detail-title">Job-sample</h3>
+        <div class="text-muted">
+          <span class="me-3"
+            ><strong>ID:</strong> <span id="job-detail-id">123456</span></span
+          >
+          <span class="me-3"
+            ><strong>CreatedBy:</strong>
+            <span id="job-detail-creator">Alias</span></span
+          >
+          <span
+            ><strong>Created Date:</strong>
+            <span id="job-detail-creation-time">2025-06-23 14:57</span></span
+          >
+          <span
+            ><strong>PoolID:</strong>
+            <span id="job-detail-pool-id">Pool-123</span></span
+          >
         </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Overall Result -->
+  <div class="result-section">
+    <div class="row mb-4">
+      <div class="col-md-4">
+        <div class="metric-card text-center">
+          <div class="metric-label text-success">Success Rate</div>
+          <div class="metric-value text-success" id="job-success-rate">92%</div>
+        </div>
+      </div>
     </div>
 
-    <!-- Job Header -->
-    <div class="job-header-card">
-        <div class="d-flex align-items-center mb-3">
-            <i class="bi bi-briefcase fs-2 me-3 text-primary"></i>
-            <div>
-                <h3 class="mb-1" id="job-detail-title">Job-sample</h3>
-                <div class="text-muted">
-                    <span class="me-3"><strong>ID:</strong> <span id="job-detail-id">123456</span></span>
-                    <span class="me-3"><strong>CreatedBy:</strong> <span id="job-detail-creator">Alias</span></span>
-                    <span><strong>Created Date:</strong> <span id="job-detail-creation-time">2025-06-23 14:57</span></span>
-                    <span><strong>PoolID:</strong> <span id="job-detail-pool-id">Pool-123</span></span>
-                </div>
-            </div>
+    <div class="row mb-4">
+      <div class="col-md-4">
+        <div class="metric-card text-center">
+          <div class="metric-label">Avg Copilot Interactions</div>
+          <div class="metric-value" id="job-avg-iterations">10</div>
         </div>
+      </div>
+      <div class="col-md-4">
+        <div class="metric-card text-center">
+          <div class="metric-label">Avg IaC File Edits</div>
+          <div class="metric-value" id="job-iterations-changes">xx</div>
+        </div>
+      </div>
+      <div class="col-md-4">
+        <div class="metric-card text-center">
+          <div class="metric-label">Avg File Edits</div>
+          <div class="metric-value" id="job-avg-file-edits">10</div>
+        </div>
+      </div>
     </div>
 
-    <!-- Overall Result -->
-    <div class="result-section">
-        <div class="row mb-4">            <div class="col-md-4">
-                <div class="metric-card text-center">
-                    <div class="metric-label text-success">Success Rate</div>
-                    <div class="metric-value text-success" id="job-success-rate">92%</div>
-                </div>
-            </div>
-        </div>
+    <!-- Tool Call Section -->
+    <div class="tool-call-section mb-4">
+      <h5><i class="bi bi-wrench"></i> Tool Usage Summary:</h5>
+      <div class="row" id="tool-usage-container">
+        <!-- Tool usage items will be dynamically populated here -->
+      </div>
+    </div>
+  </div>
+  <!-- Classification Results -->
+  <div class="classification-section">
+    <div class="row" id="classification-container">
+      <!-- Classification cards will be dynamically generated here -->
+    </div>
+  </div>
 
-        <div class="row mb-4">
-            <div class="col-md-4">
-                <div class="metric-card text-center">
-                    <div class="metric-label">Avg Copilot Interactions</div>
-                    <div class="metric-value" id="job-avg-iterations">10</div>
-                </div>
-            </div>
-            <div class="col-md-4">
-                <div class="metric-card text-center">
-                    <div class="metric-label">Avg IaC File Edits</div>
-                    <div class="metric-value" id="job-iterations-changes">xx</div>
-                </div>
-            </div>
-            <div class="col-md-4">
-                <div class="metric-card text-center">
-                    <div class="metric-label">Avg File Edits</div>
-                    <div class="metric-value" id="job-avg-file-edits">10</div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Tool Call Section -->
-        <div class="tool-call-section mb-4">
-            <h5><i class="bi bi-wrench"></i> Tool call:</h5>
-            <div class="row">
-                <div class="col-md-2">
-                    <div class="tool-metric">
-                        <div class="tool-label">Recommend</div>
-                        <div class="tool-value" id="tool-recommend">xx</div>
-                    </div>
-                </div>
-                <div class="col-md-2">
-                    <div class="tool-metric">
-                        <div class="tool-label">Predeploy</div>
-                        <div class="tool-value" id="tool-predeploy">xx</div>
-                    </div>
-                </div>
-                <div class="col-md-2">
-                    <div class="tool-metric">
-                        <div class="tool-label">Deploy</div>
-                        <div class="tool-value" id="tool-deploy">xx</div>
-                    </div>
-                </div>
-                <div class="col-md-2">
-                    <div class="tool-metric">
-                        <div class="tool-label">Region</div>
-                        <div class="tool-value" id="tool-region">xx</div>
-                    </div>
-                </div>
-                <div class="col-md-2">
-                    <div class="tool-metric">
-                        <div class="tool-label">Quota</div>
-                        <div class="tool-value" id="tool-quota">xx</div>
-                    </div>
-                </div>
-                <div class="col-md-2">
-                    <div class="tool-metric">
-                        <div class="tool-label">Get Logs Call</div>
-                        <div class="tool-value" id="tool-get-logs">xx</div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>    <!-- Classification Results -->
-    <div class="classification-section">
-        <div class="row" id="classification-container">
-            <!-- Classification cards will be dynamically generated here -->
-        </div>
+  <!-- Two-Dimensional Results Analysis -->
+  <div class="two-dimension-analysis-section">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+      <h4>
+        <i class="bi bi-grid-3x3 me-2"></i>Two-Dimensional Results Analysis
+      </h4>
     </div>
 
-    <!-- Two-Dimensional Results Analysis -->
-    <div class="two-dimension-analysis-section">
-        <div class="d-flex justify-content-between align-items-center mb-3">
-            <h4><i class="bi bi-grid-3x3 me-2"></i>Two-Dimensional Results Analysis</h4>
+    <!-- Dimension Selection Card -->
+    <div class="dimension-selection-card mb-4">
+      <div class="dimension-controls">
+        <div class="row">
+          <div class="col-md-6">
+            <div class="dimension-selector">
+              <label for="x-dimension" class="form-label"
+                >X-Axis Dimension:</label
+              >
+              <select class="form-select" id="x-dimension">
+                <option value="IaCType">IaC Type</option>
+                <option value="CopilotModel" selected>Copilot Model</option>
+                <option value="Languages">Languages</option>
+                <option value="RepoType">Repository Type</option>
+                <option value="AppPattern">Application Pattern</option>
+              </select>
+            </div>
+          </div>
+          <div class="col-md-6">
+            <div class="dimension-selector">
+              <label for="y-dimension" class="form-label"
+                >Y-Axis Dimension:</label
+              >
+              <select class="form-select" id="y-dimension">
+                <option value="IaCType">IaC Type</option>
+                <option value="CopilotModel">Copilot Model</option>
+                <option value="Languages" selected>Languages</option>
+                <option value="RepoType">Repository Type</option>
+                <option value="AppPattern">Application Pattern</option>
+              </select>
+            </div>
+          </div>
         </div>
-
-        <!-- Dimension Selection Card -->
-        <div class="dimension-selection-card mb-4">
-            <div class="dimension-controls">
-                <div class="row">
-                    <div class="col-md-6">                        <div class="dimension-selector">
-                            <label for="x-dimension" class="form-label">X-Axis Dimension:</label>
-                            <select class="form-select" id="x-dimension">
-                                <option value="IaCType">IaC Type</option>
-                                <option value="CopilotModel" selected>Copilot Model</option>
-                                <option value="Languages">Languages</option>
-                                <option value="RepoType">Repository Type</option>
-                                <option value="AppPattern">Application Pattern</option>
-                            </select>
-                        </div>
-                    </div>
-                    <div class="col-md-6">
-                        <div class="dimension-selector">
-                            <label for="y-dimension" class="form-label">Y-Axis Dimension:</label>
-                            <select class="form-select" id="y-dimension">
-                                <option value="IaCType">IaC Type</option>
-                                <option value="CopilotModel">Copilot Model</option>
-                                <option value="Languages" selected>Languages</option>
-                                <option value="RepoType">Repository Type</option>
-                                <option value="AppPattern">Application Pattern</option>
-                            </select>
-                        </div>
-                    </div>
-                </div>                <div class="row mt-3">
-                    <div class="col-md-6">
-                        <div class="visualization-options">
-                            <label class="form-label">Display Options:</label>
-                            <div class="form-check form-switch">
-                                <input class="form-check-input" type="checkbox" id="show-values" checked>
-                                <label class="form-check-label" for="show-values">Show values in cells</label>
-                            </div>
-                            <div class="form-check form-switch">
-                                <input class="form-check-input" type="checkbox" id="color-coding" checked>
-                                <label class="form-check-label" for="color-coding">Color coding</label>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="col-md-6">
-                        <div class="control-buttons mt-4">
-                            <button class="btn btn-primary" id="generate-matrix-btn">
-                                <i class="bi bi-arrow-clockwise me-2"></i>Generate Matrix
-                            </button>
-                            <button class="btn btn-outline-secondary ms-2" id="export-matrix-btn">
-                                <i class="bi bi-download me-2"></i>Export
-                            </button>
-                        </div>
-                    </div>
-                </div>
+        <div class="row mt-3">
+          <div class="col-md-6">
+            <div class="visualization-options">
+              <label class="form-label">Display Options:</label>
+              <div class="form-check form-switch">
+                <input
+                  class="form-check-input"
+                  type="checkbox"
+                  id="show-values"
+                  checked
+                />
+                <label class="form-check-label" for="show-values"
+                  >Show values in cells</label
+                >
+              </div>
+              <div class="form-check form-switch">
+                <input
+                  class="form-check-input"
+                  type="checkbox"
+                  id="color-coding"
+                  checked
+                />
+                <label class="form-check-label" for="color-coding"
+                  >Color coding</label
+                >
+              </div>
             </div>
+          </div>
+          <div class="col-md-6">
+            <div class="control-buttons mt-4">
+              <button class="btn btn-primary" id="generate-matrix-btn">
+                <i class="bi bi-arrow-clockwise me-2"></i>Generate Matrix
+              </button>
+              <button
+                class="btn btn-outline-secondary ms-2"
+                id="export-matrix-btn"
+              >
+                <i class="bi bi-download me-2"></i>Export
+              </button>
+            </div>
+          </div>
         </div>
-
-        <!-- Matrix Results Card -->
-        <div class="matrix-results-card">
-            <!-- Loading State -->
-            <div class="matrix-loading-state text-center py-5" id="matrix-loading" style="display: none;">
-                <div class="spinner-border text-primary mb-3" role="status">
-                    <span class="visually-hidden">Loading...</span>
-                </div>
-                <p class="text-muted">Generating two-dimensional analysis...</p>
-            </div>
-
-            <!-- Matrix Table Container -->
-            <div class="matrix-container" id="matrix-container">
-                <div class="table-responsive">
-                    <table class="table table-bordered matrix-table" id="matrix-table">
-                        <thead>
-                            <tr id="matrix-header">
-                                <!-- Dynamic header will be generated -->
-                            </tr>
-                        </thead>
-                        <tbody id="matrix-body">
-                            <!-- Dynamic matrix content will be generated -->
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-
-            <!-- Legend -->
-            <div class="matrix-legend mt-3" id="matrix-legend" style="display: none;">
-                <div class="legend-title">
-                    <strong>Color Legend:</strong>
-                </div>
-                <div class="legend-items">
-                    <div class="legend-item">
-                        <span class="legend-color high-performance"></span>
-                        <span class="legend-text">High Performance (≥80%)</span>
-                    </div>
-                    <div class="legend-item">
-                        <span class="legend-color medium-performance"></span>
-                        <span class="legend-text">Medium Performance (50-79%)</span>
-                    </div>
-                    <div class="legend-item">
-                        <span class="legend-color low-performance"></span>
-                        <span class="legend-text">Low Performance (&lt;50%)</span>
-                    </div>
-                    <div class="legend-item">
-                        <span class="legend-color no-data"></span>
-                        <span class="legend-text">No Data</span>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Summary Statistics -->
-            <div class="matrix-summary mt-4" id="matrix-summary" style="display: none;">
-                <div class="row">
-                    <div class="col-md-3">
-                        <div class="summary-stat">
-                            <div class="stat-value" id="matrix-total-combinations">0</div>
-                            <div class="stat-label">Total Combinations</div>
-                        </div>
-                    </div>
-                    <div class="col-md-3">
-                        <div class="summary-stat">
-                            <div class="stat-value" id="matrix-covered-combinations">0</div>
-                            <div class="stat-label">Covered Combinations</div>
-                        </div>
-                    </div>
-                    <div class="col-md-3">
-                        <div class="summary-stat">
-                            <div class="stat-value" id="matrix-best-combination">N/A</div>
-                            <div class="stat-label">Best Combination</div>
-                        </div>
-                    </div>
-                    <div class="col-md-3">
-                        <div class="summary-stat">
-                            <div class="stat-value" id="matrix-coverage-percentage">0%</div>
-                            <div class="stat-label">Coverage</div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Empty State -->
-            <div class="matrix-empty-state text-center py-5" id="matrix-empty" style="display: none;">
-                <i class="bi bi-grid display-1 text-muted mb-3"></i>
-                <h5 class="text-muted">No data available</h5>
-                <p class="text-muted">Select dimensions and click "Generate Matrix" to view the analysis.</p>
-            </div>
-        </div>
+      </div>
     </div>
 
-    <!-- Failed Tasks Section -->
-    <div class="failed-tasks-section">
-        <div class="d-flex justify-content-between align-items-center mb-3">
-            <h4><i class="bi bi-exclamation-triangle text-warning me-2"></i>Failed Tasks Analysis</h4>
-            <span class="badge bg-danger" id="failed-tasks-count">5 Failed Tasks</span>
+    <!-- Matrix Results Card -->
+    <div class="matrix-results-card">
+      <!-- Loading State -->
+      <div
+        class="matrix-loading-state text-center py-5"
+        id="matrix-loading"
+        style="display: none"
+      >
+        <div class="spinner-border text-primary mb-3" role="status">
+          <span class="visually-hidden">Loading...</span>
         </div>
+        <p class="text-muted">Generating two-dimensional analysis...</p>
+      </div>
 
-        <!-- Detailed Failed Tasks List -->
-        <div class="top-error-category-card mb-4">
-            <div class="row">
-                <div class="col-md-4">
-                    <div class="top-error-stat text-center p-4">
-                        <div class="top-error-icon mb-3">
-                            <i class="bi bi-exclamation-circle-fill"></i>
-                        </div>
-                        <h3 class="mb-2" id="top-error-category">Loading...</h3>
-                        <p class="text-muted mb-2">Most Common Error Type</p>
-                        <div class="top-error-count" id="top-error-count">
-                            <span class="count">0</span> occurrences
-                        </div>
-                    </div>
-                </div>
-                <div class="col-md-8">
-                    <div class="top-error-details p-4">
-                        <h5 class="mb-3">Common Error Patterns</h5>
-                        <div id="top-error-patterns">
-                            <!-- Error patterns will be dynamically populated -->
-                        </div>
-                        <div class="error-trend mt-3">
-                            <div class="d-flex justify-content-between align-items-center mb-2">
-                                <span>Error Frequency</span>
-                                <span id="top-error-percentage">0%</span>
-                            </div>
-                            <div class="progress" style="height: 8px;">
-                                <div class="progress-bar bg-danger" id="top-error-progress" role="progressbar" style="width: 0%" 
-                                     aria-valuenow="0" aria-valuemin="0" aria-valuemax="100"></div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
+      <!-- Matrix Table Container -->
+      <div class="matrix-container" id="matrix-container">
+        <div class="table-responsive">
+          <table class="table table-bordered matrix-table" id="matrix-table">
+            <thead>
+              <tr id="matrix-header">
+                <!-- Dynamic header will be generated -->
+              </tr>
+            </thead>
+            <tbody id="matrix-body">
+              <!-- Dynamic matrix content will be generated -->
+            </tbody>
+          </table>
         </div>
+      </div>
 
         <div class="error-categories-summary mb-4">
             <div class="row" id="error-categories-container">
                 <!-- Error category cards will be dynamically populated here -->
             </div>
         </div>        
-        <div class="failed-tasks-card">
-            <div class="failed-tasks-header">
-                <!-- Title -->
-                <div class="row mb-3">
-                    <div class="col-md-12">
-                        <h5 class="mb-0">Tasks List</h5>
-                    </div>
-                </div>
-                
-                <!-- Filter Controls -->
-                <div class="row mb-3">
-                    <div class="col-md-4">
-                        <div class="filter-controls">
-                            <label for="task-search" class="form-label me-2">Search Tasks:</label>
-                            <input type="text" class="form-control" id="task-search" placeholder="Search by task name...">
-                        </div>
-                    </div>
-                    <div class="col-md-4">
-                        <div class="filter-controls">
-                            <label for="category-filter" class="form-label me-2">Filter by Category:</label>
-                            <select class="form-select" id="category-filter">
-                                <option value="all">All Categories</option>
-                            </select>
-                        </div>
-                    </div>
-                    <div class="col-md-4">
-                        <div class="filter-controls justify-content-end">
-                            <div class="form-check form-switch me-3">
-                                <input class="form-check-input" type="checkbox" id="filter-failed-only-switch">
-                                <label class="form-check-label" for="filter-failed-only-switch">
-                                    Failed Tasks Only
-                                </label>
-                            </div>
-                            <button class="btn btn-outline-secondary btn-sm" id="clear-filter-btn" style="display: none;">
-                                <i class="bi bi-x-circle"></i> Clear All
-                            </button>
-                        </div>
-                    </div>
-                </div>
-                
-                <!-- Table Header -->
-                <div class="row fw-bold text-muted">
-                    <div class="col-md-2">Task Name</div>
-                    <div class="col-md-1">Final State</div>
-                    <div class="col-md-1">Created Date</div>
-                    <div class="col-md-1">First Error Category</div>
-                    <div class="col-md-2">Error Description</div>
-                    <div class="col-md-5">Error Details</div>
-                </div>
-            </div>
-            <div class="failed-tasks-content" id="failed-tasks-content">
-                <div class="failed-task-item">
-                    <div class="row align-items-center">
-                        <div class="col-md-3">
-                            <span class="task-name">tasktracker-deploy</span>
-                        </div>
-                        <div class="col-md-1">
-                            <span class="created-date">2023-09-01</span>
-                        </div>
-                        <div class="col-md-1">
-                            <span class="error-category badge bg-danger-subtle text-danger">Deployment Error</span>
-                        </div>
-                        <div class="col-md-6">
-                            <span class="error-description">Failed to deploy container: Resource quota exceeded in region eastus</span>
-                        </div>
-                    </div>
-                </div>
-                <div class="failed-task-item">
-                    <div class="row align-items-center">
-                        <div class="col-md-3">
-                            <span class="task-name">airsonic-config</span>
-                        </div>
-                        <div class="col-md-3">
-                            <span class="error-category badge bg-warning-subtle text-warning">Configuration Error</span>
-                        </div>
-                        <div class="col-md-6">
-                            <span class="error-description">Invalid database connection string format in appsettings.json</span>
-                        </div>
-                    </div>
-                </div>
-                <div class="failed-task-item">
-                    <div class="row align-items-center">
-                        <div class="col-md-3">
-                            <span class="task-name">assessment-build</span>
-                        </div>
-                        <div class="col-md-3">
-                            <span class="error-category badge bg-info-subtle text-info">Build Error</span>
-                        </div>
-                        <div class="col-md-6">
-                            <span class="error-description">Compilation failed: Missing dependency Microsoft.AspNetCore.Mvc v6.0.0</span>
-                        </div>
-                    </div>
-                </div>
-                <div class="failed-task-item">
-                    <div class="row align-items-center">
-                        <div class="col-md-3">
-                            <span class="task-name">before-container-test</span>
-                        </div>
-                        <div class="col-md-3">
-                            <span class="error-category badge bg-secondary-subtle text-secondary">Test Error</span>
-                        </div>
-                        <div class="col-md-6">
-                            <span class="error-description">Unit tests failed: 3 out of 15 test cases failed due to timeout</span>
-                        </div>
-                    </div>
-                </div>
-                <div class="failed-task-item">
-                    <div class="row align-items-center">
-                        <div class="col-md-3">
-                            <span class="task-name">task-2-infrastructure</span>
-                        </div>
-                        <div class="col-md-3">
-                            <span class="error-category badge bg-danger-subtle text-danger">Infrastructure Error</span>
-                        </div>
-                        <div class="col-md-6">
-                            <span class="error-description">Terraform apply failed: Cannot create storage account, name already exists</span>
-                        </div>
-                    </div>
-                </div>
-            </div>
+        <div class="legend-items">
+          <div class="legend-item">
+            <span class="legend-color high-performance"></span>
+            <span class="legend-text">High Performance (≥80%)</span>
+          </div>
+          <div class="legend-item">
+            <span class="legend-color medium-performance"></span>
+            <span class="legend-text">Medium Performance (50-79%)</span>
+          </div>
+          <div class="legend-item">
+            <span class="legend-color low-performance"></span>
+            <span class="legend-text">Low Performance (&lt;50%)</span>
+          </div>
+          <div class="legend-item">
+            <span class="legend-color no-data"></span>
+            <span class="legend-text">No Data</span>
+          </div>
         </div>
+      </div>
+
+      <!-- Summary Statistics -->
+      <div
+        class="matrix-summary mt-4"
+        id="matrix-summary"
+        style="display: none"
+      >
+        <div class="row">
+          <div class="col-md-3">
+            <div class="summary-stat">
+              <div class="stat-value" id="matrix-total-combinations">0</div>
+              <div class="stat-label">Total Combinations</div>
+            </div>
+          </div>
+          <div class="col-md-3">
+            <div class="summary-stat">
+              <div class="stat-value" id="matrix-covered-combinations">0</div>
+              <div class="stat-label">Covered Combinations</div>
+            </div>
+          </div>
+          <div class="col-md-3">
+            <div class="summary-stat">
+              <div class="stat-value" id="matrix-best-combination">N/A</div>
+              <div class="stat-label">Best Combination</div>
+            </div>
+          </div>
+          <div class="col-md-3">
+            <div class="summary-stat">
+              <div class="stat-value" id="matrix-coverage-percentage">0%</div>
+              <div class="stat-label">Coverage</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Empty State -->
+      <div
+        class="matrix-empty-state text-center py-5"
+        id="matrix-empty"
+        style="display: none"
+      >
+        <i class="bi bi-grid display-1 text-muted mb-3"></i>
+        <h5 class="text-muted">No data available</h5>
+        <p class="text-muted">
+          Select dimensions and click "Generate Matrix" to view the analysis.
+        </p>
+      </div>
     </div>
+  </div>
+
+  <!-- Failed Tasks Section -->
+  <div class="failed-tasks-section">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+      <h4>
+        <i class="bi bi-exclamation-triangle text-warning me-2"></i>Errors Analysis
+      </h4>
+      <span class="badge bg-danger" id="failed-tasks-count"
+        >5 Failed Tasks</span
+      >
+    </div>
+
+    <!-- Detailed Failed Tasks List -->
+    <div class="top-error-category-card mb-4">
+      <div class="row">
+        <div class="col-md-4">
+          <div class="top-error-stat text-center p-4">
+            <div class="top-error-icon mb-3">
+              <i class="bi bi-exclamation-circle-fill"></i>
+            </div>
+            <h3 class="mb-2" id="top-error-category">Loading...</h3>
+            <p class="text-muted mb-2">Most Common Error Type</p>
+            <div class="top-error-count" id="top-error-count">
+              <span class="count">0</span> occurrences
+            </div>
+          </div>
+        </div>
+        <div class="col-md-8">
+          <div class="top-error-details p-4">
+            <h5 class="mb-3">Common Error Patterns</h5>
+            <div id="top-error-patterns">
+              <!-- Error patterns will be dynamically populated -->
+            </div>
+            <div class="error-trend mt-3">
+              <div
+                class="d-flex justify-content-between align-items-center mb-2"
+              >
+                <span>Error Frequency</span>
+                <span id="top-error-percentage">0%</span>
+              </div>
+              <div class="progress" style="height: 8px">
+                <div
+                  class="progress-bar bg-danger"
+                  id="top-error-progress"
+                  role="progressbar"
+                  style="width: 0%"
+                  aria-valuenow="0"
+                  aria-valuemin="0"
+                  aria-valuemax="100"
+                ></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="error-categories-summary mb-4">
+      <div class="row" id="error-categories-container">
+        <!-- Error category cards will be dynamically populated here -->
+      </div>
+    </div>
+    <div class="failed-tasks-card">
+      <div class="failed-tasks-header">
+        <!-- Title -->
+        <div class="row mb-3">
+          <div class="col-md-12">
+            <h5 class="mb-0">Tasks List</h5>
+          </div>
+        </div>
+
+        <!-- Filter Controls -->
+        <div class="row mb-3">
+          <div class="col-md-4">
+            <div class="filter-controls">
+              <label for="task-search" class="form-label me-2"
+                >Search Tasks:</label
+              >
+              <input
+                type="text"
+                class="form-control"
+                id="task-search"
+                placeholder="Search by task name..."
+              />
+            </div>
+          </div>
+          <div class="col-md-4">
+            <div class="filter-controls">
+              <label for="category-filter" class="form-label me-2"
+                >Filter by Category:</label
+              >
+              <select class="form-select" id="category-filter">
+                <option value="all">All Categories</option>
+              </select>
+            </div>
+          </div>
+          <div class="col-md-4">
+            <div class="filter-controls justify-content-end">
+              <div class="form-check form-switch me-3">
+                <input class="form-check-input" type="checkbox" id="filter-failed-only-switch">
+                <label class="form-check-label" for="filter-failed-only-switch">
+                  Only show failed tasks
+                </label>
+              </div>
+              <button
+                class="btn btn-outline-secondary btn-sm ms-2"
+                id="clear-filter-btn"
+                style="display: none"
+              >
+                <i class="bi bi-x-circle"></i> Clear
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Table Header -->
+        <div class="row fw-bold text-muted">
+          <div class="col-md-2">Task Name</div>
+          <div class="col-md-1">Final State</div>
+          <div class="col-md-1">Created Date</div>
+          <div class="col-md-1">First Error Category</div>
+          <div class="col-md-2">Error Description</div>
+          <div class="col-md-5">Error Details</div>
+        </div>
+      </div>
+      <div class="failed-tasks-content" id="failed-tasks-content">
+        <!-- Failed tasks will be dynamically populated here -->
+      </div>
+    </div>
+  </div>
 </div>
