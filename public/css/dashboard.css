@@ -749,12 +749,12 @@ main {
   transform: translateY(0);
 }
 
-/* Failed Tasks Analysis Styles */
-.failed-tasks-section {
+/* Error Analysis Styles */
+.error-analysis-section {
   margin-top: 2rem;
 }
 
-.failed-tasks-card {
+.error-analysis-card {
   background: rgba(255, 255, 255, 0.9);
   backdrop-filter: blur(10px);
   border: 1px solid var(--border-color);
@@ -764,12 +764,63 @@ main {
   transition: all 0.3s ease;
 }
 
-.failed-tasks-card:hover {
+.error-analysis-card:hover {
   transform: translateY(-2px);
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
 }
 
-.failed-tasks-header {
+/* Tasks List Styles */
+.tasks-list-section {
+  margin-top: 2rem;
+}
+
+.tasks-list-card {
+  background: rgba(255, 255, 255, 0.9);
+  backdrop-filter: blur(10px);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-lg);
+  padding: 1.5rem;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.05);
+  transition: all 0.3s ease;
+}
+
+.tasks-list-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
+}
+
+.tasks-list-header {
+  background: rgba(248, 250, 252, 0.8);
+  border-radius: var(--radius-sm);
+  padding: 1rem;
+  margin-bottom: 1rem;
+  border-bottom: 2px solid var(--border-color);
+}
+
+/* Failed Tasks Analysis Styles (legacy support) */
+.failed-tasks-section {
+  margin-top: 2rem;
+}
+
+.failed-tasks-card,
+.tasks-list-card {
+  background: rgba(255, 255, 255, 0.9);
+  backdrop-filter: blur(10px);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-lg);
+  padding: 1.5rem;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.05);
+  transition: all 0.3s ease;
+}
+
+.failed-tasks-card:hover,
+.tasks-list-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
+}
+
+.failed-tasks-header,
+.tasks-list-header {
   background: rgba(248, 250, 252, 0.8);
   border-radius: var(--radius-sm);
   padding: 1rem;
@@ -935,11 +986,13 @@ main {
     width: 100%;
   }
 
-  .failed-tasks-header .row .col-md-6 {
+  .failed-tasks-header .row .col-md-6,
+  .tasks-list-header .row .col-md-6 {
     margin-bottom: 1rem;
   }
 
-  .failed-tasks-header .row .col-md-6:last-child {
+  .failed-tasks-header .row .col-md-6:last-child,
+  .tasks-list-header .row .col-md-6:last-child {
     margin-bottom: 0;
   }
 }

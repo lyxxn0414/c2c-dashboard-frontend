@@ -267,33 +267,38 @@
     </div>
   </div>
 
-  <!-- Failed Tasks Section -->
-  <div class="failed-tasks-section">
+  <!-- Error Analysis Section -->
+  <div class="error-analysis-section">
     <div class="d-flex justify-content-between align-items-center mb-3">
       <h4>
-        <i class="bi bi-exclamation-triangle text-warning me-2"></i>Errors Analysis
+        <i class="bi bi-bar-chart text-info me-2"></i>Error Analysis
       </h4>
-      <span class="badge bg-danger" id="failed-tasks-count"
+      <small class="text-muted">First errors encountered across all tasks</small>
+    </div>
+
+    <div class="error-analysis-card">
+      <!-- Error Categories Summary -->
+      <div class="error-categories-summary mb-4">
+        <div class="row" id="error-categories-container">
+          <!-- Error category cards will be dynamically populated here -->
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Tasks List Section -->
+  <div class="tasks-list-section">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+      <h4>
+        <i class="bi bi-list-task me-2"></i>Tasks List
+      </h4>
+      <span class="badge bg-primary" id="failed-tasks-count"
         >5 Failed Tasks</span
       >
     </div>
 
-    <div class="failed-tasks-card">
-      <div class="failed-tasks-header">
-        <!-- Title -->
-        <div class="row mb-3">
-          <div class="col-md-12">
-            <h5 class="mb-0">Tasks List</h5>
-          </div>
-        </div>
-
-        <!-- Error Categories Summary - placed after Tasks List title -->
-        <div class="error-categories-summary mb-4">
-          <div class="row" id="error-categories-container">
-            <!-- Error category cards will be dynamically populated here -->
-          </div>
-        </div>
-
+    <div class="tasks-list-card">
+      <div class="tasks-list-header">
         <!-- Filter Controls -->
         <div class="row mb-3">
           <div class="col-md-4">
@@ -348,8 +353,8 @@
           <div class="col-md-5">Error Details</div>
         </div>
       </div>
-      <div class="failed-tasks-content" id="failed-tasks-content">
-        <!-- Failed tasks will be dynamically populated here -->
+      <div class="tasks-list-content" id="failed-tasks-content">
+        <!-- Tasks will be dynamically populated here -->
       </div>
     </div>
   </div>

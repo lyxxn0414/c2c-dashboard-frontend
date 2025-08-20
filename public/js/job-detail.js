@@ -337,11 +337,11 @@ class JobDetail {
       // Store original data for filtering
       this.originalFailedTasks = allTasks;
 
-      // Group errors by category (for error analysis)
-      const failedTasks = allTasks.filter(
-        (task) => task.IsSuccessful === false || task.IsSuccessful === "false"
+      // Group errors by category (for error analysis) - use ALL tasks to find first errors
+      const allTasksWithErrors = allTasks.filter(
+        (task) => task.ErrorCategory && task.ErrorCategory.trim() !== ""
       );
-      const errorsByCategory = this.groupErrorsByCategory(failedTasks);
+      const errorsByCategory = this.groupErrorsByCategory(allTasksWithErrors);
 
       // Update error categories summary
       this.populateAllErrorCategories(errorsByCategory);
@@ -353,7 +353,9 @@ class JobDetail {
       const failedTasksCountBadge =
         document.getElementById("failed-tasks-count");
       if (failedTasksCountBadge) {
-        const failedCount = failedTasks.length;
+        const failedCount = allTasks.filter(
+          (task) => task.IsSuccessful === false || task.IsSuccessful === "false"
+        ).length;
         failedTasksCountBadge.textContent = `${allTasks.length} Task${
           allTasks.length !== 1 ? "s" : ""
         } (${failedCount} Failed)`;
@@ -807,9 +809,9 @@ class JobDetail {
         `;
   }
 
-  groupErrorsByCategory(failedTasks) {
+  groupErrorsByCategory(tasksWithErrors) {
     const categories = {};
-    failedTasks.forEach((task) => {
+    tasksWithErrors.forEach((task) => {
       // Normalize category, handle undefined/null/empty cases
       let category = task.ErrorCategory;
       if (
@@ -879,6 +881,17 @@ class JobDetail {
       0
     );
 
+    if (totalErrors === 0) {
+      errorCategoriesContainer.innerHTML = `
+        <div class="col-12 text-center py-4">
+          <i class="bi bi-check-circle text-success" style="font-size: 3rem;"></i>
+          <h5 class="text-success mt-2">No Errors Found</h5>
+          <p class="text-muted">All tasks completed without encountering any errors.</p>
+        </div>
+      `;
+      return;
+    }
+
     const categoriesHTML = Object.entries(errorsByCategory)
       .map(([category, data]) => {
         const percentage = ((data.count / totalErrors) * 100).toFixed(1);
@@ -888,7 +901,7 @@ class JobDetail {
             (pattern) => `
                 <div class="error-pattern-item">
                     <div class="d-flex justify-content-between">
-                                               <span>${pattern.pattern}</span>
+                        <span>${pattern.pattern}</span>
                         <span class="text-muted">${pattern.count}x</span>
                     </div>
                 </div>
@@ -907,7 +920,7 @@ class JobDetail {
                                 <div>
                                     <h4 class="mb-1">${category}</h4>
                                     <div class="error-count text-muted">
-                                        ${data.count} occurrence${
+                                        ${data.count} first error${
           data.count !== 1 ? "s" : ""
         } (${percentage}%)
                                     </div>
@@ -919,7 +932,7 @@ class JobDetail {
                             </div>
                             <div class="error-trend mt-3">
                                 <div class="progress" style="height: 6px;">
-                                    <div class="progress-bar bg-danger" role="progressbar" 
+                                    <div class="progress-bar bg-warning" role="progressbar" 
                                         style="width: ${percentage}%" 
                                         aria-valuenow="${percentage}" 
                                         aria-valuemin="0" 
@@ -1236,13 +1249,27 @@ class JobDetail {
     // Update the filtered task count
     const failedTasksCountBadge = document.getElementById("failed-tasks-count");
     if (failedTasksCountBadge) {
-      failedTasksCountBadge.textContent = `${filteredTasks.length} Failed Task${
-        filteredTasks.length !== 1 ? "s" : ""
-      }`;
-      // Add a filtered indicator if filters are active
+      const totalTasks = this.originalFailedTasks
+        ? this.originalFailedTasks.length
+        : 0;
+      const totalFailedTasks = this.originalFailedTasks
+        ? this.originalFailedTasks.filter(
+            (task) =>
+              task.IsSuccessful === false || task.IsSuccessful === "false"
+          ).length
+        : 0;
+
+      // Base count format
+      let countText = `${totalTasks} Task${
+        totalTasks !== 1 ? "s" : ""
+      } (${totalFailedTasks} Failed)`;
+
+      // Add filtered indicator if filters are active
       if (selectedCategory !== "all" || searchText || this.failedOnlyActive) {
-        failedTasksCountBadge.textContent += " (filtered)";
+        countText += ` - Showing ${filteredTasks.length}`;
       }
+
+      failedTasksCountBadge.textContent = countText;
     }
 
     // Render the filtered tasks
