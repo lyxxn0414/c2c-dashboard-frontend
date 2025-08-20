@@ -122,8 +122,8 @@ class JobDetail {
     // Populate dynamic tool usage from ToolUsageList
     this.populateToolUsage(job);
 
-    this.populateModelStatistics(job.TestJobID); // Failed tasks analysis
-    this.populateAllTasks(job.TestJobID); // Load all tasks (both successful and failed)
+    // Use taskErrors directly instead of fetching additional data
+    this.populateTasksFromErrors(taskErrors); // Use the taskErrors data directly
     document.querySelectorAll(".task-name-link").forEach((link) => {
       link.addEventListener("click", (e) => {
         e.preventDefault();
@@ -307,8 +307,119 @@ class JobDetail {
     }
   }
 
+  populateTasksFromErrors(taskErrors) {
+    const failedTasksContainer = document.getElementById(
+      "failed-tasks-content"
+    );
+    if (!failedTasksContainer) {
+      console.warn("Tasks container not found");
+      return;
+    }
+
+    try {
+      console.log("Using taskErrors data directly:", taskErrors);
+
+      // Extract tasks data from taskErrors
+      const allTasks = taskErrors?.data || taskErrors || [];
+
+      if (!allTasks || allTasks.length === 0) {
+        failedTasksContainer.innerHTML = `
+          <div class="text-center py-4">
+            <i class="bi bi-info-circle text-muted" style="font-size: 2rem;"></i>
+            <p class="text-muted mt-2">No tasks found for this job</p>
+          </div>
+        `;
+        return;
+      }
+
+      console.log("Tasks data:", allTasks);
+
+      // Store original data for filtering
+      this.originalFailedTasks = allTasks;
+
+      // Group errors by category (for error analysis)
+      const failedTasks = allTasks.filter(
+        (task) => task.IsSuccessful === false || task.IsSuccessful === "false"
+      );
+      const errorsByCategory = this.groupErrorsByCategory(failedTasks);
+
+      // Update error categories summary
+      this.populateAllErrorCategories(errorsByCategory);
+
+      // Update classification results using the same task data
+      this.populateClassificationFromTasks(allTasks);
+
+      // Update tasks count badge
+      const failedTasksCountBadge =
+        document.getElementById("failed-tasks-count");
+      if (failedTasksCountBadge) {
+        const failedCount = failedTasks.length;
+        failedTasksCountBadge.textContent = `${allTasks.length} Task${
+          allTasks.length !== 1 ? "s" : ""
+        } (${failedCount} Failed)`;
+      }
+
+      // Populate category filter dropdown
+      this.populateCategoryFilter(errorsByCategory);
+
+      // Render all tasks
+      this.renderFailedTasks(allTasks);
+
+      // Setup filter event listeners
+      this.setupFilterEventListeners();
+    } catch (error) {
+      console.error("Error processing task errors:", error);
+      failedTasksContainer.innerHTML = `
+        <div class="text-center py-4">
+          <i class="bi bi-exclamation-triangle text-warning" style="font-size: 2rem;"></i>
+          <p class="text-muted mt-2">Failed to load tasks</p>
+        </div>
+      `;
+    }
+  }
+
+  populateClassificationFromTasks(tasks) {
+    const classificationContainer = document.getElementById(
+      "classification-container"
+    );
+    if (!classificationContainer) {
+      console.warn("Classification container not found");
+      return;
+    }
+
+    try {
+      console.log("Populating classification from tasks data:", tasks);
+
+      if (!tasks || tasks.length === 0) {
+        classificationContainer.innerHTML = `
+          <div class="col-12 text-center py-4">
+            <i class="bi bi-info-circle text-muted" style="font-size: 2rem;"></i>
+            <p class="text-muted mt-2">No task data available for classification</p>
+          </div>
+        `;
+        return;
+      }
+
+      // Generate unified classification table using the task data
+      const unifiedTable = this.generateUnifiedClassificationTable(tasks);
+
+      // Clear existing content and render the unified table
+      classificationContainer.innerHTML = unifiedTable;
+    } catch (error) {
+      console.error("Error populating classification from tasks:", error);
+      classificationContainer.innerHTML = `
+        <div class="col-12 text-center py-4">
+          <i class="bi bi-exclamation-triangle text-warning" style="font-size: 2rem;"></i>
+          <p class="text-muted mt-2">Failed to load classification data</p>
+        </div>
+      `;
+    }
+  }
+
   async populateAllTasks(jobId) {
-    const failedTasksContainer = document.getElementById("failed-tasks-content");
+    const failedTasksContainer = document.getElementById(
+      "failed-tasks-content"
+    );
     if (!failedTasksContainer) {
       console.warn("Tasks container not found");
       return;
@@ -334,7 +445,8 @@ class JobDetail {
       }
 
       const tasksResponse = await response.json();
-      const allTasks = tasksResponse.data || tasksResponse.tasks || tasksResponse;
+      const allTasks =
+        tasksResponse.data || tasksResponse.tasks || tasksResponse;
 
       if (!allTasks || allTasks.length === 0) {
         failedTasksContainer.innerHTML = `
@@ -352,7 +464,9 @@ class JobDetail {
       this.originalFailedTasks = allTasks; // Rename this to originalTasks later
 
       // Group errors by category (for error analysis)
-      const failedTasks = allTasks.filter(task => task.IsSuccessful === false || task.IsSuccessful === "false");
+      const failedTasks = allTasks.filter(
+        (task) => task.IsSuccessful === false || task.IsSuccessful === "false"
+      );
       const errorsByCategory = this.groupErrorsByCategory(failedTasks);
 
       // Update top error category module
@@ -362,10 +476,13 @@ class JobDetail {
       this.populateAllErrorCategories(errorsByCategory);
 
       // Update tasks count badge
-      const failedTasksCountBadge = document.getElementById("failed-tasks-count");
+      const failedTasksCountBadge =
+        document.getElementById("failed-tasks-count");
       if (failedTasksCountBadge) {
         const failedCount = failedTasks.length;
-        failedTasksCountBadge.textContent = `${allTasks.length} Task${allTasks.length !== 1 ? "s" : ""} (${failedCount} Failed)`;
+        failedTasksCountBadge.textContent = `${allTasks.length} Task${
+          allTasks.length !== 1 ? "s" : ""
+        } (${failedCount} Failed)`;
       }
 
       // Populate category filter dropdown
@@ -376,7 +493,6 @@ class JobDetail {
 
       // Setup filter event listeners
       this.setupFilterEventListeners();
-
     } catch (error) {
       console.error("Error loading tasks:", error);
       failedTasksContainer.innerHTML = `
@@ -869,6 +985,7 @@ class JobDetail {
             `;
       return;
     } // Generate HTML for failed tasks using Bootstrap row/col structure
+    console.log("Failed tasks found:", tasks);
     const failedTasksHTML = tasks
       .map((task) => {
         // Normalize error category, handle undefined/null cases
