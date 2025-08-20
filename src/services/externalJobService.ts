@@ -194,28 +194,24 @@ export class ExternalJobService {
   /**
    * Get a specific job by ID
    */
-  async getJobById(id: string): Promise<Job> {
+  async getJobById(id: string): Promise<any> {
     try {
       const requestBody = {
         TestJobID: id,
       };
 
-      const response = await this.requestWithRetry<
-        Job | { name: string; data: Job[] }
-      >({
+      const response = await this.requestWithRetry<any>({
         method: "GET",
         url: "/kusto/getJobDetailsByID",
         data: requestBody,
       });
 
-      // 处理可能的不同响应格式
       if (
         response &&
         typeof response === "object" &&
         "data" in response &&
         Array.isArray(response.data)
       ) {
-        // 如果返回的是包装格式，取第一个元素
         return response.data[0];
       }
 

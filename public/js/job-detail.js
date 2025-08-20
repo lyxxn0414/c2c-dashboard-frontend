@@ -5,7 +5,8 @@ class JobDetail {
     this.twoDimensionalAnalysis = new TwoDimensionalAnalysis();
     this.currentJob = null; // Store current job for detail view
     this.failedOnlyActive = false; // Track failed-only filter state
-  }initializeElements() {
+  }
+  initializeElements() {
     this.jobDetailView = document.getElementById("job-detail-view");
 
     // Check if elements exist
@@ -18,16 +19,18 @@ class JobDetail {
           this.initializeElements();
         }, 500);
       };
-      
+
       // Listen for templates loaded event
       if (!window.templateRetryListenerAdded) {
         window.addEventListener("templatesLoaded", () => {
-          console.log("📡 Templates loaded event received, retrying initialization...");
+          console.log(
+            "📡 Templates loaded event received, retrying initialization..."
+          );
           setTimeout(() => this.initializeElements(), 100);
         });
         window.templateRetryListenerAdded = true;
       }
-        // Fallback retry
+      // Fallback retry
       retryInitialization();
       return;
     }
@@ -52,12 +55,8 @@ class JobDetail {
       "job-iterations-changes"
     );
 
-    // Tool call elements
-    this.toolRecommend = document.getElementById("tool-recommend");
-    this.toolPredeploy = document.getElementById("tool-predeploy");
-    this.toolDeploy = document.getElementById("tool-deploy");
-    this.toolRegion = document.getElementById("tool-region");
-    this.toolQuota = document.getElementById("tool-quota");
+    // Tool usage container (dynamic)
+    this.toolUsageContainer = document.getElementById("tool-usage-container");
   }
 
   async initJobDetailView(jobId) {
@@ -89,8 +88,9 @@ class JobDetail {
     this.currentJob = job;
 
     // Populate job detail fields
-    document.getElementById("job-detail-title").textContent =
-      `${job.TestJobID}`;
+    document.getElementById(
+      "job-detail-title"
+    ).textContent = `${job.TestJobID}`;
     document.getElementById("job-detail-id").textContent = job.TestJobID;
     document.getElementById("job-detail-creator").textContent = job.InitiatedBy;
     document.getElementById("job-detail-creation-time").textContent =
@@ -99,35 +99,31 @@ class JobDetail {
 
     // Populate metrics - handle both new and old field names for compatibility
     document.getElementById("job-success-rate").textContent =
-      job.SuccessRate+" ("+job.SuccessTasks+"/"+job.TaskNum+")" || "0%";    // Additional metrics from backend
+      job.SuccessRate + " (" + job.SuccessTasks + "/" + job.TaskNum + ")" ||
+      "0%"; // Additional metrics from backend
     console.log("Job metrics:", job);
     document.getElementById("job-avg-iterations").textContent =
       job.AvgSuccessIteration || "10";
-    
+
     // Fix for AvgInfraChanges - only call toFixed on numbers
     const avgInfraChanges = job.AvgInfraChanges;
-    document.getElementById("job-iterations-changes").textContent = 
-      (typeof avgInfraChanges === 'number' && !isNaN(avgInfraChanges)) 
-        ? avgInfraChanges.toFixed(2) 
-        : (avgInfraChanges || "xx");
-    
+    document.getElementById("job-iterations-changes").textContent =
+      typeof avgInfraChanges === "number" && !isNaN(avgInfraChanges)
+        ? avgInfraChanges.toFixed(2)
+        : avgInfraChanges || "xx";
+
     // Fix for AvgFileChanges - only call toFixed on numbers
     const avgFileChanges = job.AvgFileChanges;
-    document.getElementById("job-avg-file-edits").textContent = 
-      (typeof avgFileChanges === 'number' && !isNaN(avgFileChanges)) 
-        ? avgFileChanges.toFixed(2) 
-        : (avgFileChanges || "xx");
+    document.getElementById("job-avg-file-edits").textContent =
+      typeof avgFileChanges === "number" && !isNaN(avgFileChanges)
+        ? avgFileChanges.toFixed(2)
+        : avgFileChanges || "xx";
 
-    // Tool call metrics
-    document.getElementById("tool-recommend").textContent =
-      job.RecommendCalls || 0;
-    document.getElementById("tool-predeploy").textContent =
-      job.PredeployCalls || 0;
-    document.getElementById("tool-deploy").textContent = job.DeployCalls || 0;
-    document.getElementById("tool-region").textContent = job.RegionCalls || 0;
-    document.getElementById("tool-quota").textContent = job.QuotaCalls || 0;
-    document.getElementById("tool-get-logs").textContent = job.GetLogsCalls || 0;
+    // Tool call metrics - use ToolUsageList if available, fallback to legacy fields
+    this.populateToolUsage(job);
 
+    document.getElementById("tool-get-logs").textContent =
+      job.GetLogsCalls || 0;
 
     this.populateModelStatistics(job.TestJobID); // Failed tasks analysis
     this.populateFailedTasks(taskErrors);
@@ -162,8 +158,7 @@ class JobDetail {
     if (jobDetailId) jobDetailId.textContent = "...";
     if (jobDetailCreator) jobDetailCreator.textContent = "...";
     if (jobDetailCreationTime) jobDetailCreationTime.textContent = "...";
-    if (this.jobDetailPoolID)
-      this.jobDetailPoolID.textContent = "...";
+    if (this.jobDetailPoolID) this.jobDetailPoolID.textContent = "...";
     // if (jobDetailDescription) jobDetailDescription.textContent = 'Loading job details...';
 
     // Show loading spinner for metrics
@@ -175,11 +170,6 @@ class JobDetail {
       "job-avg-iterations",
       "job-iterations-changes",
       "job-avg-file-edits",
-      "tool-recommend",
-      "tool-predeploy",
-      "tool-deploy",
-      "tool-region",
-      "tool-quota",
       "tool-get-logs",
     ];
 
@@ -189,6 +179,22 @@ class JobDetail {
         element.innerHTML = loadingSpinner;
       }
     });
+
+    // Clear tool usage containers
+    const toolUsageContainer = document.getElementById("tool-usage-container");
+    const legacyToolMetrics = document.getElementById("legacy-tool-metrics");
+
+    if (toolUsageContainer) {
+      toolUsageContainer.innerHTML = `
+        <div class="col-12 text-center py-3">
+          ${loadingSpinner} Loading tool usage data...
+        </div>
+      `;
+    }
+
+    if (legacyToolMetrics) {
+      legacyToolMetrics.style.display = "none";
+    }
 
     // Clear model statistics and failed tasks content
     const failedTasksContent = document.getElementById("failed-tasks-content");
@@ -211,7 +217,7 @@ class JobDetail {
 
     try {
       console.log("Loading classification data for job:", jobId);
-      
+
       // Show loading state
       classificationContainer.innerHTML = `
         <div class="col-12 text-center py-4">
@@ -246,7 +252,6 @@ class JobDetail {
 
       // Clear existing content and render the unified table
       classificationContainer.innerHTML = unifiedTable;
-
     } catch (error) {
       console.error("Error loading classification data:", error);
       classificationContainer.innerHTML = `
@@ -256,6 +261,102 @@ class JobDetail {
         </div>
       `;
     }
+  }
+
+  /**
+   * Populate tool usage data from ToolUsageList or fallback to legacy fields
+   */
+  populateToolUsage(job) {
+    const toolUsageContainer = document.getElementById("tool-usage-container");
+    const legacyToolMetrics = document.getElementById("legacy-tool-metrics");
+
+    if (!toolUsageContainer) {
+      console.warn("Tool usage container not found");
+      return;
+    }
+
+    // Check if ToolUsageList is available and not empty
+    if (
+      job.ToolUsageList &&
+      Array.isArray(job.ToolUsageList) &&
+      job.ToolUsageList.length > 0
+    ) {
+      // Use new ToolUsageList format
+      console.log("Using ToolUsageList data:", job.ToolUsageList);
+
+      // Hide legacy metrics and show new container
+      if (legacyToolMetrics) legacyToolMetrics.style.display = "none";
+      toolUsageContainer.style.display = "flex";
+
+      // Generate tool usage items
+      const toolUsageHTML = job.ToolUsageList.map((tool, index) => {
+        // Extract a display name from the tool name
+        const displayName = this.formatToolName(tool.ToolName);
+
+        return `
+          <div class="col-md-2 col-sm-4 col-6 mb-3">
+            <div class="tool-metric">
+              <div class="tool-label" title="${
+                tool.ToolName
+              }">${displayName}</div>
+              <div class="tool-value">${tool.TaskCount || 0}</div>
+            </div>
+          </div>
+        `;
+      }).join("");
+
+      toolUsageContainer.innerHTML = toolUsageHTML;
+    } else {
+      // Fallback to legacy format
+      console.log("Using legacy tool call data");
+
+      // Hide new container and show legacy metrics
+      toolUsageContainer.style.display = "none";
+      if (legacyToolMetrics) {
+        legacyToolMetrics.style.display = "flex";
+
+        // Populate legacy fields
+        document.getElementById("tool-recommend").textContent =
+          job.RecommendCalls || 0;
+        document.getElementById("tool-predeploy").textContent =
+          job.PredeployCalls || 0;
+        document.getElementById("tool-deploy").textContent =
+          job.DeployCalls || 0;
+        document.getElementById("tool-region").textContent =
+          job.RegionCalls || 0;
+        document.getElementById("tool-quota").textContent = job.QuotaCalls || 0;
+      }
+    }
+  }
+
+  /**
+   * Format tool name for display (extract meaningful part from full tool name)
+   */
+  formatToolName(toolName) {
+    if (!toolName) return "Unknown Tool";
+
+    // Handle format like "deploy deploy_plan-get" -> "Deploy Plan"
+    // or "deploy deploy_iac-rules-get" -> "Deploy IAC Rules"
+
+    // Remove common prefixes and split on common separators
+    let formatted = toolName
+      .replace(/^(deploy\s+)/i, "") // Remove "deploy " prefix
+      .replace(/[-_]/g, " ") // Replace dashes and underscores with spaces
+      .replace(/\b(get|post|put|delete)\b/gi, "") // Remove HTTP methods
+      .trim();
+
+    // Capitalize words
+    formatted = formatted
+      .split(" ")
+      .map((word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+      .join(" ");
+
+    // Truncate if too long
+    if (formatted.length > 12) {
+      formatted = formatted.substring(0, 12) + "...";
+    }
+
+    return formatted || "Tool";
   }
 
   populateFailedTasks(taskErrors) {
@@ -299,7 +400,9 @@ class JobDetail {
     // Update failed tasks count badge
     const failedTasksCountBadge = document.getElementById("failed-tasks-count");
     if (failedTasksCountBadge) {
-      failedTasksCountBadge.textContent = `${failedTasksArr.length} Failed Task${failedTasksArr.length !== 1 ? "s" : ""}`;
+      failedTasksCountBadge.textContent = `${
+        failedTasksArr.length
+      } Failed Task${failedTasksArr.length !== 1 ? "s" : ""}`;
     }
 
     // Populate category filter dropdown    // Populate category filter dropdown
@@ -318,26 +421,28 @@ class JobDetail {
     // Helper function to calculate metrics for a group of tasks
     const calculateMetrics = (groupTasks) => {
       const totalTasks = groupTasks.length;
-      const successfulTasks = groupTasks.filter(task => 
-        task.IsSuccessful === true || task.IsSuccessful === "true"
+      const successfulTasks = groupTasks.filter(
+        (task) => task.IsSuccessful === true || task.IsSuccessful === "true"
       );
       const successCount = successfulTasks.length;
       const successRate = Math.round((successCount / totalTasks) * 100);
-      
+
       // Calculate average iterations for successful tasks only
       let avgIteration = 0;
       if (successfulTasks.length > 0) {
-        const totalIterations = successfulTasks.reduce((sum, task) => 
-          sum + (task.Iterations || 0), 0
+        const totalIterations = successfulTasks.reduce(
+          (sum, task) => sum + (task.Iterations || 0),
+          0
         );
-        avgIteration = Math.round((totalIterations / successfulTasks.length) * 10) / 10;
+        avgIteration =
+          Math.round((totalIterations / successfulTasks.length) * 10) / 10;
       }
 
       return {
         totalRepos: totalTasks,
         successRate: successRate,
         successCount: successCount,
-        avgIteration: avgIteration
+        avgIteration: avgIteration,
       };
     };
 
@@ -367,9 +472,9 @@ class JobDetail {
     const dimensions = ["Model", "Language", "AppPattern"];
     const classificationData = {};
 
-    dimensions.forEach(dimension => {
+    dimensions.forEach((dimension) => {
       const grouped = {};
-      tasks.forEach(task => {
+      tasks.forEach((task) => {
         const value = getDimensionValue(task, dimension);
         if (!grouped[value]) {
           grouped[value] = [];
@@ -380,7 +485,7 @@ class JobDetail {
       classificationData[dimension] = Object.entries(grouped)
         .map(([type, groupTasks]) => ({
           type: type,
-          ...calculateMetrics(groupTasks)
+          ...calculateMetrics(groupTasks),
         }))
         .sort((a, b) => b.successRate - a.successRate);
     });
@@ -417,13 +522,22 @@ class JobDetail {
                 </tr>
                 
                 <!-- Model Classification -->
-                ${this.generateCategoryRows("By Model", classificationData.Model)}
+                ${this.generateCategoryRows(
+                  "By Model",
+                  classificationData.Model
+                )}
                 
                 <!-- Language Classification -->
-                ${this.generateCategoryRows("By Language", classificationData.Language)}
+                ${this.generateCategoryRows(
+                  "By Language",
+                  classificationData.Language
+                )}
                 
                 <!-- App Pattern Classification -->
-                ${this.generateCategoryRows("By App Pattern (Compute + Binding Services)", classificationData.AppPattern)}
+                ${this.generateCategoryRows(
+                  "By App Pattern (Compute + Binding Services)",
+                  classificationData.AppPattern
+                )}
                 
                 <!-- Average iteration per success summary -->
                 <tr class="table-info">
@@ -443,8 +557,8 @@ class JobDetail {
 
   calculateAverageIterationSummary(tasks) {
     // Get all successful tasks and their iterations
-    const successfulTasks = tasks.filter(task => 
-      task.IsSuccessful === true || task.IsSuccessful === "true"
+    const successfulTasks = tasks.filter(
+      (task) => task.IsSuccessful === true || task.IsSuccessful === "true"
     );
 
     if (successfulTasks.length === 0) {
@@ -452,10 +566,11 @@ class JobDetail {
     }
 
     // Calculate the overall average iterations for successful tasks
-    const totalIterations = successfulTasks.reduce((sum, task) => 
-      sum + (task.Iterations || 0), 0
+    const totalIterations = successfulTasks.reduce(
+      (sum, task) => sum + (task.Iterations || 0),
+      0
     );
-    
+
     return Math.round((totalIterations / successfulTasks.length) * 10) / 10;
   }
 
@@ -472,32 +587,42 @@ class JobDetail {
       `;
     }
 
-    return categoryData.map((item, index) => {
-      const isFirstRow = index === 0;
-      const rowspan = categoryData.length;
-      
-      return `
+    return categoryData
+      .map((item, index) => {
+        const isFirstRow = index === 0;
+        const rowspan = categoryData.length;
+
+        return `
         <tr>
-          ${isFirstRow ? `<th scope="row" rowspan="${rowspan}">${categoryName}</th>` : ''}
+          ${
+            isFirstRow
+              ? `<th scope="row" rowspan="${rowspan}">${categoryName}</th>`
+              : ""
+          }
           <td>${item.type}</td>
           <td>${item.totalRepos}</td>
           <td>
-            <span class="badge ${this.getSuccessRateBadgeClass(item.successRate)}">
+            <span class="badge ${this.getSuccessRateBadgeClass(
+              item.successRate
+            )}">
               ${item.successRate}%
             </span>
-            <small class="text-muted ms-1">(${item.successCount}/${item.totalRepos})</small>
+            <small class="text-muted ms-1">(${item.successCount}/${
+          item.totalRepos
+        })</small>
           </td>
           <td>${item.avgIteration}</td>
         </tr>
       `;
-    }).join('');
+      })
+      .join("");
   }
 
   getSuccessRateBadgeClass(successRate) {
-    if (successRate >= 80) return 'bg-success';
-    if (successRate >= 60) return 'bg-warning';
-    if (successRate >= 40) return 'bg-orange text-dark';
-    return 'bg-danger';
+    if (successRate >= 80) return "bg-success";
+    if (successRate >= 60) return "bg-warning";
+    if (successRate >= 40) return "bg-orange text-dark";
+    return "bg-danger";
   }
 
   generateClassificationCard(category) {
@@ -512,7 +637,9 @@ class JobDetail {
             <div class="classification-item">
                 <span class="model-name">${item.Type}</span>
                 <span class="model-stats">
-                    Success Rate: ${item.SuccessRate || "0%"} (${item.SuccessNum || 0}/${item.TaskNum || 0}) |
+                    Success Rate: ${item.SuccessRate || "0%"} (${
+          item.SuccessNum || 0
+        }/${item.TaskNum || 0}) |
                     Avg Iteration: ${item.AvgSuccessIteration || 0}
                 </span>
             </div>
@@ -635,7 +762,9 @@ class JobDetail {
                                 <div>
                                     <h4 class="mb-1">${category}</h4>
                                     <div class="error-count text-muted">
-                                        ${data.count} occurrence${data.count !== 1 ? "s" : ""} (${percentage}%)
+                                        ${data.count} occurrence${
+          data.count !== 1 ? "s" : ""
+        } (${percentage}%)
                                     </div>
                                 </div>
                             </div>
@@ -710,17 +839,17 @@ class JobDetail {
                 </div>
             `;
       return;
-    }    // Generate HTML for failed tasks using Bootstrap row/col structure
+    } // Generate HTML for failed tasks using Bootstrap row/col structure
     const failedTasksHTML = tasks
       .map((task) => {
         // Normalize error category, handle undefined/null cases
         const errorCategory = task.ErrorCategory || "General Error";
         const taskName = task.TaskID || "Unknown Task";
-        
+
         // Determine success status styling based on IsSuccessful property
         let statusText = "";
         let statusClass = "";
-        
+
         if (task.IsSuccessful === true) {
           statusText = "Success";
           statusClass = "badge bg-success";
@@ -736,22 +865,33 @@ class JobDetail {
                 <div class="failed-task-item" data-category="${errorCategory}" data-task-name="${taskName.toLowerCase()}">
                     <div class="row align-items-center">
                         <div class="col-md-2">
-                            <a href="/task-detail/${task.TaskID}" class="task-name-link" data-task-id="${task.TaskID}">${taskName}</a>
+                            <a href="/task-detail/${
+                              task.TaskID
+                            }" class="task-name-link" data-task-id="${
+          task.TaskID
+        }">${taskName}</a>
                         </div>
                         <div class="col-md-1">
                             <span class="${statusClass}">${statusText}</span>
                         </div>
                         <div class="col-md-1">
-                            <span class="created-date">${formatDateTime(task.CreatedDate)}</span>
+                            <span class="created-date">${formatDateTime(
+                              task.CreatedDate
+                            )}</span>
                         </div>
                         <div class="col-md-1">
                             <span class="error-category badge bg-danger-subtle text-danger">${errorCategory}</span>
                         </div>
                         <div class="col-md-2">
-                            <span class="error-description">${task.ErrorDescription || "No error description available"}</span>
+                            <span class="error-description">${
+                              task.ErrorDescription ||
+                              "No error description available"
+                            }</span>
                         </div>
                         <div class="col-md-5">
-                            <span class="error-description">${task.ErrorDetail || "No error details available"}</span>
+                            <span class="error-description">${
+                              task.ErrorDetail || "No error details available"
+                            }</span>
                         </div>
                     </div>
                 </div>
@@ -766,7 +906,9 @@ class JobDetail {
     const categoryFilter = document.getElementById("category-filter");
     const clearFilterBtn = document.getElementById("clear-filter-btn");
     const taskSearch = document.getElementById("task-search");
-    const filterFailedOnlySwitch = document.getElementById("filter-failed-only-switch");
+    const filterFailedOnlySwitch = document.getElementById(
+      "filter-failed-only-switch"
+    );
 
     if (categoryFilter) {
       // Remove existing event listener to avoid duplicates
@@ -795,7 +937,10 @@ class JobDetail {
 
     if (filterFailedOnlySwitch) {
       // Remove existing event listener to avoid duplicates
-      filterFailedOnlySwitch.removeEventListener("change", this.handleFilterFailedOnly);
+      filterFailedOnlySwitch.removeEventListener(
+        "change",
+        this.handleFilterFailedOnly
+      );
 
       // Add new event listener
       this.handleFilterFailedOnly = (e) => {
@@ -803,7 +948,10 @@ class JobDetail {
         this.applyFilters();
       };
 
-      filterFailedOnlySwitch.addEventListener("change", this.handleFilterFailedOnly);
+      filterFailedOnlySwitch.addEventListener(
+        "change",
+        this.handleFilterFailedOnly
+      );
     }
 
     if (clearFilterBtn) {
@@ -839,7 +987,9 @@ class JobDetail {
     }
 
     categoryElem.textContent = data.category;
-    countElem.innerHTML = `<span class="count">${data.count}</span> occurrence${data.count !== 1 ? "s" : ""}`;
+    countElem.innerHTML = `<span class="count">${data.count}</span> occurrence${
+      data.count !== 1 ? "s" : ""
+    }`;
     percentageElem.textContent = `${data.percentage}%`;
     progressElem.style.width = `${data.percentage}%`;
     progressElem.setAttribute("aria-valuenow", data.percentage);
@@ -884,7 +1034,7 @@ class JobDetail {
     const categoryFilter = document.getElementById("category-filter");
     const taskSearch = document.getElementById("task-search");
     const clearFilterBtn = document.getElementById("clear-filter-btn");
-    
+
     if (!this.originalFailedTasks) {
       console.warn("No original task data available for filtering");
       return;
@@ -907,7 +1057,7 @@ class JobDetail {
 
     // Apply failed-only filter (Final State == "Failed")
     if (this.failedOnlyActive) {
-      filteredTasks = filteredTasks.filter(task => {
+      filteredTasks = filteredTasks.filter((task) => {
         // Check if the task has a final state of "Failed"
         return task.IsSuccessful === false || task.IsSuccessful === "false";
       });
@@ -915,7 +1065,7 @@ class JobDetail {
 
     // Apply category filter
     if (selectedCategory !== "all") {
-      filteredTasks = filteredTasks.filter(task => {
+      filteredTasks = filteredTasks.filter((task) => {
         const taskCategory = task.ErrorCategory || "General Error";
         return taskCategory === selectedCategory;
       });
@@ -923,22 +1073,26 @@ class JobDetail {
 
     // Apply search filter
     if (searchText) {
-      filteredTasks = filteredTasks.filter(task => {
+      filteredTasks = filteredTasks.filter((task) => {
         const taskName = task.TaskID || "Unknown Task";
         const errorDesc = task.ErrorDescription || "";
         const errorDetail = task.ErrorDetail || "";
-        
+
         // Search in task name, error description and detail
-        return taskName.toLowerCase().includes(searchText) || 
-               errorDesc.toLowerCase().includes(searchText) ||
-               errorDetail.toLowerCase().includes(searchText);
+        return (
+          taskName.toLowerCase().includes(searchText) ||
+          errorDesc.toLowerCase().includes(searchText) ||
+          errorDetail.toLowerCase().includes(searchText)
+        );
       });
     }
 
     // Update the filtered task count
     const failedTasksCountBadge = document.getElementById("failed-tasks-count");
     if (failedTasksCountBadge) {
-      failedTasksCountBadge.textContent = `${filteredTasks.length} Failed Task${filteredTasks.length !== 1 ? "s" : ""}`;
+      failedTasksCountBadge.textContent = `${filteredTasks.length} Failed Task${
+        filteredTasks.length !== 1 ? "s" : ""
+      }`;
       // Add a filtered indicator if filters are active
       if (selectedCategory !== "all" || searchText || this.failedOnlyActive) {
         failedTasksCountBadge.textContent += " (filtered)";
@@ -956,27 +1110,32 @@ class JobDetail {
     const categoryFilter = document.getElementById("category-filter");
     const taskSearch = document.getElementById("task-search");
     const clearFilterBtn = document.getElementById("clear-filter-btn");
-    const filterFailedOnlySwitch = document.getElementById("filter-failed-only-switch");
-    
+    const filterFailedOnlySwitch = document.getElementById(
+      "filter-failed-only-switch"
+    );
+
     // Reset filter elements
     if (categoryFilter) categoryFilter.value = "all";
     if (taskSearch) taskSearch.value = "";
     if (clearFilterBtn) clearFilterBtn.style.display = "none";
-    
+
     // Reset failed-only filter switch
     if (filterFailedOnlySwitch) {
       filterFailedOnlySwitch.checked = false;
       this.failedOnlyActive = false;
     }
-    
+
     // Restore original task list
     if (this.originalFailedTasks) {
       // Update the task count badge
-      const failedTasksCountBadge = document.getElementById("failed-tasks-count");
+      const failedTasksCountBadge =
+        document.getElementById("failed-tasks-count");
       if (failedTasksCountBadge) {
-        failedTasksCountBadge.textContent = `${this.originalFailedTasks.length} Failed Task${this.originalFailedTasks.length !== 1 ? "s" : ""}`;
+        failedTasksCountBadge.textContent = `${
+          this.originalFailedTasks.length
+        } Failed Task${this.originalFailedTasks.length !== 1 ? "s" : ""}`;
       }
-      
+
       // Render the original tasks
       this.renderFailedTasks(this.originalFailedTasks);
     }
@@ -1185,7 +1344,9 @@ class TwoDimensionalAnalysis {
             } else {
               cellContent = `
                                 <div class="matrix-cell-content">
-                                    <div class="matrix-cell-count">${count} task${count !== 1 ? "s" : ""}</div>
+                                    <div class="matrix-cell-count">${count} task${
+                count !== 1 ? "s" : ""
+              }</div>
                                 </div>
                             `;
             }
@@ -1199,7 +1360,11 @@ class TwoDimensionalAnalysis {
                         `;
           }
 
-          bodyHTML += `<td><div class="${cellClass}" title="${this.getCellTooltip(cellInfo, xVal, yVal)}">${cellContent}</div></td>`;
+          bodyHTML += `<td><div class="${cellClass}" title="${this.getCellTooltip(
+            cellInfo,
+            xVal,
+            yVal
+          )}">${cellContent}</div></td>`;
         });
 
         // Row total cell
@@ -1222,7 +1387,11 @@ class TwoDimensionalAnalysis {
         } else {
           totalCellContent = `
                         <div class="matrix-cell-content">
-                            <div class="matrix-cell-count"><strong>${yTotal.totalTasks} task${yTotal.totalTasks !== 1 ? "s" : ""}</strong></div>
+                            <div class="matrix-cell-count"><strong>${
+                              yTotal.totalTasks
+                            } task${
+            yTotal.totalTasks !== 1 ? "s" : ""
+          }</strong></div>
                         </div>
                     `;
         }
@@ -1255,7 +1424,11 @@ class TwoDimensionalAnalysis {
         } else {
           totalCellContent = `
                         <div class="matrix-cell-content">
-                            <div class="matrix-cell-count"><strong>${xTotal.totalTasks} task${xTotal.totalTasks !== 1 ? "s" : ""}</strong></div>
+                            <div class="matrix-cell-count"><strong>${
+                              xTotal.totalTasks
+                            } task${
+            xTotal.totalTasks !== 1 ? "s" : ""
+          }</strong></div>
                         </div>
                     `;
         }
@@ -1282,7 +1455,11 @@ class TwoDimensionalAnalysis {
       } else {
         grandTotalCellContent = `
                     <div class="matrix-cell-content">
-                        <div class="matrix-cell-count"><strong>${grandTotal.totalTasks} task${grandTotal.totalTasks !== 1 ? "s" : ""}</strong></div>
+                        <div class="matrix-cell-count"><strong>${
+                          grandTotal.totalTasks
+                        } task${
+          grandTotal.totalTasks !== 1 ? "s" : ""
+        }</strong></div>
                     </div>
                 `;
       }
@@ -1741,7 +1918,7 @@ function showJobDetailPage(jobId) {
   if (!jobDetail) {
     jobDetail = new JobDetail();
   }
-  
+
   // Check if elements are initialized before proceeding
   if (!jobDetail.elementsInitialized) {
     console.warn("⚠️ Elements not initialized yet, waiting...");
@@ -1751,7 +1928,7 @@ function showJobDetailPage(jobId) {
     }, 200);
     return;
   }
-  
+
   jobDetail.showJobDetailLoadingState();
   jobDetail.initJobDetailView(jobId);
   window.viewManager.showView("job-detail");
