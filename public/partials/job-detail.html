@@ -35,31 +35,87 @@
     </div>
   </div>
 
+  <!-- Job Config Section -->
+  <div class="job-config-section mb-4">
+    <div class="job-config-card">
+      <div class="d-flex align-items-center mb-3">
+        <i class="bi bi-gear-fill fs-4 me-3 text-info"></i>
+        <h4 class="mb-0">Job Configuration</h4>
+      </div>
+      <div class="config-content">
+        <div class="row">
+          <div class="col-md-2 col-lg-2">
+            <div class="config-item">
+              <div class="config-label">Tool</div>
+              <div class="config-value" id="job-config-tool">Loading...</div>
+            </div>
+          </div>
+          <div class="col-md-2 col-lg-2">
+            <div class="config-item">
+              <div class="config-label">Copilot Model</div>
+              <div class="config-value" id="job-config-copilot-model">Loading...</div>
+            </div>
+          </div>
+          <div class="col-md-2 col-lg-2">
+            <div class="config-item">
+              <div class="config-label">Deploy Type</div>
+              <div class="config-value" id="job-config-deploy-type">Loading...</div>
+            </div>
+          </div>
+          <div class="col-md-3 col-lg-3">
+            <div class="config-item">
+              <div class="config-label">IaC Type</div>
+              <div class="config-value" id="job-config-iac-type">Loading...</div>
+            </div>
+          </div>
+          <div class="col-md-3 col-lg-3">
+            <div class="config-item">
+              <div class="config-label">Computing Type</div>
+              <div class="config-value" id="job-config-computing-type">Loading...</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+    <!-- Initial Prompt Section -->
+  <div class="initial-prompt-section mb-4">
+    <div class="initial-prompt-card">
+      <div class="d-flex align-items-center mb-3">
+        <i class="bi bi-chat-quote fs-4 me-3 text-secondary"></i>
+        <h4 class="mb-0">Initial Prompt</h4>
+      </div>
+      <div class="prompt-content">
+        <div class="prompt-text" id="job-initial-prompt">
+          Loading initial prompt...
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- Overall Result -->
   <div class="result-section">
     <div class="row mb-4">
-      <div class="col-md-4">
+      <div class="col-md-3">
         <div class="metric-card text-center">
           <div class="metric-label text-success">Success Rate</div>
           <div class="metric-value text-success" id="job-success-rate">92%</div>
         </div>
       </div>
-    </div>
-
-    <div class="row mb-4">
-      <div class="col-md-4">
+      <div class="col-md-3">
         <div class="metric-card text-center">
           <div class="metric-label">Avg Copilot Interactions</div>
           <div class="metric-value" id="job-avg-iterations">10</div>
         </div>
       </div>
-      <div class="col-md-4">
+      <div class="col-md-3">
         <div class="metric-card text-center">
           <div class="metric-label">Avg IaC File Edits</div>
           <div class="metric-value" id="job-iterations-changes">xx</div>
         </div>
       </div>
-      <div class="col-md-4">
+      <div class="col-md-3">
         <div class="metric-card text-center">
           <div class="metric-label">Avg File Edits</div>
           <div class="metric-value" id="job-avg-file-edits">10</div>

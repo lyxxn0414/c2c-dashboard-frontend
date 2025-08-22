@@ -97,6 +97,16 @@ class JobDetail {
       formatDateTime(job.CreatedTime);
     document.getElementById("job-detail-pool-id").textContent = job.PoolName;
 
+    // Populate initial prompt
+    const initialPromptElement = document.getElementById("job-initial-prompt");
+    if (initialPromptElement) {
+      const initialPrompt = job.InitialPrompt || "No initial prompt available";
+      initialPromptElement.textContent = initialPrompt;
+    }
+
+    // Populate job configuration
+    this.populateJobConfig(job);
+
     // Populate metrics - handle both new and old field names for compatibility
     document.getElementById("job-success-rate").textContent =
       job.SuccessRate + " (" + job.SuccessTasks + "/" + job.TaskNum + ")" ||
@@ -156,6 +166,28 @@ class JobDetail {
     if (jobDetailCreator) jobDetailCreator.textContent = "...";
     if (jobDetailCreationTime) jobDetailCreationTime.textContent = "...";
     if (this.jobDetailPoolID) this.jobDetailPoolID.textContent = "...";
+
+    // Show loading state for initial prompt
+    const jobInitialPrompt = document.getElementById("job-initial-prompt");
+    if (jobInitialPrompt)
+      jobInitialPrompt.textContent = "Loading initial prompt...";
+
+    // Show loading state for job config
+    const jobConfigElements = [
+      "job-config-tool",
+      "job-config-copilot-model",
+      "job-config-deploy-type",
+      "job-config-iac-type",
+      "job-config-computing-type",
+    ];
+
+    jobConfigElements.forEach((elementId) => {
+      const element = document.getElementById(elementId);
+      if (element) {
+        element.textContent = "Loading...";
+      }
+    });
+
     // if (jobDetailDescription) jobDetailDescription.textContent = 'Loading job details...';
 
     // Show loading spinner for metrics
@@ -248,6 +280,54 @@ class JobDetail {
         </div>
       `;
     }
+  }
+
+  populateJobConfig(job) {
+    // Populate job configuration fields
+    const configMappings = [
+      {
+        elementId: "job-config-tool",
+        jobField: "Tool",
+        fallback: "Not specified",
+      },
+      {
+        elementId: "job-config-copilot-model",
+        jobField: "CopilotModel",
+        fallback: "Not specified",
+      },
+      {
+        elementId: "job-config-deploy-type",
+        jobField: "DeployType",
+        fallback: "Not specified",
+      },
+      {
+        elementId: "job-config-iac-type",
+        jobField: "IacType",
+        fallback: "Not specified",
+      },
+      {
+        elementId: "job-config-computing-type",
+        jobField: "ComputingType",
+        fallback: "Not specified",
+      },
+    ];
+
+    configMappings.forEach(({ elementId, jobField, fallback }) => {
+      const element = document.getElementById(elementId);
+      if (element) {
+        const value = job[jobField] || fallback;
+        element.textContent = value;
+
+        // Add appropriate styling based on whether value exists
+        if (job[jobField]) {
+          element.classList.remove("text-muted");
+          element.classList.add("text-dark");
+        } else {
+          element.classList.remove("text-dark");
+          element.classList.add("text-muted");
+        }
+      }
+    });
   }
 
   async populateModelStatistics(jobId) {

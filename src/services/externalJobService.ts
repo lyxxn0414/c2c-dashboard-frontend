@@ -215,7 +215,7 @@ export class ExternalJobService {
         return response.data[0];
       }
 
-      return response as Job;
+      return response;
     } catch (error) {
       console.error(`[ExternalAPI] Failed to fetch job ${id}:`, error);
       if (error instanceof Error && error.message.includes("404")) {
