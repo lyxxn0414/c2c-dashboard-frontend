@@ -186,43 +186,21 @@
 </div>
 
 <!-- Tool Call Summary -->
-<div class="result-section mb-4">
-  <h4 class="mb-3">Tool Call Summary</h4>
-  <div class="row g-3 mb-4">
-    <div class="col-md-2">
-      <div class="metric-card text-center">
-        <div class="metric-label">Recommend</div>
-        <div class="metric-value" id="task-recommend-count">xx</div>
-      </div>
-    </div>
-    <div class="col-md-2">
-      <div class="metric-card text-center">
-        <div class="metric-label">Predeploy</div>
-        <div class="metric-value" id="task-predeploy-count">xx</div>
-      </div>
-    </div>
-    <div class="col-md-2">
-      <div class="metric-card text-center">
-        <div class="metric-label">Deploy</div>
-        <div class="metric-value" id="task-deploy-count">xx</div>
-      </div>
-    </div>
-    <div class="col-md-2">
-      <div class="metric-card text-center">
-        <div class="metric-label">Region</div>
-        <div class="metric-value" id="task-region-count">xx</div>
-      </div>
-    </div>
-    <div class="col-md-2">
-      <div class="metric-card text-center">
-        <div class="metric-label">Quota</div>
-        <div class="metric-value" id="task-quota-count">xx</div>
-      </div>
-    </div>
-    <div class="col-md-2">
-      <div class="metric-card text-center">
-        <div class="metric-label">GetLogs</div>
-        <div class="metric-value" id="task-getlogs-count">xx</div>
+<div class="tool-call-summary-section mb-4">
+  <h4 class="mb-3">
+    <i class="bi bi-tools me-2 text-info"></i>
+    Tool Call Summary
+  </h4>
+  <div class="card">
+    <div class="card-body">
+      <div id="task-tool-usage-container" class="tool-usage-grid">
+        <!-- Dynamic tool usage cards will be populated here -->
+        <div class="text-center py-3">
+          <div class="text-muted">
+            <i class="bi bi-hourglass-split me-2"></i>
+            Loading tool usage data...
+          </div>
+        </div>
       </div>
     </div>
   </div>

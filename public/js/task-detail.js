@@ -1,4 +1,6 @@
 // Task Detail JavaScript
+console.log("[Debug] task-detail.js loaded at:", new Date().toISOString());
+
 class TaskDetail {
   constructor() {
     this.currentTaskId = null;
@@ -41,6 +43,7 @@ class TaskDetail {
   } // Load task detail data
   async loadTaskDetail(taskId) {
     try {
+      console.log("[Debug] loadTaskDetail called with taskId:", taskId);
       this.currentTaskId = taskId;
 
       this.showLoadingState();
@@ -48,18 +51,32 @@ class TaskDetail {
       // Make API call to get task details
       const queryParams = new URLSearchParams();
 
-      const url = `/api/jobs/tasks/${taskId}${queryParams.toString() ? "?" + queryParams.toString() : ""}`;
+      const url = `/api/jobs/tasks/${taskId}${
+        queryParams.toString() ? "?" + queryParams.toString() : ""
+      }`;
+      console.log("[Debug] Fetching URL:", url);
       const response = await fetch(url);
+
+      console.log("[Debug] Response status:", response.status);
+      console.log("[Debug] Response headers:", response.headers);
 
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
 
       const taskData = await response.json();
+      console.log("[Debug] Received task data:", taskData);
+      console.log("[Debug] Task data type:", typeof taskData);
+      console.log("[Debug] Task data keys:", Object.keys(taskData));
       this.taskData = taskData;
 
+      console.log("[Debug] Calling populateTaskDetail with:", taskData);
       this.populateTaskDetail(taskData);
+      this.populateToolUsage(taskData);
       this.hideLoadingState();
+
+      // Populate tool usage after sections are made visible
+      console.log("[Debug] Calling populateToolUsage after hideLoadingState");
     } catch (error) {
       console.error("Error loading task details:", error);
       this.showErrorState(error.message);
@@ -74,11 +91,19 @@ class TaskDetail {
     const details = taskData.TaskDetails || taskData;
 
     // Basic task information
-    this.setElementText("task-detail-title", details.TaskID || taskData.name || "Task-sample");
-    this.setElementText("task-detail-id", details.TaskID || taskData.taskId || "123456");
+    this.setElementText(
+      "task-detail-title",
+      details.TaskID || taskData.name || "Task-sample"
+    );
+    this.setElementText(
+      "task-detail-id",
+      details.TaskID || taskData.taskId || "123456"
+    );
     this.setElementText(
       "task-detail-creation-time",
-      formatDateTime(details.CreatedDate || details.Timestamp || taskData.creationTime) || "2025-06-23 14:57"
+      formatDateTime(
+        details.CreatedDate || details.Timestamp || taskData.creationTime
+      ) || "2025-06-23 14:57"
     );
     this.setElementText(
       "task-detail-repo-name",
@@ -100,7 +125,7 @@ class TaskDetail {
     this.setElementText("task-computing-type", details.ComputingType || "-");
     this.setElementText("task-copilot-model", details.CopilotModel || "-");
     this.setElementText("task-command-line", details.CommandLine || "-");
-    
+
     // Success status with color coding
     const successElement = document.getElementById("task-success-status");
     if (successElement) {
@@ -119,11 +144,26 @@ class TaskDetail {
 
     // Environment & Configuration
     this.setElementText("task-vscode-version", details.VSCodeVersion || "-");
-    this.setElementText("task-extension-versions", details.ExtensionVersions || "-");
-    this.setElementText("task-use-terraform", details.UseTerraform ? "Yes" : "No");
-    this.setElementText("task-is-throttled", details.IsThrottled ? "Yes" : "No");
-    this.setElementText("task-use-bicep-schemas", details.UseBicepSchemasTool ? "Yes" : "No");
-    this.setElementText("task-use-best-practices", details.UseAzureAgentBestPractices ? "Yes" : "No");
+    this.setElementText(
+      "task-extension-versions",
+      details.ExtensionVersions || "-"
+    );
+    this.setElementText(
+      "task-use-terraform",
+      details.UseTerraform ? "Yes" : "No"
+    );
+    this.setElementText(
+      "task-is-throttled",
+      details.IsThrottled ? "Yes" : "No"
+    );
+    this.setElementText(
+      "task-use-bicep-schemas",
+      details.UseBicepSchemasTool ? "Yes" : "No"
+    );
+    this.setElementText(
+      "task-use-best-practices",
+      details.UseAzureAgentBestPractices ? "Yes" : "No"
+    );
 
     // Task Statistics
     this.setElementText("task-iterations", details.Iterations || "-");
@@ -133,12 +173,19 @@ class TaskDetail {
     // File Edits List
     const fileEditsElement = document.getElementById("task-file-edits-list");
     if (fileEditsElement && details.FileEditsList) {
-      if (Array.isArray(details.FileEditsList) && details.FileEditsList.length > 0) {
-        fileEditsElement.innerHTML = details.FileEditsList
-          .map(file => `<div class="mb-1"><i class="bi bi-file-earmark-code me-2"></i>${this.escapeHtml(file)}</div>`)
-          .join("");
+      if (
+        Array.isArray(details.FileEditsList) &&
+        details.FileEditsList.length > 0
+      ) {
+        fileEditsElement.innerHTML = details.FileEditsList.map(
+          (file) =>
+            `<div class="mb-1"><i class="bi bi-file-earmark-code me-2"></i>${this.escapeHtml(
+              file
+            )}</div>`
+        ).join("");
       } else {
-        fileEditsElement.innerHTML = '<div class="text-muted">No file edits recorded</div>';
+        fileEditsElement.innerHTML =
+          '<div class="text-muted">No file edits recorded</div>';
       }
     }
 
@@ -148,23 +195,202 @@ class TaskDetail {
       promptElement.textContent = details.InitialPrompt;
     } else if (promptElement) {
       promptElement.textContent = "No initial prompt available";
-    }    // Tool call counts - updated to use the new API structure
-    this.setElementText("task-recommend-count", details.RecommendToolCount || taskData.toolCalls?.recommend || "0");
-    this.setElementText("task-predeploy-count", details.PredeployToolCount || taskData.toolCalls?.predeploy || "0");
-    this.setElementText("task-deploy-count", details.DeployToolCount || taskData.toolCalls?.deploy || "0");
-    this.setElementText("task-region-count", details.RegionToolCount || taskData.toolCalls?.region || "0");
-    this.setElementText("task-quota-count", details.QuotaToolCount || taskData.toolCalls?.quota || "0");
-    this.setElementText("task-getlogs-count", details.GetLogsCalls || taskData.toolCalls?.getLogs || "0");
+    }
 
     // AI Integration counts - updated to use the new API structure
-    this.setElementText("task-fill-params-count", details.FillMainParametersJSONWithOpenAI || taskData.aiIntegration?.fillMainParametersJSONWithOpenAI || "0");
-    this.setElementText("task-generate-input-count", details.GenerateUserInputWithOpenAI || taskData.aiIntegration?.generateUserInputWithOpenAI || "0");
-    this.setElementText("task-judge-success-count", details.JudgeAzdUpSuccessWithOpenAI || taskData.aiIntegration?.judgeAzdUpSuccessWithOpenAI || "0");    // Populate failure details table
-    this.populateFailureDetailsTable(details.DeployFailureDetails || taskData.deployFailureDetails || []);
+    this.setElementText(
+      "task-fill-params-count",
+      details.FillMainParametersJSONWithOpenAI ||
+        taskData.aiIntegration?.fillMainParametersJSONWithOpenAI ||
+        "0"
+    );
+    this.setElementText(
+      "task-generate-input-count",
+      details.GenerateUserInputWithOpenAI ||
+        taskData.aiIntegration?.generateUserInputWithOpenAI ||
+        "0"
+    );
+    this.setElementText(
+      "task-judge-success-count",
+      details.JudgeAzdUpSuccessWithOpenAI ||
+        taskData.aiIntegration?.judgeAzdUpSuccessWithOpenAI ||
+        "0"
+    ); // Populate failure details table
+    this.populateFailureDetailsTable(
+      details.DeployFailureDetails || taskData.deployFailureDetails || []
+    );
 
-    // Populate copilot response table  
-    this.populateCopilotResponseTable(details.DeployIterationData || taskData.copilotResponses || []);
+    // Populate copilot response table
+    this.populateCopilotResponseTable(
+      details.DeployIterationData || taskData.copilotResponses || []
+    );
   }
+
+  populateToolUsage(taskData) {
+    console.log("🔧 ==========================================");
+    console.log("🔧 POPULATE TOOL USAGE FUNCTION CALLED");
+    console.log("🔧 ==========================================");
+    console.log("[Debug] populateToolUsage called with:", taskData);
+
+    const toolUsageContainer = document.getElementById(
+      "task-tool-usage-container"
+    );
+
+    if (!toolUsageContainer) {
+      console.error("CRITICAL: Tool usage container not found!");
+      return;
+    }
+
+    console.log("[Debug] Container found:", toolUsageContainer);
+
+    // Clear existing content first
+    toolUsageContainer.innerHTML = "";
+
+    // Remove any hidden classes
+    toolUsageContainer.classList.remove("d-none", "hidden");
+    toolUsageContainer.style.display = "";
+
+    console.log(
+      "[Debug] Container cleared and unhidden, now checking tool data..."
+    );
+
+    // Extract TaskDetails if it exists, otherwise use taskData directly
+    const details = taskData.TaskDetails || taskData;
+
+    // Check if we have ToolUsageList or ToolNames
+    const toolUsageList = taskData.ToolUsageList || [];
+    const toolNames = details.ToolNames || taskData.ToolNames || [];
+
+    console.log("[Debug] ToolUsageList:", toolUsageList);
+    console.log("[Debug] ToolNames:", toolNames);
+
+    let toolsToDisplay = [];
+
+    // If we have ToolUsageList, use it directly
+    if (
+      toolUsageList &&
+      Array.isArray(toolUsageList) &&
+      toolUsageList.length > 0
+    ) {
+      console.log(
+        "[Debug] ✅ Using ToolUsageList with",
+        toolUsageList.length,
+        "items"
+      );
+      toolsToDisplay = toolUsageList;
+    }
+    // If we have ToolNames, create tool objects with usage counts
+    else if (toolNames && Array.isArray(toolNames) && toolNames.length > 0) {
+      console.log("[Debug] ✅ Using ToolNames with", toolNames.length, "items");
+
+      // Count occurrences of each tool name
+      const toolCounts = {};
+      toolNames.forEach((toolName) => {
+        toolCounts[toolName] = (toolCounts[toolName] || 0) + 1;
+      });
+
+      console.log("[Debug] Tool counts calculated:", toolCounts);
+
+      // Convert to display format
+      toolsToDisplay = Object.entries(toolCounts).map(([toolName, count]) => ({
+        ToolName: toolName,
+        TaskCount: count,
+      }));
+
+      // Sort by count (descending) then by name
+      toolsToDisplay.sort((a, b) => {
+        if (b.TaskCount !== a.TaskCount) {
+          return b.TaskCount - a.TaskCount;
+        }
+        return a.ToolName.localeCompare(b.ToolName);
+      });
+    }
+
+    if (toolsToDisplay.length > 0) {
+      console.log("[Debug] ✅ Displaying", toolsToDisplay.length, "tools");
+
+      try {
+        // Generate tool usage cards using CSS Grid layout
+        const toolElements = toolsToDisplay.map((tool, index) => {
+          const toolName = tool.ToolName || tool.name || `Tool ${index + 1}`;
+          const taskCount =
+            tool.TaskCount !== undefined ? tool.TaskCount : tool.count || 0;
+
+          console.log(
+            `[Debug] Processing tool ${index}: ${toolName} = ${taskCount}`
+          );
+
+          // Truncate long tool names for display
+          const displayName =
+            toolName.length > 25 ? toolName.substring(0, 23) + "..." : toolName;
+
+          return `
+            <div class="tool-metric-card" title="${this.escapeHtml(toolName)}">
+              <div class="tool-metric-label">${this.escapeHtml(
+                displayName
+              )}</div>
+              <div class="tool-metric-value">${taskCount}</div>
+            </div>
+          `;
+        });
+
+        console.log(`[Debug] Generated ${toolElements.length} tool elements`);
+
+        const finalHTML = toolElements.join("");
+        console.log("[Debug] Final HTML to insert:", finalHTML);
+
+        toolUsageContainer.innerHTML = finalHTML;
+
+        console.log("[Debug] ✅ HTML inserted into container");
+
+        // Ensure parent tool-call-summary-section is visible
+        const summarySection = toolUsageContainer.closest(
+          ".tool-call-summary-section"
+        );
+        if (summarySection) {
+          summarySection.classList.remove("d-none");
+          console.log("[Debug] Made tool-call-summary-section visible");
+        }
+
+        // Force refresh container visibility and layout
+        toolUsageContainer.style.visibility = "visible";
+        toolUsageContainer.style.display = "";
+        toolUsageContainer.offsetHeight; // Force reflow
+
+        // Log final container state
+        console.log(
+          "[Debug] Container final innerHTML:",
+          toolUsageContainer.innerHTML
+        );
+        console.log("[Debug] Container computed style:", {
+          display: window.getComputedStyle(toolUsageContainer).display,
+          visibility: window.getComputedStyle(toolUsageContainer).visibility,
+        });
+      } catch (error) {
+        console.error("[Debug] ❌ ERROR processing tool data:", error);
+        toolUsageContainer.innerHTML = `
+          <div class="text-center py-3">
+            <div class="alert alert-danger">
+              Error processing tool usage data: ${error.message}
+            </div>
+          </div>
+        `;
+      }
+    } else {
+      // Show message when no tool usage data is available
+      console.log("No tool usage data found");
+      toolUsageContainer.innerHTML = `
+        <div class="text-center py-3">
+          <div class="text-muted">
+            <i class="bi bi-info-circle me-2"></i>
+            No tool usage data available
+          </div>
+        </div>
+      `;
+      console.log("[Debug] Set fallback message in container");
+    }
+  }
+
   // Populate failure details table
   populateFailureDetailsTable(failureDetails) {
     const tableBody = document.querySelector("#failure-details-table tbody");
@@ -183,11 +409,16 @@ class TaskDetail {
 
     failureDetails.forEach((failure) => {
       const row = tableBody.insertRow();
-      row.insertCell().textContent = failure.IterationNum || failure.iterationNum || "-";
-      row.insertCell().textContent = formatDateTime(failure.Time || failure.time) || "-";
-      row.insertCell().textContent = failure.ErrorCategory || failure.errorCategory || "-";
-      row.insertCell().textContent = failure.ErrorDescription || failure.errorDescription || "-";
-      row.insertCell().textContent = failure.ErrorDetail || failure.errorDetail || "-";
+      row.insertCell().textContent =
+        failure.IterationNum || failure.iterationNum || "-";
+      row.insertCell().textContent =
+        formatDateTime(failure.Time || failure.time) || "-";
+      row.insertCell().textContent =
+        failure.ErrorCategory || failure.errorCategory || "-";
+      row.insertCell().textContent =
+        failure.ErrorDescription || failure.errorDescription || "-";
+      row.insertCell().textContent =
+        failure.ErrorDetail || failure.errorDetail || "-";
     });
   }
   // Populate copilot response table
@@ -209,14 +440,17 @@ class TaskDetail {
     deployIterationData.forEach((iteration, index) => {
       const row = tableBody.insertRow();
       row.insertCell().textContent = iteration.iteration;
-      row.insertCell().textContent = formatDateTime(iteration.Time || iteration.time) || "-";
+      row.insertCell().textContent =
+        formatDateTime(iteration.Time || iteration.time) || "-";
 
       // Input command cell with truncation
       const inputCell = row.insertCell();
       const inputText = iteration.InputCommand || iteration.inputCommand || "-";
       if (inputText.length > 100) {
         inputCell.innerHTML = `
-                    <span class="truncated-text" title="${this.escapeHtml(inputText)}">
+                    <span class="truncated-text" title="${this.escapeHtml(
+                      inputText
+                    )}">
                         ${this.escapeHtml(inputText.substring(0, 100))}...
                     </span>
                 `;
@@ -224,11 +458,13 @@ class TaskDetail {
         inputCell.textContent = inputText;
       }
 
-      row.insertCell().textContent = iteration.ToolCall || iteration.toolCall || "-";
+      row.insertCell().textContent =
+        iteration.ToolCall || iteration.toolCall || "-";
 
       // Copilot response cell with expandable content
       const responseCell = row.insertCell();
-      const responseText = iteration.CopilotResponse || iteration.copilotResponse || "-";
+      const responseText =
+        iteration.CopilotResponse || iteration.copilotResponse || "-";
 
       if (responseText !== "-") {
         // Convert \\n to actual line breaks and clean up the text
@@ -245,7 +481,9 @@ class TaskDetail {
           responseCell.innerHTML = `
                         <div class="copilot-response-content">
                             <div class="response-preview" id="${responseId}-preview">
-                                <pre class="response-text">${this.escapeHtml(truncatedText)}...</pre>
+                                <pre class="response-text">${this.escapeHtml(
+                                  truncatedText
+                                )}...</pre>
                                 <button class="btn btn-sm btn-outline-primary mt-2 show-details-btn" 
                                         data-target="${responseId}" 
                                         data-expanded="false">
@@ -253,7 +491,9 @@ class TaskDetail {
                                 </button>
                             </div>
                             <div class="response-full d-none" id="${responseId}-full">
-                                <pre class="response-text">${this.escapeHtml(cleanedResponseText)}</pre>
+                                <pre class="response-text">${this.escapeHtml(
+                                  cleanedResponseText
+                                )}</pre>
                                 <button class="btn btn-sm btn-outline-secondary mt-2 hide-details-btn" 
                                         data-target="${responseId}" 
                                         data-expanded="true">
@@ -266,7 +506,9 @@ class TaskDetail {
           // For shorter responses, just display with line breaks
           responseCell.innerHTML = `
                         <div class="copilot-response-content">
-                            <pre class="response-text">${this.escapeHtml(cleanedResponseText)}</pre>
+                            <pre class="response-text">${this.escapeHtml(
+                              cleanedResponseText
+                            )}</pre>
                         </div>
                     `;
         }
@@ -342,7 +584,7 @@ class TaskDetail {
     document.getElementById("task-detail-loading")?.classList.remove("d-none");
     document
       .querySelectorAll(
-        ".task-header-card, .task-details-section, .task-stats-section, .initial-prompt-section, .result-section, .ai-integration-section, .failure-details-section, .copilot-response-section"
+        ".task-header-card, .task-details-section, .task-stats-section, .initial-prompt-section, .tool-call-summary-section, .ai-integration-section, .failure-details-section, .copilot-response-section"
       )
       .forEach((section) => section.classList.add("d-none"));
   }
@@ -351,7 +593,7 @@ class TaskDetail {
     document.getElementById("task-detail-loading")?.classList.add("d-none");
     document
       .querySelectorAll(
-        ".task-header-card, .task-details-section, .task-stats-section, .initial-prompt-section, .result-section, .ai-integration-section, .failure-details-section, .copilot-response-section"
+        ".task-header-card, .task-details-section, .task-stats-section, .initial-prompt-section, .tool-call-summary-section, .ai-integration-section, .failure-details-section, .copilot-response-section"
       )
       .forEach((section) => section.classList.remove("d-none"));
   }
@@ -360,7 +602,7 @@ class TaskDetail {
     this.hideLoadingState();
     document
       .querySelectorAll(
-        ".task-header-card, .task-details-section, .task-stats-section, .initial-prompt-section, .result-section, .ai-integration-section, .failure-details-section, .copilot-response-section"
+        ".task-header-card, .task-details-section, .task-stats-section, .initial-prompt-section, .tool-call-summary-section, .ai-integration-section, .failure-details-section, .copilot-response-section"
       )
       .forEach((section) => section.classList.add("d-none"));
 
@@ -393,7 +635,9 @@ class TaskDetail {
           `/repoName/${encodeURIComponent(this.currentRepoName)}`
         );
       } else {
-        window.location.href = `/repoName/${encodeURIComponent(this.currentRepoName)}`;
+        window.location.href = `/repoName/${encodeURIComponent(
+          this.currentRepoName
+        )}`;
       }
     } else if (this.currentJobId) {
       // Navigate back to job detail

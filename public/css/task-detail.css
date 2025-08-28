@@ -36,18 +36,94 @@
   color: #6c757d;
 }
 
-/* Result Section */
-.result-section {
+/* Tool Call Summary Section */
+.tool-call-summary-section {
   margin-bottom: 2rem;
 }
 
-.result-section h4 {
-  color: #495057;
+.tool-call-summary-section h4 {
+  color: #17a2b8;
   font-weight: 600;
   margin-bottom: 1rem;
 }
 
-/* Metric Cards */
+.tool-call-summary-section .card {
+  box-shadow: 0 2px 8px rgba(23, 162, 184, 0.1);
+  border: 1px solid #e9ecef;
+}
+
+/* Tool Usage Grid */
+.tool-usage-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1rem;
+  min-height: 120px;
+  padding: 0.5rem;
+}
+
+.tool-usage-grid .tool-metric-card {
+  background: linear-gradient(135deg, #fff 0%, #f8f9fa 100%);
+  border: 1px solid #e9ecef;
+  border-radius: 8px;
+  padding: 1rem;
+  text-align: center;
+  transition: all 0.3s ease;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  min-height: 100px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.tool-usage-grid .tool-metric-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(23, 162, 184, 0.2);
+  border-color: #17a2b8;
+}
+
+.tool-usage-grid .tool-metric-label {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #6c757d;
+  margin-bottom: 0.5rem;
+  line-height: 1.3;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+}
+
+.tool-usage-grid .tool-metric-value {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #17a2b8;
+  line-height: 1;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .tool-usage-grid {
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 0.75rem;
+  }
+
+  .tool-usage-grid .tool-metric-card {
+    min-height: 80px;
+    padding: 0.75rem;
+  }
+
+  .tool-usage-grid .tool-metric-label {
+    font-size: 0.75rem;
+  }
+
+  .tool-usage-grid .tool-metric-value {
+    font-size: 1.25rem;
+  }
+}
+
+@media (max-width: 576px) {
+  .tool-usage-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+} /* Metric Cards */
 .metric-card {
   background: linear-gradient(135deg, #fff 0%, #f8f9fa 100%);
   border: 1px solid #e9ecef;
