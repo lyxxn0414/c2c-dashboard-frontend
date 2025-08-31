@@ -983,6 +983,7 @@ class JobCompare {
       DeployType: job.DeployType || "N/A",
       IacType: job.IacType || "N/A",
       ComputingType: job.ComputingType || "N/A",
+      TestScenario: job.TestScenario || "N/A",
     };
 
     // Check which configs are different across all jobs

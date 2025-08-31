@@ -9,6 +9,7 @@ export interface Job {
   SuccessTasks: number; // 成功任务数
   FailedTasks?: number; // 失败任务数
   SuccessRate: string; // 成功率
+  TestScenario?: string; // 测试场景
 
   // 详情页面额外字段
   UseMCP?: number;

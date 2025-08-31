@@ -23,7 +23,7 @@
             type="text"
             class="form-control"
             id="filter-input"
-            placeholder="Filter by ID, Creator, Date, Rate, etc..."
+            placeholder="Filter by ID, Creator, Date, Rate, Test Scenario, etc..."
           />
         </div>
         
@@ -101,6 +101,21 @@
             <li><a class="dropdown-item" href="#" data-filter="all">All</a></li>
           </ul>
         </div>
+
+        <div class="dropdown">
+          <button
+            class="btn btn-outline-secondary dropdown-toggle"
+            type="button"
+            id="test-scenario-filter"
+            aria-expanded="false"
+          >
+            Test Scenario <span class="badge bg-primary">equals</span>
+            <span class="badge bg-secondary">all</span>
+          </button>
+          <ul class="dropdown-menu" id="test-scenario-filter-menu">
+            <li><a class="dropdown-item" href="#" data-filter="all">All</a></li>
+          </ul>
+        </div>
       </div>
     </div>  </div>
 
@@ -164,6 +179,9 @@
           </th>
           <th>
             Computing Resource
+          </th>
+          <th>
+            Test Scenario
           </th>
           <th>
             Success Rate

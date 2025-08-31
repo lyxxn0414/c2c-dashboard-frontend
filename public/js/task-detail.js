@@ -168,7 +168,6 @@ class TaskDetail {
     // Task Statistics
     this.setElementText("task-iterations", details.Iterations || "-");
     this.setElementText("task-file-edits-num", details.FileEditsNum || "-");
-    this.setElementText("task-ai-integration", details.AIIntegration || "-");
 
     // File Edits List
     const fileEditsElement = document.getElementById("task-file-edits-list");
@@ -197,25 +196,7 @@ class TaskDetail {
       promptElement.textContent = "No initial prompt available";
     }
 
-    // AI Integration counts - updated to use the new API structure
-    this.setElementText(
-      "task-fill-params-count",
-      details.FillMainParametersJSONWithOpenAI ||
-        taskData.aiIntegration?.fillMainParametersJSONWithOpenAI ||
-        "0"
-    );
-    this.setElementText(
-      "task-generate-input-count",
-      details.GenerateUserInputWithOpenAI ||
-        taskData.aiIntegration?.generateUserInputWithOpenAI ||
-        "0"
-    );
-    this.setElementText(
-      "task-judge-success-count",
-      details.JudgeAzdUpSuccessWithOpenAI ||
-        taskData.aiIntegration?.judgeAzdUpSuccessWithOpenAI ||
-        "0"
-    ); // Populate failure details table
+    // Populate failure details table
     this.populateFailureDetailsTable(
       details.DeployFailureDetails || taskData.deployFailureDetails || []
     );
@@ -584,7 +565,7 @@ class TaskDetail {
     document.getElementById("task-detail-loading")?.classList.remove("d-none");
     document
       .querySelectorAll(
-        ".task-header-card, .task-details-section, .task-stats-section, .initial-prompt-section, .tool-call-summary-section, .ai-integration-section, .failure-details-section, .copilot-response-section"
+        ".task-header-card, .task-details-section, .task-stats-section, .initial-prompt-section, .tool-call-summary-section, .failure-details-section, .copilot-response-section"
       )
       .forEach((section) => section.classList.add("d-none"));
   }
@@ -593,7 +574,7 @@ class TaskDetail {
     document.getElementById("task-detail-loading")?.classList.add("d-none");
     document
       .querySelectorAll(
-        ".task-header-card, .task-details-section, .task-stats-section, .initial-prompt-section, .tool-call-summary-section, .ai-integration-section, .failure-details-section, .copilot-response-section"
+        ".task-header-card, .task-details-section, .task-stats-section, .initial-prompt-section, .tool-call-summary-section, .failure-details-section, .copilot-response-section"
       )
       .forEach((section) => section.classList.remove("d-none"));
   }
@@ -602,7 +583,7 @@ class TaskDetail {
     this.hideLoadingState();
     document
       .querySelectorAll(
-        ".task-header-card, .task-details-section, .task-stats-section, .initial-prompt-section, .tool-call-summary-section, .ai-integration-section, .failure-details-section, .copilot-response-section"
+        ".task-header-card, .task-details-section, .task-stats-section, .initial-prompt-section, .tool-call-summary-section, .failure-details-section, .copilot-response-section"
       )
       .forEach((section) => section.classList.add("d-none"));
 

@@ -8,6 +8,7 @@ class JobsView {  constructor() {
     this.currentCopilotModelFilter = "all";
     this.currentDeployTypeFilter = "all";
     this.currentComputingResourceFilter = "all";
+    this.currentTestScenarioFilter = "all";
     this.externalServiceStatus = null;
     this.jobDropdownsInitialized = false;
     this.selectedJobIds = new Set(); // Track selected jobs for comparison
@@ -42,6 +43,7 @@ class JobsView {  constructor() {
     this.copilotModelFilter = document.getElementById("copilot-model-filter");
     this.deployTypeFilter = document.getElementById("deploy-type-filter");
     this.computingResourceFilter = document.getElementById("computing-resource-filter");
+    this.testScenarioFilter = document.getElementById("test-scenario-filter");
 
     // Job comparison elements
     this.selectAllCheckbox = document.getElementById("select-all-jobs");
@@ -104,6 +106,9 @@ class JobsView {  constructor() {
       if (this.currentComputingResourceFilter !== "all") {
         params.append("computingResource", this.currentComputingResourceFilter);
       }
+      if (this.currentTestScenarioFilter !== "all") {
+        params.append("testScenario", this.currentTestScenarioFilter);
+      }
       if (this.currentFilter && this.currentFilter.trim() !== "") {
         params.append("search", this.currentFilter.trim());
       }
@@ -152,19 +157,23 @@ class JobsView {  constructor() {
     
     const computingResources = [...new Set(jobs.map(job => job.ComputingType).filter(Boolean))].sort();
 
+    const testScenarios = [...new Set(jobs.map(job => job.TestScenario).filter(Boolean))].sort();
+
     // Populate all filter dropdowns
     window.dropdownManager.populateDropdown("tool-type-filter", toolTypes);
     window.dropdownManager.populateDropdown("iac-type-filter", iacTypes);
     window.dropdownManager.populateDropdown("copilot-model-filter", copilotModels);
     window.dropdownManager.populateDropdown("deploy-type-filter", deployTypes);
     window.dropdownManager.populateDropdown("computing-resource-filter", computingResources);
+    window.dropdownManager.populateDropdown("test-scenario-filter", testScenarios);
 
     console.log("Populated job filters:", {
       toolTypes: toolTypes.length,
       iacTypes: iacTypes.length,
       copilotModels: copilotModels.length,
       deployTypes: deployTypes.length,
-      computingResources: computingResources.length
+      computingResources: computingResources.length,
+      testScenarios: testScenarios.length
     });  }
 
   applyClientSideFilters(jobs) {
@@ -206,6 +215,13 @@ class JobsView {  constructor() {
       });
     }
 
+    // Apply TestScenario filter
+    if (this.currentTestScenarioFilter !== "all") {
+      filteredJobs = filteredJobs.filter((job) => {
+        return job.TestScenario === this.currentTestScenarioFilter;
+      });
+    }
+
     // Apply text filter for any field (including ID)
     if (this.currentFilter && this.currentFilter.trim() !== "") {
       const filterText = this.currentFilter.toLowerCase().trim();
@@ -222,6 +238,7 @@ class JobsView {  constructor() {
           job.CopilotModel || "",
           job.DeployType || "",
           job.ComputingType || "",
+          job.TestScenario || "",
           job.SuccessRate?.toString() || "",
           job.SuccessTasks?.toString() || "",
           job.TaskNum?.toString() || "",
@@ -244,6 +261,7 @@ class JobsView {  constructor() {
       copilotModel: this.currentCopilotModelFilter,
       deployType: this.currentDeployTypeFilter,
       computingResource: this.currentComputingResourceFilter,
+      testScenario: this.currentTestScenarioFilter,
       search: this.currentFilter
     });
     return filteredJobs;
@@ -356,7 +374,7 @@ class JobsView {  constructor() {
     if (jobs.length === 0) {
       tbody.innerHTML = `
                 <tr>
-                    <td colspan="9" class="text-center text-muted py-4">
+                    <td colspan="10" class="text-center text-muted py-4">
                         <i class="bi bi-inbox fs-1 d-block mb-2"></i>
                         No jobs found
                     </td>
@@ -387,6 +405,7 @@ class JobsView {  constructor() {
                 <td>${job.CopilotModel}</td>
                 <td>${job.DeployType}</td>
                 <td>${job.ComputingType}</td>
+                <td>${escapeHtml(job.TestScenario || '')}</td>
                 <td>
                     <span class="success-rate ${getSuccessRateClass(job.SuccessRate)}">
                         ${job.SuccessRate} (${job.SuccessTasks}/${job.TaskNum})
@@ -445,6 +464,11 @@ class JobsView {  constructor() {
           selector: "#computing-resource-filter + .dropdown-menu .dropdown-item",
           property: "currentComputingResourceFilter",
           buttonId: "computing-resource-filter",
+        },
+        {
+          selector: "#test-scenario-filter + .dropdown-menu .dropdown-item",
+          property: "currentTestScenarioFilter",
+          buttonId: "test-scenario-filter",
         },
       ]);
     });
@@ -560,12 +584,27 @@ class JobsView {  constructor() {
       },
     });
 
+    // Register TestScenario filter dropdown
+    window.dropdownManager.register("test-scenario-filter", {
+      buttonId: "test-scenario-filter",
+      dropdownId: "test-scenario-filter-menu",
+      placeholder: "Test Scenario",
+      filterType: "select",
+      onSelect: (value, label, id) => {
+        this.currentTestScenarioFilter = value;
+        this.currentPage = 1; // Reset to first page when filter changes
+        this.loadJobs(); // Reload data from server
+        console.log(`TestScenario filter changed to: ${value}`);
+      },
+    });
+
     // Initialize all job dropdowns
     window.dropdownManager.init("tool-type-filter");
     window.dropdownManager.init("iac-type-filter");
     window.dropdownManager.init("copilot-model-filter");
     window.dropdownManager.init("deploy-type-filter");
     window.dropdownManager.init("computing-resource-filter");
+    window.dropdownManager.init("test-scenario-filter");
   }
 
   showLoading(show) {
