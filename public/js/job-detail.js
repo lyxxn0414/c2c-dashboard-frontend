@@ -180,6 +180,7 @@ class JobDetail {
       "job-config-iac-type",
       "job-config-computing-type",
       "job-config-test-scenario",
+      "job-config-test-tag",
     ];
 
     jobConfigElements.forEach((elementId) => {
@@ -314,6 +315,11 @@ class JobDetail {
       {
         elementId: "job-config-test-scenario",
         jobField: "TestScenario",
+        fallback: "Not specified",
+      },
+      {
+        elementId: "job-config-test-tag",
+        jobField: "TestTag",
         fallback: "Not specified",
       },
     ];
