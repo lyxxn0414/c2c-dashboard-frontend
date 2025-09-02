@@ -20,7 +20,8 @@ function setupViewConfiguration() {
   }
 
   // Configure all application views
-  window.viewManager.registerViews({    // Jobs List View
+  window.viewManager.registerViews({
+    // Jobs List View
     jobs: {
       show: ["jobs-view", "jobs-content"],
       hide: [
@@ -40,7 +41,44 @@ function setupViewConfiguration() {
       onHide: async () => {
         console.log("Jobs view hidden");
       },
-    },// Job Detail View
+    },
+
+    // Summary View
+    summary: {
+      show: ["summary-view", "summary-content"],
+      hide: [
+        "jobs-view",
+        "jobs-content",
+        "job-detail-view",
+        "job-detail-content",
+        "repos-content",
+        "repo-detail-view",
+        "task-detail-view",
+        "error-center-content",
+        "job-compare-view",
+      ],
+      css: {
+        "summary-content": { display: "block" },
+      },
+      onShow: async () => {
+        console.log("Summary view shown");
+        // Initialize summary view if not already done
+        if (!window.summaryInitialized) {
+          window.summaryInitialized = true;
+          setTimeout(() => {
+            if (typeof initializeSummaryView === "function") {
+              console.log("Initializing summary view");
+              initializeSummaryView();
+            } else {
+              console.error("initializeSummaryView function not found");
+            }
+          }, 100);
+        }
+      },
+      onHide: async () => {
+        console.log("Summary view hidden");
+      },
+    }, // Job Detail View
     "job-detail": {
       show: ["job-detail-view", "job-detail-content"],
       hide: [
@@ -62,7 +100,7 @@ function setupViewConfiguration() {
       onHide: async () => {
         console.log("Job detail view hidden");
       },
-    },    // Job Comparison View
+    }, // Job Comparison View
     "job-compare": {
       show: ["job-compare-view"],
       hide: [
@@ -84,7 +122,7 @@ function setupViewConfiguration() {
       onHide: async () => {
         console.log("Job comparison view hidden");
       },
-    },// Repos List View
+    }, // Repos List View
     repos: {
       show: ["repos-content"],
       hide: [
@@ -118,7 +156,7 @@ function setupViewConfiguration() {
       onHide: async () => {
         console.log("Repos view hidden");
       },
-    },    // Repo Detail View
+    }, // Repo Detail View
     "repo-detail": {
       show: ["repo-detail-view"],
       hide: [
@@ -141,7 +179,7 @@ function setupViewConfiguration() {
       onHide: async () => {
         console.log("Repo detail view hidden");
       },
-    },    // Task Detail View
+    }, // Task Detail View
     "task-detail": {
       show: ["task-detail-view"],
       hide: [
@@ -164,7 +202,7 @@ function setupViewConfiguration() {
       onHide: async () => {
         console.log("Task detail view hidden");
       },
-    },    // Error Center View
+    }, // Error Center View
     "error-center": {
       show: ["error-center-content"],
       hide: [

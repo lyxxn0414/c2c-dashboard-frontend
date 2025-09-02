@@ -28,6 +28,13 @@ window.navigateToErrorCenter = function () {
   }
 };
 
+window.navigateToSummary = function () {
+  console.log("Navigating to summary...");
+  if (window.router) {
+    window.router.navigate("/summary");
+  }
+};
+
 window.navigateToJobDetail = function (jobId) {
   if (window.router) {
     window.router.navigate(`/job-detail/jobID=${jobId}`);
@@ -94,11 +101,15 @@ class Router {
 
     // Check if templates are already loaded
     if (window.areTemplatesLoaded && window.areTemplatesLoaded()) {
-      console.log("🎯 Templates already loaded, initializing router immediately");
+      console.log(
+        "🎯 Templates already loaded, initializing router immediately"
+      );
       this.templatesReady = true;
       this.init();
     } else {
-      console.log("⏳ Router constructor: waiting for templates to be ready...");
+      console.log(
+        "⏳ Router constructor: waiting for templates to be ready..."
+      );
 
       // Listen for templates loaded event
       window.addEventListener("templatesLoaded", () => {
@@ -110,7 +121,9 @@ class Router {
       // Fallback: try to init after a delay
       setTimeout(() => {
         if (!this.templatesReady) {
-          console.log("⚠️ Router constructor fallback: initializing after delay");
+          console.log(
+            "⚠️ Router constructor fallback: initializing after delay"
+          );
           this.templatesReady = true;
           this.init();
         }
@@ -118,7 +131,10 @@ class Router {
     }
   }
   init() {
-    console.log("🚀 Router init() called, templatesReady:", this.templatesReady);
+    console.log(
+      "🚀 Router init() called, templatesReady:",
+      this.templatesReady
+    );
 
     // Handle initial page load
     this.handleRoute();
@@ -155,7 +171,8 @@ class Router {
         this.updateNavigation();
         return;
       }
-    }    if (path.startsWith("/job-detail/")) {
+    }
+    if (path.startsWith("/job-detail/")) {
       const jobId = path.split("/job-detail/jobID=")[1];
       if (jobId) {
         this.currentRoute = path;
@@ -169,7 +186,7 @@ class Router {
       // Parse job IDs from query parameters
       const jobIds = [];
       for (const [key, value] of searchParams.entries()) {
-        if (key === 'jobID') {
+        if (key === "jobID") {
           jobIds.push(value);
         }
       }
@@ -198,6 +215,12 @@ class Router {
     if (path.startsWith("/error-center")) {
       this.currentRoute = "/error-center";
       this.showErrorCenterPage();
+      this.updateNavigation();
+      return;
+    }
+    if (path.startsWith("/summary")) {
+      this.currentRoute = "/summary";
+      this.showSummaryPage();
       this.updateNavigation();
       return;
     }
@@ -237,6 +260,19 @@ class Router {
     initErrorCenter();
   }
 
+  showSummaryPage() {
+    console.log("Router: Showing summary page");
+    window.viewManager.showView("summary");
+
+    // Initialize summary view if function exists
+    if (typeof initializeSummaryView === "function") {
+      console.log("Calling initializeSummaryView");
+      initializeSummaryView();
+    } else {
+      console.error("initializeSummaryView function not found");
+    }
+  }
+
   showRepoDetailPage(repoName) {
     console.log("Router: Showing repo detail page for:", repoName);
 
@@ -261,7 +297,8 @@ class Router {
     } else {
       console.error("showJobDetail function not found");
     }
-  }  showJobComparisonPage(jobIds) {
+  }
+  showJobComparisonPage(jobIds) {
     console.log("Router: Showing job comparison page for:", jobIds);
     window.viewManager.showView("job-compare", { jobIds });
 
@@ -270,7 +307,7 @@ class Router {
       if (!window.jobCompare && typeof JobCompare === "function") {
         window.jobCompare = new JobCompare();
       }
-      
+
       // Load the jobs for comparison
       if (window.jobCompare && jobIds && jobIds.length > 0) {
         window.jobCompare.loadJobs(jobIds);
