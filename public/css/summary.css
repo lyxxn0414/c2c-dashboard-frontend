@@ -1,0 +1,510 @@
+/* Summary View Styles */
+
+/* Summary Tab Navigation */
+.summary-tab-section {
+  margin-bottom: 2rem;
+}
+
+.summary-tab-card {
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(10px);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-lg);
+  padding: 1rem;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.05);
+}
+
+.summary-tabs {
+  margin-bottom: 0;
+  border: none;
+}
+
+.summary-tab-btn {
+  border-radius: var(--radius-md) !important;
+  border: 2px solid transparent !important;
+  font-weight: 500;
+  transition: all 0.3s ease;
+  color: var(--text-secondary) !important;
+  background: rgba(248, 250, 252, 0.8) !important;
+  margin: 0 0.25rem;
+}
+
+.summary-tab-btn:hover {
+  background: rgba(59, 130, 246, 0.1) !important;
+  border-color: rgba(59, 130, 246, 0.3) !important;
+  color: var(--primary-color) !important;
+  transform: translateY(-2px);
+}
+
+.summary-tab-btn.active {
+  background: linear-gradient(135deg, var(--primary-color), #0056b3) !important;
+  border-color: var(--primary-color) !important;
+  color: white !important;
+  box-shadow: 0 4px 12px rgba(0, 123, 255, 0.3);
+}
+
+.summary-tab-btn i {
+  font-size: 1.1rem;
+}
+
+/* Chart Module Styles */
+.chart-module-section {
+  margin-bottom: 2rem;
+}
+
+.chart-module-card {
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(10px);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-lg);
+  padding: 2rem;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.05);
+  transition: all 0.3s ease;
+}
+
+.chart-module-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
+}
+
+.chart-header h4 {
+  color: var(--text-primary);
+  font-weight: 600;
+  margin-bottom: 0;
+}
+
+/* Chart Filters */
+.chart-filters {
+  background: rgba(248, 250, 252, 0.8);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  padding: 1.5rem;
+}
+
+.filter-group {
+  margin-bottom: 1rem;
+}
+
+.filter-label {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  margin-bottom: 0.5rem;
+  display: block;
+}
+
+.filter-group .form-select {
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-sm);
+  font-size: 0.875rem;
+  transition: all 0.2s ease;
+}
+
+.filter-group .form-select:focus {
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+}
+
+/* Chart Container */
+.chart-container {
+  background: white;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  padding: 1.5rem;
+  min-height: 400px;
+  position: relative;
+}
+
+.chart-canvas-wrapper {
+  width: 100%;
+  height: 350px;
+  position: relative;
+}
+
+.chart-legend {
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--border-color);
+}
+
+.legend-items {
+  display: flex;
+  justify-content: center;
+  gap: 2rem;
+  flex-wrap: wrap;
+}
+
+.legend-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.legend-line {
+  width: 30px;
+  height: 3px;
+  border-radius: 2px;
+}
+
+.legend-line.success-rate {
+  background: linear-gradient(90deg, #28a745, #20c997);
+}
+
+.legend-bar {
+  width: 20px;
+  height: 20px;
+  border-radius: var(--radius-sm);
+}
+
+.legend-bar.iterations {
+  background: linear-gradient(135deg, #007bff, #6610f2);
+}
+
+.legend-text {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--text-primary);
+}
+
+/* Chart Loading and Empty States */
+.chart-loading-state,
+.chart-empty-state {
+  background: rgba(248, 250, 252, 0.5);
+  border-radius: var(--radius-sm);
+  border: 1px dashed var(--border-color);
+}
+
+.chart-loading-state .spinner-border {
+  width: 3rem;
+  height: 3rem;
+}
+
+/* Comparison Table Styles */
+.comparison-table-section {
+  margin-bottom: 2rem;
+}
+
+.comparison-table-card {
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(10px);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-lg);
+  padding: 2rem;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.05);
+  transition: all 0.3s ease;
+}
+
+.comparison-table-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
+}
+
+.comparison-header h4 {
+  color: var(--text-primary);
+  font-weight: 600;
+  margin-bottom: 0;
+}
+
+/* Table Controls */
+.table-controls {
+  background: rgba(248, 250, 252, 0.8);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  padding: 1rem;
+}
+
+.table-controls .form-check-label {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--text-secondary);
+}
+
+.table-controls .form-select {
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-sm);
+  font-size: 0.875rem;
+}
+
+/* Comparison Table */
+.comparison-table {
+  margin-bottom: 0;
+  font-size: 0.875rem;
+  border-collapse: separate;
+  border-spacing: 0;
+}
+
+.comparison-table thead th {
+  background: linear-gradient(135deg, #343a40, #495057);
+  color: white;
+  border: 1px solid #495057;
+  font-weight: 600;
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  padding: 0.75rem;
+  vertical-align: middle;
+}
+
+.comparison-table tbody th {
+  font-weight: 600;
+  color: var(--text-primary);
+  border: 1px solid var(--border-color);
+  vertical-align: middle;
+  background: rgba(248, 250, 252, 0.8);
+}
+
+.comparison-table tbody td {
+  border: 1px solid var(--border-color);
+  vertical-align: middle;
+  padding: 0.75rem;
+  transition: all 0.2s ease;
+}
+
+.comparison-table tbody tr:hover {
+  background-color: rgba(59, 130, 246, 0.05);
+}
+
+/* Category Headers */
+.category-header {
+  writing-mode: vertical-lr;
+  text-orientation: mixed;
+  font-weight: 700;
+  font-size: 0.9rem;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  background: linear-gradient(135deg, #f8f9fa, #e9ecef);
+  border-right: 3px solid var(--primary-color) !important;
+}
+
+/* Model/Language/Pattern Names */
+.model-name,
+.language-name,
+.pattern-name {
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+/* Success Rate Badges */
+.badge.bg-success {
+  background: linear-gradient(135deg, #28a745, #20c997) !important;
+}
+
+.badge.bg-warning {
+  background: linear-gradient(135deg, #ffc107, #fd7e14) !important;
+  color: #212529 !important;
+}
+
+.badge.bg-danger {
+  background: linear-gradient(135deg, #dc3545, #c82333) !important;
+}
+
+/* Table Row Colors */
+.table-primary th,
+.table-primary td {
+  background-color: rgba(0, 123, 255, 0.1) !important;
+  border-color: rgba(0, 123, 255, 0.2) !important;
+}
+
+.table-info th,
+.table-info td {
+  background-color: rgba(23, 162, 184, 0.1) !important;
+  border-color: rgba(23, 162, 184, 0.2) !important;
+}
+
+.table-success th,
+.table-success td {
+  background-color: rgba(40, 167, 69, 0.1) !important;
+  border-color: rgba(40, 167, 69, 0.2) !important;
+}
+
+/* Table Summary */
+.table-summary {
+  background: rgba(248, 250, 252, 0.8);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  padding: 1.5rem;
+}
+
+.summary-metric {
+  text-align: center;
+  padding: 1rem;
+}
+
+.summary-value {
+  display: block;
+  font-size: 2rem;
+  font-weight: 700;
+  line-height: 1.2;
+  margin-bottom: 0.5rem;
+}
+
+.summary-label {
+  display: block;
+  font-size: 0.875rem;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--text-muted);
+}
+
+/* Table Loading State */
+.table-loading-state {
+  background: rgba(248, 250, 252, 0.5);
+  border-radius: var(--radius-sm);
+  border: 1px dashed var(--border-color);
+}
+
+.table-loading-state .spinner-border {
+  width: 3rem;
+  height: 3rem;
+}
+
+/* Placeholder Content */
+.placeholder-content {
+  background: rgba(248, 250, 252, 0.5);
+  border: 2px dashed var(--border-color);
+  border-radius: var(--radius-lg);
+  margin: 2rem 0;
+}
+
+.placeholder-content i {
+  color: var(--text-muted);
+}
+
+.placeholder-content h4 {
+  color: var(--text-muted);
+  font-weight: 600;
+}
+
+.placeholder-content p {
+  color: var(--text-muted);
+  margin-bottom: 0;
+}
+
+/* Button Styles */
+.btn-sm {
+  font-weight: 500;
+  border-radius: var(--radius-sm);
+  transition: all 0.2s ease;
+}
+
+.btn-primary {
+  background: linear-gradient(135deg, var(--primary-color), #0056b3);
+  border-color: var(--primary-color);
+}
+
+.btn-primary:hover {
+  background: linear-gradient(135deg, #0056b3, #004494);
+  border-color: #0056b3;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(0, 123, 255, 0.3);
+}
+
+.btn-outline-primary {
+  border-color: var(--primary-color);
+  color: var(--primary-color);
+}
+
+.btn-outline-primary:hover {
+  background: var(--primary-color);
+  border-color: var(--primary-color);
+  transform: translateY(-1px);
+}
+
+.btn-outline-secondary {
+  border-color: var(--border-color);
+  color: var(--text-secondary);
+}
+
+.btn-outline-secondary:hover {
+  background: var(--secondary-color);
+  border-color: var(--secondary-color);
+  transform: translateY(-1px);
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .chart-module-card,
+  .comparison-table-card {
+    padding: 1rem;
+  }
+
+  .chart-filters {
+    padding: 1rem;
+  }
+
+  .filter-group {
+    margin-bottom: 0.75rem;
+  }
+
+  .chart-container {
+    padding: 1rem;
+    min-height: 300px;
+  }
+
+  .chart-canvas-wrapper {
+    height: 250px;
+  }
+
+  .legend-items {
+    gap: 1rem;
+  }
+
+  .comparison-table {
+    font-size: 0.8rem;
+  }
+
+  .comparison-table thead th,
+  .comparison-table tbody td {
+    padding: 0.5rem;
+  }
+
+  .summary-value {
+    font-size: 1.5rem;
+  }
+
+  .comparison-actions {
+    margin-top: 1rem;
+  }
+
+  .table-controls .row {
+    flex-direction: column;
+    gap: 1rem;
+  }
+
+  .category-header {
+    writing-mode: initial;
+    text-orientation: initial;
+    text-align: center;
+  }
+}
+
+@media (max-width: 576px) {
+  .summary-tabs {
+    flex-direction: column;
+  }
+
+  .summary-tab-btn {
+    margin: 0.25rem 0;
+    text-align: center;
+  }
+
+  .chart-filters .row,
+  .table-controls .row {
+    gap: 0.5rem;
+  }
+
+  .filter-group {
+    margin-bottom: 0.5rem;
+  }
+
+  .comparison-table {
+    font-size: 0.75rem;
+  }
+
+  .legend-items {
+    flex-direction: column;
+    align-items: center;
+    gap: 0.75rem;
+  }
+}
