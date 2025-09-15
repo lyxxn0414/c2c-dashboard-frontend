@@ -54,6 +54,8 @@ class JobDetail {
     this.jobIterationsChanges = document.getElementById(
       "job-iterations-changes"
     );
+    this.jobAvgFileEdits = document.getElementById("job-avg-file-edits");
+    this.jobAvgTokens = document.getElementById("job-avg-tokens");
 
     // Tool usage container (dynamic)
     this.toolUsageContainer = document.getElementById("tool-usage-container");
@@ -129,6 +131,13 @@ class JobDetail {
         ? avgFileChanges.toFixed(2)
         : avgFileChanges || "xx";
 
+    // Add average tokens per successful task
+    const tokensUsed = job.TokensUsed;
+    document.getElementById("job-avg-tokens").textContent =
+      typeof tokensUsed === "number" && !isNaN(tokensUsed) && tokensUsed > 0
+        ? tokensUsed.toFixed(2)
+        : tokensUsed || "NaN";
+
     // Populate dynamic tool usage from ToolUsageList
     this.populateToolUsage(job);
 
@@ -201,6 +210,7 @@ class JobDetail {
       "job-avg-iterations",
       "job-iterations-changes",
       "job-avg-file-edits",
+      "job-avg-tokens",
       "tool-get-logs",
     ];
 

@@ -168,6 +168,7 @@ class TaskDetail {
     // Task Statistics
     this.setElementText("task-iterations", details.Iterations || "-");
     this.setElementText("task-file-edits-num", details.FileEditsNum || "-");
+    this.setElementText("task-tokens-used", details.TokensUsed || "-");
 
     // File Edits List
     const fileEditsElement = document.getElementById("task-file-edits-list");
