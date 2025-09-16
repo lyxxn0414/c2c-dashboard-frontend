@@ -423,6 +423,72 @@ export class ExternalJobService {
   }
 
   /**
+   * Download infrastructure files (infra folder and yml file)
+   * @param infraFolderUrl - URL/path to the infrastructure folder
+   * @param ymlUrl - URL/path to the yml file
+   * @returns Promise<Blob> - Returns blob data for frontend to handle download
+   */
+  async downloadInfra(
+    infraFolderUrl: string,
+    ymlUrl: string
+  ): Promise<{
+    blob: Blob;
+    filename: string;
+  }> {
+    try {
+      console.log(`[ExternalAPI] Downloading infrastructure files...`);
+      console.log(`Infra Folder URL: ${infraFolderUrl}`);
+      console.log(`YML URL: ${ymlUrl}`);
+
+      const requestBody = {
+        infraFolderUrl,
+        ymlUrl,
+      };
+
+      // Make request to backend download endpoint
+      const response = await this.client.request({
+        method: "POST",
+        url: "/storage-blob/download-infra",
+        data: requestBody,
+        responseType: "blob", // Important: handle binary response
+        timeout: 60000, // Extended timeout for large files
+      });
+
+      // Create blob from response
+      const blob = new Blob([response.data], {
+        type: response.headers["content-type"] || "application/zip",
+      });
+
+      // Extract filename from response headers or use default
+      const contentDisposition = response.headers["content-disposition"];
+      let filename = "infrastructure-files.zip";
+
+      if (contentDisposition) {
+        const filenameMatch = contentDisposition.match(
+          /filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/
+        );
+        if (filenameMatch && filenameMatch[1]) {
+          filename = filenameMatch[1].replace(/['"]/g, "");
+        }
+      }
+
+      console.log(`[ExternalAPI] Successfully prepared download: ${filename}`);
+
+      return { blob, filename };
+    } catch (error) {
+      console.error(
+        `[ExternalAPI] Failed to download infrastructure files:`,
+        error
+      );
+      throw new Error(
+        `Failed to download infrastructure files: ${
+          error instanceof Error ? error.message : "Unknown error"
+        }`
+      );
+    }
+  }
+
+  /**
    * Parse and transform task detail response to match the expected format
    */ private parseTaskDetailResponse(
     taskData: any,

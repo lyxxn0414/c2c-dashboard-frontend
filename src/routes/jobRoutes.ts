@@ -424,4 +424,29 @@ router.post(
   })
 );
 
+router.post(
+  "/tasks/downloadInfra",
+  asyncHandler(async (req: Request, res: Response) => {
+    const { infraFolderUrl, ymlUrl } = req.body;
+
+    if (!infraFolderUrl || !ymlUrl) {
+      return res.status(400).json({ error: "Invalid URLs." });
+    }
+
+    try {
+      const results = await externalJobService.downloadInfra(
+        infraFolderUrl,
+        ymlUrl
+      );
+
+      res.json({ name: "PrimaryResult", data: results });
+    } catch (error) {
+      console.error("Error downloading infrastructure files:", error);
+      res
+        .status(500)
+        .json({ error: "Failed to download infrastructure files." });
+    }
+  })
+);
+
 export default router;
