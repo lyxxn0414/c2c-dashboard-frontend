@@ -24,6 +24,14 @@ class TaskDetail {
       });
     }
 
+    // Download plan button
+    const downloadPlanBtn = document.getElementById("download-task-plan-btn");
+    if (downloadPlanBtn) {
+      downloadPlanBtn.addEventListener("click", () => {
+        this.downloadTaskPlan();
+      });
+    }
+
     // Job link click
     const jobLink = document.getElementById("task-detail-job-link");
     if (jobLink) {
@@ -206,6 +214,16 @@ class TaskDetail {
     this.populateCopilotResponseTable(
       details.DeployIterationData || taskData.copilotResponses || []
     );
+
+    // Show/hide download plan button based on PlanUrl availability
+    const downloadPlanBtn = document.getElementById("download-task-plan-btn");
+    if (downloadPlanBtn) {
+      if (details.PlanUrl) {
+        downloadPlanBtn.classList.remove("d-none");
+      } else {
+        downloadPlanBtn.classList.add("d-none");
+      }
+    }
   }
 
   populateToolUsage(taskData) {
@@ -558,6 +576,84 @@ class TaskDetail {
     } catch (error) {
       console.error("Error downloading task details:", error);
       alert("Error downloading task details. Please try again.");
+    }
+  }
+
+  // Download task plan
+  async downloadTaskPlan() {
+    if (!this.taskData) {
+      showAlert('No task data available.', 'warning');
+      return;
+    }
+
+    const details = this.taskData.TaskDetails || this.taskData;
+    const planUrl = details.PlanUrl;
+    
+    if (!planUrl) {
+      showAlert('No plan URL available for this task.', 'warning');
+      return;
+    }
+
+    const downloadPlanBtn = document.getElementById("download-task-plan-btn");
+    
+    try {
+      // Show loading state
+      const originalHTML = downloadPlanBtn.innerHTML;
+      downloadPlanBtn.innerHTML = '<i class="bi bi-spinner spinner-border-sm"></i> Downloading...';
+      downloadPlanBtn.disabled = true;
+      
+      // Call the downloadPlan API endpoint
+      const response = await fetch('/storage-blob/download-plan', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          planUrl: planUrl
+        })
+      });
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      
+      // Get the blob from the response
+      const blob = await response.blob();
+      
+      // Extract filename from response headers or use default
+      const contentDisposition = response.headers.get('content-disposition');
+      let filename = `plan-${this.currentTaskId}.md`;
+      
+      if (contentDisposition) {
+        const filenameMatch = contentDisposition.match(/filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/);
+        if (filenameMatch && filenameMatch[1]) {
+          filename = filenameMatch[1].replace(/['"]/g, '');
+        }
+      }
+      
+      // Create download link and trigger download
+      const downloadLink = document.createElement('a');
+      const url = URL.createObjectURL(blob);
+      downloadLink.href = url;
+      downloadLink.download = filename;
+      downloadLink.style.display = 'none';
+      
+      document.body.appendChild(downloadLink);
+      downloadLink.click();
+      document.body.removeChild(downloadLink);
+      
+      // Clean up the URL object
+      URL.revokeObjectURL(url);
+      
+      showAlert(`Plan file downloaded successfully: ${filename}`, 'success');
+      
+    } catch (error) {
+      console.error('Error downloading plan file:', error);
+      showAlert(`Failed to download plan file: ${error.message}`, 'danger');
+    } finally {
+      // Restore button state
+      downloadPlanBtn.innerHTML = '<i class="bi bi-download"></i> Download Plan';
+      downloadPlanBtn.disabled = false;
     }
   }
   // Show loading state

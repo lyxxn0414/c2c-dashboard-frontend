@@ -1122,6 +1122,23 @@ class JobDetail {
           statusClass = "badge bg-secondary";
         }
 
+        // Create download plan button/link
+        let downloadPlanColumn = '';
+        if (task.PlanUrl && task.PlanUrl.trim() !== '') {
+          downloadPlanColumn = `
+            <button class="btn btn-outline-primary btn-sm download-plan-btn" 
+                    data-plan-url="${task.PlanUrl}" 
+                    data-task-id="${task.TaskID}"
+                    title="Download plan file">
+              <i class="bi bi-download"></i> Plan
+            </button>
+          `;
+        } else {
+          downloadPlanColumn = `
+            <span class="text-muted small">No plan</span>
+          `;
+        }
+
         return `
                 <div class="failed-task-item" data-category="${errorCategory}" data-task-name="${taskName.toLowerCase()}">
                     <div class="row align-items-center">
@@ -1141,7 +1158,8 @@ class JobDetail {
                             )}</span>
                         </div>
                         <div class="col-md-1">
-                            <span class="error-category badge bg-danger-subtle text-danger">${errorCategory}</span>
+                            <span class="error-category badge bg-danger-subtle text-danger" 
+                                  title="${errorCategory}">${errorCategory}</span>
                         </div>
                         <div class="col-md-2">
                             <span class="error-description">${
@@ -1149,10 +1167,13 @@ class JobDetail {
                               "No error description available"
                             }</span>
                         </div>
-                        <div class="col-md-5">
+                        <div class="col-md-4">
                             <span class="error-description">${
                               task.ErrorDetail || "No error details available"
                             }</span>
+                        </div>
+                        <div class="col-md-1">
+                            ${downloadPlanColumn}
                         </div>
                     </div>
                 </div>
@@ -1161,6 +1182,9 @@ class JobDetail {
       .join("");
 
     failedTasksContainer.innerHTML = failedTasksHTML;
+
+    // Add event listeners for download plan buttons
+    this.setupDownloadPlanEventListeners();
   }
 
   setupFilterEventListeners() {
@@ -1414,6 +1438,88 @@ class JobDetail {
       // Render the original tasks
       this.renderFailedTasks(this.originalFailedTasks);
     }
+  }
+
+  /**
+   * Setup event listeners for download plan buttons
+   */
+  setupDownloadPlanEventListeners() {
+    const downloadPlanButtons = document.querySelectorAll('.download-plan-btn');
+    
+    downloadPlanButtons.forEach(button => {
+      button.addEventListener('click', async (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        
+        const planUrl = button.getAttribute('data-plan-url');
+        const taskId = button.getAttribute('data-task-id');
+        
+        if (!planUrl) {
+          showAlert('No plan URL available for this task.', 'warning');
+          return;
+        }
+        
+        try {
+          // Show loading state
+          const originalHTML = button.innerHTML;
+          button.innerHTML = '<i class="bi bi-spinner spinner-border-sm"></i> Downloading...';
+          button.disabled = true;
+          
+          // Call the downloadPlan API endpoint
+          const response = await fetch('/storage-blob/download-plan', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              planUrl: planUrl
+            })
+          });
+          
+          if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+          }
+          
+          // Get the blob from the response
+          const blob = await response.blob();
+          
+          // Extract filename from response headers or use default
+          const contentDisposition = response.headers.get('content-disposition');
+          let filename = `plan-${taskId}.md`;
+          
+          if (contentDisposition) {
+            const filenameMatch = contentDisposition.match(/filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/);
+            if (filenameMatch && filenameMatch[1]) {
+              filename = filenameMatch[1].replace(/['"]/g, '');
+            }
+          }
+          
+          // Create download link and trigger download
+          const downloadLink = document.createElement('a');
+          const url = URL.createObjectURL(blob);
+          downloadLink.href = url;
+          downloadLink.download = filename;
+          downloadLink.style.display = 'none';
+          
+          document.body.appendChild(downloadLink);
+          downloadLink.click();
+          document.body.removeChild(downloadLink);
+          
+          // Clean up the URL object
+          URL.revokeObjectURL(url);
+          
+          showAlert(`Plan file downloaded successfully: ${filename}`, 'success');
+          
+        } catch (error) {
+          console.error('Error downloading plan file:', error);
+          showAlert(`Failed to download plan file: ${error.message}`, 'danger');
+        } finally {
+          // Restore button state
+          button.innerHTML = '<i class="bi bi-download"></i> Plan';
+          button.disabled = false;
+        }
+      });
+    });
   }
 }
 

@@ -489,6 +489,63 @@ export class ExternalJobService {
   }
 
   /**
+   * Download plan file as markdown
+   * @param planUrl - URL/path to the plan file
+   * @returns Promise<{blob: Blob, filename: string}> - Returns blob data for frontend to handle download
+   */
+  async downloadPlan(planUrl: string): Promise<{
+    blob: Blob;
+    filename: string;
+  }> {
+    try {
+      console.log(`[ExternalAPI] Downloading plan file...`);
+      console.log(`Plan URL: ${planUrl}`);
+
+      const requestBody = {
+        planUrl,
+      };
+
+      // Make request to backend download endpoint
+      const response = await this.client.request({
+        method: "POST",
+        url: "/storage-blob/download-plan",
+        data: requestBody,
+        responseType: "blob", // Important: handle binary response
+        timeout: 60000, // Extended timeout for large files
+      });
+
+      // Create blob from response
+      const blob = new Blob([response.data], {
+        type: response.headers["content-type"] || "text/markdown",
+      });
+
+      // Extract filename from response headers or use default
+      const contentDisposition = response.headers["content-disposition"];
+      let filename = "plan.md";
+
+      if (contentDisposition) {
+        const filenameMatch = contentDisposition.match(
+          /filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/
+        );
+        if (filenameMatch && filenameMatch[1]) {
+          filename = filenameMatch[1].replace(/['"]/g, "");
+        }
+      }
+
+      console.log(`[ExternalAPI] Successfully prepared download: ${filename}`);
+
+      return { blob, filename };
+    } catch (error) {
+      console.error(`[ExternalAPI] Failed to download plan file:`, error);
+      throw new Error(
+        `Failed to download plan file: ${
+          error instanceof Error ? error.message : "Unknown error"
+        }`
+      );
+    }
+  }
+
+  /**
    * Parse and transform task detail response to match the expected format
    */ private parseTaskDetailResponse(
     taskData: any,
