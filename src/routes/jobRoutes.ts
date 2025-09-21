@@ -11,6 +11,7 @@ import {
   TaskErrorsResponse,
 } from "../types/job.types";
 import { externalJobService } from "../services/externalJobService";
+import axios from "axios";
 
 const router = Router();
 
@@ -425,7 +426,7 @@ router.post(
 );
 
 router.post(
-  "/tasks/downloadInfra",
+  "/downloadInfra",
   asyncHandler(async (req: Request, res: Response) => {
     const { infraFolderUrl, ymlUrl } = req.body;
 
@@ -434,17 +435,85 @@ router.post(
     }
 
     try {
-      const results = await externalJobService.downloadInfra(
+      const requestBody = {
         infraFolderUrl,
         ymlUrl
-      );
+      };
 
-      res.json({ name: "PrimaryResult", data: results });
+      const baseURL = process.env.EXTERNAL_API_BASE_URL || "https://c2c-test-dashboard-d8feccd5dgbmd7a2.eastus-01.azurewebsites.net";
+      
+      // Make request directly to external service
+      const response = await axios({
+        method: 'POST',
+        url: `${baseURL}/storage-blob/download-infra`,
+        data: requestBody,
+        responseType: 'stream',
+        headers: {
+          'Content-Type': 'application/json',
+        }
+      });
+
+      // Copy headers from external service response
+      const contentType = response.headers['content-type'] || 'application/zip';
+      const contentDisposition = response.headers['content-disposition'] || 'attachment; filename="infrastructure-files.zip"';
+      
+      res.setHeader('Content-Type', contentType);
+      res.setHeader('Content-Disposition', contentDisposition);
+
+      // Pipe the response stream directly to our response
+      response.data.pipe(res);
+      
     } catch (error) {
       console.error("Error downloading infrastructure files:", error);
-      res
-        .status(500)
-        .json({ error: "Failed to download infrastructure files." });
+      if (!res.headersSent) {
+        res.status(500).json({ error: "Failed to download infrastructure files." });
+      }
+    }
+  })
+);
+
+router.post(
+  "/downloadPlan",
+  asyncHandler(async (req: Request, res: Response) => {
+    const { planUrl } = req.body;
+    
+    if (!planUrl) {
+      return res.status(400).json({ error: "Plan URL is required." });
+    }
+    
+    try {
+      const requestBody = {
+        planUrl
+      };
+
+      const baseURL = process.env.EXTERNAL_API_BASE_URL || "https://c2c-test-dashboard-d8feccd5dgbmd7a2.eastus-01.azurewebsites.net";
+      
+      // Make request directly to external service
+      const response = await axios({
+        method: 'POST',
+        url: `${baseURL}/storage-blob/download-plan`,
+        data: requestBody,
+        responseType: 'stream',
+        headers: {
+          'Content-Type': 'application/json',
+        }
+      });
+
+      // Copy headers from external service response
+      const contentType = response.headers['content-type'] || 'text/markdown';
+      const contentDisposition = response.headers['content-disposition'] || 'attachment; filename="plan.md"';
+      
+      res.setHeader('Content-Type', contentType);
+      res.setHeader('Content-Disposition', contentDisposition);
+
+      // Pipe the response stream directly to our response
+      response.data.pipe(res);
+      
+    } catch (error) {
+      console.error("Error downloading plan:", error);
+      if (!res.headersSent) {
+        res.status(500).json({ error: "Failed to download plan." });
+      }
     }
   })
 );

@@ -598,6 +598,9 @@ export class ExternalJobService {
         errorCategory: error.ErrorCategory || "Unknown",
         errorDescription: error.ErrorDescription || "No description",
         errorDetail: error.ErrorDetail || "No details",
+        yamlUrl: error.RecentYamlUrl || "",
+        infraFolderUrl: error.RecentInfraUrl || "",
+        fileEditList: error.FileEditList || [],
       })); // Transform copilot responses from copilot steps or deploy iteration data
       const copilotResponses = copilotStepsData.map((step: any) => ({
         time: formatDate(step.StartTime || step.Timestamp || step.Time || ""),

@@ -401,13 +401,13 @@ class TaskDetail {
     if (!failureDetails || failureDetails.length === 0) {
       const row = tableBody.insertRow();
       const cell = row.insertCell();
-      cell.colSpan = 5;
+      cell.colSpan = 7; // Updated to 7 columns
       cell.className = "text-center text-muted";
       cell.textContent = "No failure details available";
       return;
     }
 
-    failureDetails.forEach((failure) => {
+    failureDetails.forEach((failure, index) => {
       const row = tableBody.insertRow();
       row.insertCell().textContent =
         failure.IterationNum || failure.iterationNum || "-";
@@ -419,7 +419,194 @@ class TaskDetail {
         failure.ErrorDescription || failure.errorDescription || "-";
       row.insertCell().textContent =
         failure.ErrorDetail || failure.errorDetail || "-";
+      
+      // Download Infra column
+      const downloadCell = row.insertCell();
+      const infraFolderUrl = failure.InfraFolderUrl || failure.infraFolderUrl;
+      const yamlUrl = failure.YamlUrl || failure.yamlUrl;
+      
+      if (infraFolderUrl && yamlUrl) {
+        downloadCell.innerHTML = `
+          <button class="btn btn-sm btn-outline-primary download-infra-btn" 
+                  data-infra-url="${this.escapeHtml(infraFolderUrl)}" 
+                  data-yaml-url="${this.escapeHtml(yamlUrl)}"
+                  data-iteration="${failure.IterationNum || failure.iterationNum || index + 1}">
+            <i class="bi bi-download"></i> Download
+          </button>
+        `;
+      } else {
+        downloadCell.innerHTML = '<span class="text-muted">-</span>';
+      }
+      
+      // File Edits List column
+      const fileEditsCell = row.insertCell();
+      const fileEditList = failure.FileEditList || failure.fileEditList || [];
+      
+      if (Array.isArray(fileEditList) && fileEditList.length > 0) {
+        const fileEditListId = `file-edits-${index}`;
+        
+        if (fileEditList.length <= 3) {
+          // Show all files if 3 or fewer
+          fileEditsCell.innerHTML = `
+            <div class="file-edits-list">
+              ${fileEditList.map(file => 
+                `<div class="file-edit-item">
+                  <i class="bi bi-file-earmark-code me-1"></i>
+                  <small>${this.escapeHtml(file)}</small>
+                </div>`
+              ).join('')}
+            </div>
+          `;
+        } else {
+          // Show first 2 files with expandable option
+          const visibleFiles = fileEditList.slice(0, 2);
+          const hiddenFiles = fileEditList.slice(2);
+          
+          fileEditsCell.innerHTML = `
+            <div class="file-edits-list">
+              ${visibleFiles.map(file => 
+                `<div class="file-edit-item">
+                  <i class="bi bi-file-earmark-code me-1"></i>
+                  <small>${this.escapeHtml(file)}</small>
+                </div>`
+              ).join('')}
+              <div class="file-edits-preview" id="${fileEditListId}-preview">
+                <button class="btn btn-sm btn-link p-0 text-decoration-none show-more-files-btn" 
+                        data-target="${fileEditListId}">
+                  <small>... and ${hiddenFiles.length} more files</small>
+                  <i class="bi bi-chevron-down ms-1"></i>
+                </button>
+              </div>
+              <div class="file-edits-full d-none" id="${fileEditListId}-full">
+                ${hiddenFiles.map(file => 
+                  `<div class="file-edit-item">
+                    <i class="bi bi-file-earmark-code me-1"></i>
+                    <small>${this.escapeHtml(file)}</small>
+                  </div>`
+                ).join('')}
+                <button class="btn btn-sm btn-link p-0 text-decoration-none show-less-files-btn" 
+                        data-target="${fileEditListId}">
+                  <small>Show less</small>
+                  <i class="bi bi-chevron-up ms-1"></i>
+                </button>
+              </div>
+            </div>
+          `;
+        }
+      } else {
+        fileEditsCell.innerHTML = '<span class="text-muted">-</span>';
+      }
     });
+
+    // Bind event listeners for download buttons and file list toggles
+    this.bindFailureDetailsEvents();
+  }
+
+  // Bind event listeners for failure details interactions
+  bindFailureDetailsEvents() {
+    // Remove existing listeners to prevent duplicates
+    document.removeEventListener("click", this.handleFailureDetailsClick);
+    
+    // Add new listeners using event delegation
+    document.addEventListener("click", this.handleFailureDetailsClick.bind(this));
+  }
+
+  // Handle failure details interactions (download infra, show/hide file lists)
+  handleFailureDetailsClick(event) {
+    // Handle download infra button clicks
+    if (event.target.closest(".download-infra-btn")) {
+      const button = event.target.closest(".download-infra-btn");
+      const infraUrl = button.dataset.infraUrl;
+      const yamlUrl = button.dataset.yamlUrl;
+      const iteration = button.dataset.iteration;
+      
+      this.downloadInfraFiles(infraUrl, yamlUrl, iteration, button);
+    }
+    // Handle show more files button clicks
+    else if (event.target.closest(".show-more-files-btn")) {
+      const button = event.target.closest(".show-more-files-btn");
+      const targetId = button.dataset.target;
+      
+      document.getElementById(`${targetId}-preview`).classList.add("d-none");
+      document.getElementById(`${targetId}-full`).classList.remove("d-none");
+    }
+    // Handle show less files button clicks
+    else if (event.target.closest(".show-less-files-btn")) {
+      const button = event.target.closest(".show-less-files-btn");
+      const targetId = button.dataset.target;
+      
+      document.getElementById(`${targetId}-preview`).classList.remove("d-none");
+      document.getElementById(`${targetId}-full`).classList.add("d-none");
+    }
+  }
+
+  // Download infrastructure files
+  async downloadInfraFiles(infraFolderUrl, yamlUrl, iteration, button) {
+    if (!infraFolderUrl || !yamlUrl) {
+      showAlert('Missing infrastructure URLs.', 'warning');
+      return;
+    }
+
+    try {
+      // Show loading state
+      const originalHTML = button.innerHTML;
+      button.innerHTML = '<i class="bi bi-spinner spinner-border-sm"></i> Downloading...';
+      button.disabled = true;
+      
+      // Call the downloadInfra API endpoint
+      const response = await fetch('/api/jobs/downloadInfra', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          infraFolderUrl: infraFolderUrl,
+          ymlUrl: yamlUrl
+        })
+      });
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      
+      // Get the blob from the response
+      const blob = await response.blob();
+      
+      // Extract filename from response headers or use default
+      const contentDisposition = response.headers.get('content-disposition');
+      let filename = `infrastructure-files-iteration-${iteration}.zip`;
+      
+      if (contentDisposition) {
+        const filenameMatch = contentDisposition.match(/filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/);
+        if (filenameMatch && filenameMatch[1]) {
+          filename = filenameMatch[1].replace(/['"]/g, '');
+        }
+      }
+      
+      // Create download link and trigger download
+      const downloadLink = document.createElement('a');
+      const url = URL.createObjectURL(blob);
+      downloadLink.href = url;
+      downloadLink.download = filename;
+      downloadLink.style.display = 'none';
+      
+      document.body.appendChild(downloadLink);
+      downloadLink.click();
+      document.body.removeChild(downloadLink);
+      
+      // Clean up the URL object
+      URL.revokeObjectURL(url);
+      
+      showAlert(`Infrastructure files downloaded successfully: ${filename}`, 'success');
+      
+    } catch (error) {
+      console.error('Error downloading infrastructure files:', error);
+      showAlert(`Failed to download infrastructure files: ${error.message}`, 'danger');
+    } finally {
+      // Restore button state
+      button.innerHTML = '<i class="bi bi-download"></i> Download';
+      button.disabled = false;
+    }
   }
   // Populate copilot response table
   populateCopilotResponseTable(deployIterationData) {
@@ -603,7 +790,7 @@ class TaskDetail {
       downloadPlanBtn.disabled = true;
       
       // Call the downloadPlan API endpoint
-      const response = await fetch('/storage-blob/download-plan', {
+      const response = await fetch('/api/jobs/downloadPlan', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
